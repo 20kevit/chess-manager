@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}تورنومنت ایجاد شد!{% endblock %}
+
+{% block content %}
+<div class="success-page">
+    <div class="success-icon">✅</div>
+    <h1>تورنومنت با موفقیت ایجاد شد!</h1>
+    <h2>{{ tournament.name }}</h2>
+    
+    <div class="links-container">
+        <!-- لینک عمومی -->
+        <div class="link-box">
+            <h3>🔗 لینک عمومی (برای بازیکنان و تماشاچیان)</h3>
+            <div class="link-display">
+                <input type="text" value="{{ public_url }}" id="public-url" readonly onclick="this.select()">
+                <button onclick="copyToClipboard('public-url', this)" class="btn btn-secondary">کپی</button>
+            </div>
+            <p class="link-note">این لینک را با بازیکنان به اشتراک بگذارید</p>
+        </div>
+        
+        <!-- کد دسترسی مدیریت -->
+        <div class="link-box link-box-admin">
+            <h3>🔐 کد دسترسی مدیریت (فقط برای شما)</h3>
+            <div class="link-display">
+                <input type="text" value="{{ tournament.admin_code }}" id="admin-code" readonly onclick="this.select()" class="link-input">
+                <button onclick="copyToClipboard('admin-code', this)" class="btn btn-secondary">کپی</button>
+            </div>
+            <p class="link-note warning">
+                ⚠️ <strong>این کد ۱۶ رقمی را در جای امنی ذخیره کنید!</strong><br>
+                برای ورود به پنل مدیریت به این کد نیاز دارید. بدون این کد نمی‌توانید تورنومنت را مدیریت کنید.
+            </p>
+            <div style="margin-top: 16px; text-align: center;">
+                <a href="/{{ tournament.public_id }}/admin/login" class="btn btn-primary btn-large">
+                    ورود به پنل مدیریت
+                </a>
+            </div>
+        </div>
+        
+        <!-- دکمه بازگشت -->
+        <div style="margin-top: 24px; text-align: center;">
+            <a href="/" class="btn btn-secondary">بازگشت به خانه</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyToClipboard(elementId, button) {
+    const input = document.getElementById(elementId);
+    input.select();
+    input.setSelectionRange(0, 99999); // For mobile devices
+    
+    try {
+        document.execCommand('copy');
+        
+        // Change button text temporarily
+        const originalText = button.textContent;
+        button.textContent = 'کپی شد!';
+        button.style.background = 'var(--success)';
+        button.style.color = 'white';
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = '';
+            button.style.color = '';
+        }, 2000);
+    } catch (err) {
+        alert('خطا در کپی. لطفاً دستی کپی کنید.');
+    }
+}
+</script>
+{% endblock %}

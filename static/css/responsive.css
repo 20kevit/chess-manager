@@ -1,0 +1,205 @@
+/* ============================================
+   موبایل (تا ۶۰۰px)
+   ============================================ */
+@media (max-width: 600px) {
+    body {
+        font-size: 13px;
+    }
+
+    .container {
+        padding: 0 8px;
+    }
+
+    /* هدر */
+    .header .container {
+        justify-content: center;
+    }
+
+    .logo {
+        font-size: 0.95em;
+    }
+
+    .nav {
+        gap: 8px;
+    }
+
+    .nav a {
+        font-size: 0.8em;
+    }
+
+    /* صفحه اصلی */
+    .hero {
+        padding: 24px 8px 16px;
+    }
+
+    .hero h1 {
+        font-size: 1.2em;
+    }
+
+    .features {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .feature-card {
+        padding: 12px;
+    }
+
+    .feature-icon {
+        font-size: 1.5em;
+    }
+
+    .search-form {
+        flex-direction: column;
+    }
+
+    /* فرم‌ها */
+    .form-container {
+        padding: 12px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .radio-group {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .link-display {
+        flex-direction: column;
+    }
+
+    /* تورنومنت */
+    .tournament-header {
+        padding: 12px;
+    }
+
+    .tournament-header h1 {
+        font-size: 1em;
+    }
+
+    .tournament-meta {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .tournament-arbiters {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    /* تب‌ها */
+    .tabs {
+        padding: 3px;
+    }
+
+    .tab {
+        padding: 6px 10px;
+        font-size: 0.8em;
+    }
+
+    .tab-content {
+        padding: 10px;
+    }
+
+    /* جداول */
+    .data-table {
+        font-size: 0.72em;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 5px 4px;
+    }
+
+    /* فیلتر */
+    .filter-bar {
+        padding: 6px 8px;
+    }
+
+    .filter-btn {
+        padding: 3px 8px;
+        font-size: 0.75em;
+    }
+
+    /* دورها */
+    .round-card {
+        padding: 10px;
+    }
+
+    .admin-actions {
+        flex-direction: column;
+    }
+
+    .admin-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .result-select {
+        width: 100%;
+        min-width: 80px;
+    }
+
+    /* صفحه موفقیت */
+    .success-page h1 {
+        font-size: 1.1em;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* ============================================
+   تبلت (۶۰۱ تا ۹۶۸)
+   ============================================ */
+@media (min-width: 601px) and (max-width: 968px) {
+    .hero h1 {
+        font-size: 1.4em;
+    }
+
+    .features {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .data-table {
+        font-size: 0.78em;
+    }
+}
+
+/* ============================================
+   جدول اسکرول‌پذیر بهتر
+   ============================================ */
+.table-responsive {
+    position: relative;
+}
+
+.table-responsive::after {
+    content: '← اسکرول کنید';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    font-size: 0.65em;
+    color: var(--gray-400);
+    pointer-events: none;
+    display: none;
+}
+
+@media (max-width: 968px) {
+    .table-responsive::after {
+        display: block;
+    }
+}

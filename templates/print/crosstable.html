@@ -1,0 +1,40 @@
+{% extends "print/base.html" %}
+{% block title %}جدول برخورد | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<h2 style="text-align:center; font-size:13px; margin-bottom:4mm;">جدول برخورد</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>رتبه</th>
+            <th>#</th>
+            <th class="player-cell">بازیکن</th>
+            <th>ریتینگ</th>
+            {% for r in range(1, total_rounds + 1) %}
+            <th>{{ r }}</th>
+            {% endfor %}
+            <th>امتیاز</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for data in sorted_players %}
+        {% set player = data.player %}
+        {% if player.status == 'active' or player.points > 0 %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ player.start_number }}</td>
+            <td class="player-cell">{{ player.full_name }}</td>
+            <td>{{ player.rating or 0 }}</td>
+            {% for r in range(1, total_rounds + 1) %}
+            <td class="{% if data.rounds.get(r) %}{{ data.rounds[r].css }}{% endif %}">
+                {% if data.rounds.get(r) %}{{ data.rounds[r].text }}{% else %}-{% endif %}
+            </td>
+            {% endfor %}
+            <td><strong>{{ player.points or 0 }}</strong></td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

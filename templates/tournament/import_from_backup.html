@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}ایجاد تورنمنت از فایل پشتیبان{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom styles for tournament preview list */
+    .tournament-preview-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .tournament-name {
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #333;
+    }
+    .file-hint {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+    }
+    .loading-spinner {
+        display: inline-block;
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2 class="section-title">ایجاد تورنمنت از فایل پشتیبان Coronate</h2>
+    
+    <!-- Hidden input to store CSRF token for JavaScript access -->
+    <input type="hidden" id="csrf-token" value="{{ csrf_token() }}">
+    
+    <!-- Container for dynamic alerts -->
+    <div id="alert-container"></div>
+
+    <!-- File upload section -->
+    <div class="form-section">
+        <div class="form-group">
+            <label for="backup-file">فایل پشتیبان (JSON)</label>
+            <input type="file" id="backup-file" class="file-input" accept=".json">
+            <p class="file-hint">لطفاً فایل JSON خروجی گرفته شده از Coronate را انتخاب کنید.</p>
+        </div>
+        <div class="form-actions">
+            <button type="button" id="preview-btn" class="btn btn-primary btn-large" onclick="previewTournaments()">
+                <span id="btn-text">پیش‌نمایش تورنمنت‌ها</span>
+                <span id="btn-spinner" class="loading-spinner" style="display: none;">در حال بارگذاری...</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tournament preview results section -->
+    <div id="preview-results" class="form-section" style="display: none;">
+        <h3 class="section-title">تورنمنت‌های موجود در فایل</h3>
+        <p class="file-hint">تورنمنت مورد نظر خود را برای وارد کردن به سیستم انتخاب کنید:</p>
+        <!-- Tournament forms will be injected here by JavaScript -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/backup_import.js') }}"></script>
+{% endblock %}

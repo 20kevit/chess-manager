@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}لیست جفت‌های قفل شده{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2 class="section-title">جفت‌های قفل شده برای دور بعدی</h2>
+    <p style="margin-bottom: 20px; color: #555;">
+        این جفت‌ها در هنگام تولید خودکار جفت‌های دور بعدی، به صورت ثابت لحاظ خواهند شد.
+    </p>
+
+    {% if manual_pairings and manual_pairings|length > 0 %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background-color: #f5f5f5; border-bottom: 2px solid #ddd;">
+                    <th style="padding: 12px; text-align: right;">#</th>
+                    <th style="padding: 12px; text-align: right;">بازیکن سفید</th>
+                    <th style="padding: 12px; text-align: right;">بازیکن سیاه</th>
+                    <th style="padding: 12px; text-align: center;">عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pairing in manual_pairings %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px;">{{ loop.index }}</td>
+                    <td style="padding: 12px; font-weight: bold;">{{ pairing.white_player_name }}</td>
+                    <td style="padding: 12px; font-weight: bold;">{{ pairing.black_player_name }}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        <!-- Remove form for this pairing -->
+                        <!-- Removing by either player_id will remove the whole pairing -->
+                        <form method="POST" action="/{{ tournament.public_id }}/admin/rounds/manual-pairing/remove" style="display: inline;">
+                            {{ csrf_token() }}
+                            <input type="hidden" name="player_id" value="{{ pairing.white_player_id }}">
+                            <button type="submit" class="btn btn-small btn-danger-outline"
+                                    onclick="return confirm('آیا از حذف این جفت‌گذاری اطمینان دارید؟');">
+                                حذف
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert" style="background-color: #f9f9f9; text-align: center; padding: 30px;">
+            <p style="color: #666;">هیچ جفت‌گذاری دستی برای دور بعدی ثبت نشده است.</p>
+        </div>
+    {% endif %}
+
+    <!-- Navigation actions -->
+    <div class="form-actions" style="margin-top: 30px; border-top: 2px dashed #ddd; padding-top: 20px;">
+        <a href="/{{ tournament.public_id }}/admin/rounds/request-bye" class="btn btn-secondary">
+            بازگشت به مدیریت استراحت
+        </a>
+        <a href="/{{ tournament.public_id }}/admin/rounds" class="btn btn-primary">
+            بازگشت به لیست دورها
+        </a>
+    </div>
+</div>
+{% endblock %}

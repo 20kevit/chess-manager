@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}خلاصه | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="/{{ tournament.public_id }}" class="btn btn-secondary" style="float:left;">🔙 بازگشت</a>
+    <h1>خلاصه تورنومنت</h1>
+    <p>{{ tournament.name }}</p>
+</div>
+
+<!-- اطلاعات کلی -->
+<div class="summary-info">
+    <div class="summary-grid">
+        <div class="summary-item">
+            <span class="summary-label">شهر</span>
+            <span class="summary-value">{{ tournament.city or '-' }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">نوع</span>
+            <span class="summary-value">
+                {% if tournament.time_control_type == 'standard' %}استاندارد
+                {% elif tournament.time_control_type == 'rapid' %}سریع
+                {% elif tournament.time_control_type == 'blitz' %}برق‌آسا{% endif %}
+                {% if tournament.time_control_description %}({{ tournament.time_control_description }}){% endif %}
+            </span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">تعداد دورها</span>
+            <span class="summary-value">{{ tournament.current_round }} از {{ tournament.total_rounds }}</span>
+        </div>
+        {% if tournament.chief_arbiter %}
+        <div class="summary-item">
+            <span class="summary-label">سرداور</span>
+            <span class="summary-value">{{ tournament.chief_arbiter }}</span>
+        </div>
+        {% endif %}
+        {% if tournament.arbiter %}
+        <div class="summary-item">
+            <span class="summary-label">داور</span>
+            <span class="summary-value">{{ tournament.arbiter }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- آمار کلی -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-value">{{ total_players }}</div>
+        <div class="stat-label">بازیکن</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ total_games }}</div>
+        <div class="stat-label">بازی</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ avg_rating }}</div>
+        <div class="stat-label">میانگین ریتینگ</div>
+    </div>
+</div>
+
+<!-- آمار نتایج -->
+<div class="result-stats">
+    <h2>آمار نتایج</h2>
+    <div class="result-bars">
+        <div class="result-bar-row">
+            <span class="result-bar-label">برد سفید</span>
+            <div class="result-bar-track">
+                <div class="result-bar-fill bar-white-win" style="width: {{ white_pct }}%"></div>
+            </div>
+            <span class="result-bar-value">{{ white_wins }} ({{ white_pct }}%)</span>
+        </div>
+        <div class="result-bar-row">
+            <span class="result-bar-label">تساوی</span>
+            <div class="result-bar-track">
+                <div class="result-bar-fill bar-draw" style="width: {{ draw_pct }}%"></div>
+            </div>
+            <span class="result-bar-value">{{ draws }} ({{ draw_pct }}%)</span>
+        </div>
+        <div class="result-bar-row">
+            <span class="result-bar-label">برد سیاه</span>
+            <div class="result-bar-track">
+                <div class="result-bar-fill bar-black-win" style="width: {{ black_pct }}%"></div>
+            </div>
+            <span class="result-bar-value">{{ black_wins }} ({{ black_pct }}%)</span>
+        </div>
+        {% if forfeits > 0 %}
+        <div class="result-bar-row">
+            <span class="result-bar-label">بدون بازی</span>
+            <div class="result-bar-track">
+                <div class="result-bar-fill bar-forfeit" style="width: {{ (forfeits / total_games * 100) if total_games else 0 }}%"></div>
+            </div>
+            <span class="result-bar-value">{{ forfeits }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ۳ نفر برتر -->
+{% if top_players %}
+<div class="podium-section">
+    <h2>🏆 نفرات برتر</h2>
+    <div class="podium">
+        {% for ps in top_players %}
+        {% set player = ps.player %}
+        <div class="podium-card podium-{{ loop.index }}">
+            <div class="podium-rank">{{ loop.index }}</div>
+            <div class="podium-name">
+                <a href="/{{ tournament.public_id }}/player/{{ player.id }}">
+                    {% if player.fide_title %}
+                        <span class="player-title-badge">{{ player.fide_title }}</span>
+                    {% endif %}
+                    {{ player.full_name }}
+                </a>
+            </div>
+            <div class="podium-rating">{{ player.rating or 0 }}</div>
+            <div class="podium-points">{{ ps.points }} امتیاز</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- جوایز ویژه -->
+<div class="awards-section">
+    <h2>🌟 جوایز ویژه</h2>
+    <div class="awards-grid">
+        {% if best_performance %}
+        <div class="award-card">
+            <div class="award-icon">📈</div>
+            <div class="award-title">بهترین پرفورمنس</div>
+            <div class="award-player">
+                <a href="/{{ tournament.public_id }}/player/{{ best_performance.player.id }}">
+                    {{ best_performance.player.full_name }}
+                </a>
+            </div>
+            <div class="award-value">{{ best_performance.performance }}</div>
+        </div>
+        {% endif %}
+
+        {% if best_gain and best_gain.change > 0 %}
+        <div class="award-card">
+            <div class="award-icon">⬆️</div>
+            <div class="award-title">بیشترین افزایش ریتینگ</div>
+            <div class="award-player">
+                <a href="/{{ tournament.public_id }}/player/{{ best_gain.player.id }}">
+                    {{ best_gain.player.full_name }}
+                </a>
+            </div>
+            <div class="award-value rating-up">+{{ best_gain.change|round(1) }}</div>
+        </div>
+        {% endif %}
+
+        {% if most_wins %}
+        <div class="award-card">
+            <div class="award-icon">⚔️</div>
+            <div class="award-title">بیشترین برد</div>
+            <div class="award-player">
+                <a href="/{{ tournament.public_id }}/player/{{ most_wins.player.id }}">
+                    {{ most_wins.player.full_name }}
+                </a>
+            </div>
+            <div class="award-value">{{ most_wins.wins }} برد</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- نفر اول رده‌ها -->
+{% if age_winners %}
+<div class="category-winners">
+    <h2>🏅 نفرات اول رده‌های سنی</h2>
+    <div class="awards-grid">
+        {% for cat, ps in age_winners.items() %}
+        <div class="award-card">
+            <div class="award-icon">🥇</div>
+            <div class="award-title">{{ cat }}</div>
+            <div class="award-player">
+                <a href="/{{ tournament.public_id }}/player/{{ ps.player.id }}">
+                    {{ ps.player.full_name }}
+                </a>
+            </div>
+            <div class="award-value">{{ ps.points }} امتیاز</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if custom_winners %}
+<div class="category-winners">
+    <h2>🏅 نفرات اول دسته‌بندی‌ها</h2>
+    <div class="awards-grid">
+        {% for cat, ps in custom_winners.items() %}
+        <div class="award-card">
+            <div class="award-icon">🥇</div>
+            <div class="award-title">{{ cat }}</div>
+            <div class="award-player">
+                <a href="/{{ tournament.public_id }}/player/{{ ps.player.id }}">
+                    {{ ps.player.full_name }}
+                </a>
+            </div>
+            <div class="award-value">{{ ps.points }} امتیاز</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- لینک‌ها -->
+<div class="summary-links">
+    <a href="/{{ tournament.public_id }}" class="btn btn-primary">📊 جدول رده‌بندی</a>
+    <a href="/{{ tournament.public_id }}/crosstable" class="btn btn-secondary">📋 جدول برخورد</a>
+</div>
+{% endblock %}

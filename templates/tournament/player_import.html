@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}ایمپورت بازیکنان | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>ایمپورت بازیکنان از CSV</h1>
+    <p>{{ tournament.name }}</p>
+</div>
+
+<div class="admin-actions">
+    <!-- Clean URL without admin_code -->
+    <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 بازگشت به داشبورد</a>
+    <a href="{{ url_for('player.csv_template', public_id=tournament.public_id) }}" class="btn btn-secondary">📥 دانلود فایل نمونه CSV</a>
+</div>
+
+{% if step == 'upload' %}
+<!-- مرحله ۱: آپلود -->
+<div class="form-container">
+    <h2 class="section-title">آپلود فایل CSV</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="action" value="preview">
+
+        <div class="form-group">
+            <label for="csv_file">فایل CSV</label>
+            <input type="file" id="csv_file" name="csv_file" accept=".csv" required
+                   class="file-input">
+        </div>
+
+        <div class="import-help">
+            <h3>فرمت فایل CSV</h3>
+            <p>ستون‌های مجاز (فقط <strong>first_name</strong> و <strong>last_name</strong> اجباری):</p>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>نام ستون</th>
+                            <th>توضیح</th>
+                            <th>مثال</th>
+                            <th>اجباری</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>first_name</td><td>نام</td><td>علی</td><td>✅</td></tr>
+                        <tr><td>last_name</td><td>نام خانوادگی</td><td>اکبری</td><td>✅</td></tr>
+                        <tr><td>rating</td><td>ریتینگ</td><td>1800</td><td></td></tr>
+                        <tr><td>fide_id</td><td>کد فیده</td><td>12345678</td><td></td></tr>
+                        <tr><td>federation</td><td>فدراسیون</td><td>IRI</td><td></td></tr>
+                        <tr><td>gender</td><td>جنسیت</td><td>M یا F</td><td></td></tr>
+                        <tr><td>birth_date</td><td>تاریخ تولد</td><td>2000-01-15</td><td></td></tr>
+                        <tr><td>fide_title</td><td>عنوان</td><td>FM</td><td></td></tr>
+                        <tr><td>k_factor</td><td>ضریب K</td><td>20</td><td></td></tr>
+                        <tr><td>age_category</td><td>رده سنی</td><td>U18</td><td></td></tr>
+                        <tr><td>custom_category</td><td>دسته سفارشی</td><td>سطح A</td><td></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">پیش‌نمایش</button>
+        </div>
+    </form>
+</div>
+
+{% elif step == 'preview' %}
+<!-- مرحله ۲: پیش‌نمایش -->
+<div class="form-container">
+    <h2 class="section-title">پیش‌نمایش ({{ total_count }} بازیکن)</h2>
+
+    {% if errors %}
+    <div class="import-errors">
+        <h3>⚠️ هشدارها:</h3>
+        <ul>
+            {% for err in errors %}
+            <li>{{ err }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if players_data %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>نام</th>
+                    <th>نام خانوادگی</th>
+                    <th>ریتینگ</th>
+                    <th>فیده</th>
+                    <th>فدراسیون</th>
+                    <th>جنسیت</th>
+                    <th>عنوان</th>
+                    <th>رده سنی</th>
+                    <th>دسته</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in players_data %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td class="player-cell">{{ p.first_name }}</td>
+                    <td class="player-cell">{{ p.last_name }}</td>
+                    <td>{{ p.rating or 0 }}</td>
+                    <td>{{ p.fide_id or '-' }}</td>
+                    <td>{{ p.federation }}</td>
+                    <td>{{ 'مرد' if p.gender == 'M' else 'زن' }}</td>
+                    <td>{{ p.fide_title or '-' }}</td>
+                    <td>{{ p.age_category or '-' }}</td>
+                    <td>{{ p.custom_category or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="action" value="confirm">
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large"
+                    onclick="return confirm('{{ total_count }} بازیکن اضافه شود؟')">
+                ✅ تایید و افزودن {{ total_count }} بازیکن
+            </button>
+            <a href="/{{ tournament.public_id }}" class="btn btn-secondary">انصراف</a>
+        </div>
+    </form>
+    {% else %}
+    <div class="empty-state">
+        <p>بازیکن معتبری در فایل یافت نشد.</p>
+        <a href="{{ url_for('player.player_import', public_id=tournament.public_id, admin_code=tournament.admin_code) }}"
+           class="btn btn-secondary">بازگشت</a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

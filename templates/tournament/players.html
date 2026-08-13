@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}بازیکنان | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>لیست بازیکنان</h1>
+    <p>{{ tournament.name }} | {{ players|length }} بازیکن</p>
+</div>
+
+<div class="admin-actions">
+    <a href="{{ url_for('player.player_add', public_id=tournament.public_id) }}"
+       class="btn btn-primary">➕ افزودن بازیکن</a>
+    <a href="{{ url_for('player.player_import', public_id=tournament.public_id,) }}"
+       class="btn btn-primary">📤 ایمپورت از CSV</a>
+    <a href="/{{ tournament.public_id }}/admin/"
+       class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
+</div>
+
+{% if players %}
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>نام</th>
+                <th>نام خانوادگی</th>
+                <th>عنوان</th>
+                <th>ریتینگ</th>
+                <th>فدراسیون</th>
+                <th>فیده</th>
+                <th>رده سنی</th>
+                <th>دسته</th>
+                <th>وضعیت</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player in players %}
+            <tr class="{% if player.status == 'withdrawn' %}row-withdrawn{% endif %}">
+                <td>{{ player.start_number }}</td>
+                <td>{{ player.first_name }}</td>
+                <td>{{ player.last_name }}</td>
+                <td dir="ltr">{{ player.fide_title or '-' }}</td>
+                <td dir="ltr">{{ player.rating or 0 }}</td>
+                <td dir="ltr">{{ player.federation }}</td>
+                <td dir="ltr">
+                    {% if player.fide_id %}
+                        <a href="https://ratings.fide.com/profile/{{ player.fide_id }}" 
+                           target="_blank">{{ player.fide_id }}</a>
+                    {% else %}-{% endif %}
+                </td>
+                <td>{{ player.age_category or '-' }}</td>
+                <td>{{ player.custom_category or '-' }}</td>
+                <td>
+                    {% if player.status == 'active' %}
+                        <span class="badge badge-success">فعال</span>
+                    {% elif player.status == 'withdrawn' %}
+                        <span class="badge badge-warning">انصراف</span>
+                    {% endif %}
+                </td>
+                <td class="actions-cell">
+                    <a href="{{ url_for('player.player_edit', public_id=tournament.public_id, player_id=player.id) }}" 
+                       class="btn-small btn-edit" title="ویرایش">✏️</a>
+                    
+                    <form method="POST" style="display:inline;" 
+                          action="{{ url_for('player.player_withdraw', public_id=tournament.public_id, player_id=player.id) }}">
+                        <button type="submit" class="btn-small btn-warn" 
+                                title="{% if player.status == 'active' %}انصراف{% else %}فعال‌سازی{% endif %}">
+                            {% if player.status == 'active' %}⏸️{% else %}▶️{% endif %}
+                        </button>
+                    </form>
+                    
+                    <form method="POST" style="display:inline;" 
+                          action="{{ url_for('player.player_delete', public_id=tournament.public_id, player_id=player.id) }}"
+                          onsubmit="return confirm('آیا از حذف بازیکن {{ player.full_name }} مطمئن هستید؟')">
+                        <button type="submit" class="btn-small btn-danger" title="حذف">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>هنوز بازیکنی اضافه نشده است.</p>
+    <a href="{{ url_for('player.player_add', public_id=tournament.public_id,) }}" 
+       class="btn btn-primary">افزودن اولین بازیکن</a>
+</div>
+{% endif %}
+{% endblock %}

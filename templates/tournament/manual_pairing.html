@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}تنظیمات دستی جفت‌گذاری - دور {{ round.round_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom styles for the manual pairing adjustments page */
+    .board-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .board-number {
+        font-weight: bold;
+        color: #555;
+        min-width: 60px;
+    }
+    .players-display {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        font-size: 1.05em;
+    }
+    .player-white {
+        color: #333;
+    }
+    .player-black {
+        color: #333;
+    }
+    .vs-separator {
+        color: #999;
+        font-weight: bold;
+    }
+    .bye-row {
+        background-color: #fff8e1;
+        border-color: #ffe082;
+    }
+    .swap-section {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 6px;
+    }
+    .warning-box {
+        background-color: #fff3cd;
+        border: 1px solid #ffc107;
+        color: #856404;
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2 class="section-title">تنظیمات دستی جفت‌گذاری - دور {{ round.round_number }}</h2>
+    <p style="margin-bottom: 20px; color: #555;">
+        در این صفحه می‌توانید پس از تولید جفت‌ها، تغییرات دستی مانند جابجایی رنگ یا جابجایی بازیکنان بین میزها را اعمال کنید.
+    </p>
+
+    <!-- Section 1: Current pairings with swap-color buttons -->
+    <div class="form-section">
+        <h3 class="section-title">میزهای فعلی</h3>
+        <p style="margin-bottom: 15px; color: #666; font-size: 0.9em;">
+            برای جابجایی رنگ‌های یک میز (بدون تغییر بازیکنان)، روی دکمه "جابجایی رنگ" کلیک کنید.
+        </p>
+
+        {% if pairings and pairings|length > 0 %}
+            {% for pairing in pairings %}
+            <div class="board-row {% if pairing.is_bye %}bye-row{% endif %}">
+                <div class="board-number">میز {{ pairing.board_number }}</div>
+                <div class="players-display">
+                    <span class="player-white">
+                        ⬜ {{ pairing.white_player_name }}
+                    </span>
+                    <span class="vs-separator">در مقابل</span>
+                    <span class="player-black">
+                        ⬛ {{ pairing.black_player_name or 'استراحت' }}
+                    </span>
+                </div>
+                {% if not pairing.is_bye %}
+                <!-- Hidden form for swap-colors action -->
+                <form method="POST" action="/{{ tournament.public_id }}/admin/rounds/{{ round.round_number }}/manual" style="display: inline;">
+                    {{ csrf_token() }}
+                    <input type="hidden" name="action" value="swap_colors">
+                    <input type="hidden" name="board" value="{{ pairing.board_number }}">
+                    <button type="submit" class="btn btn-small btn-secondary"
+                            onclick="return confirm('آیا از جابجایی رنگ‌های میز {{ pairing.board_number }} اطمینان دارید؟');">
+                        جابجایی رنگ
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert" style="background-color: #f9f9f9; text-align: center; padding: 30px;">
+                <p style="color: #666;">هیچ جفت‌گذاری برای این دور وجود ندارد.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Section 2: Swap players between two boards -->
+    {% if pairings and pairings|length >= 2 %}
+    <div class="swap-section">
+        <h3 class="section-title">جابجایی بازیکن بین دو میز</h3>
+        <p style="margin-bottom: 15px; color: #666;">
+            یک بازیکن از میز اول را با یک بازیکن از میز دوم جابجا کنید.
+        </p>
+
+        <div id="swap-warning" class="warning-box" style="display: none;">
+            لطفاً دو میز متفاوت انتخاب کنید.
+        </div>
+
+        <form method="POST" action="/{{ tournament.public_id }}/admin/rounds/{{ round.round_number }}/manual" id="swap-players-form">
+            {{ csrf_token() }}
+            <input type="hidden" name="action" value="swap_players">
+
+            <div class="form-row">
+                <!-- Board 1 selection -->
+                <div class="form-group">
+                    <label for="board1">میز اول</label>
+                    <select id="board1" name="board1" required>
+                        <option value="">-- انتخاب میز --</option>
+                        {% for pairing in pairings %}
+                            {% if not pairing.is_bye %}
+                                <option value="{{ pairing.board_number }}">میز {{ pairing.board_number }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="position1">جایگاه در میز اول</label>
+                    <select id="position1" name="position1" required>
+                        <option value="">-- انتخاب جایگاه --</option>
+                        <option value="white">بازیکن سفید</option>
+                        <option value="black">بازیکن سیاه</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <!-- Board 2 selection -->
+                <div class="form-group">
+                    <label for="board2">میز دوم</label>
+                    <select id="board2" name="board2" required>
+                        <option value="">-- انتخاب میز --</option>
+                        {% for pairing in pairings %}
+                            {% if not pairing.is_bye %}
+                                <option value="{{ pairing.board_number }}">میز {{ pairing.board_number }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="position2">جایگاه در میز دوم</label>
+                    <select id="position2" name="position2" required>
+                        <option value="">-- انتخاب جایگاه --</option>
+                        <option value="white">بازیکن سفید</option>
+                        <option value="black">بازیکن سیاه</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" id="swap-submit-btn" class="btn btn-primary">
+                    اعمال جابجایی
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Navigation -->
+    <div class="form-actions" style="margin-top: 30px; border-top: 2px dashed #ddd; padding-top: 20px;">
+        <a href="/{{ tournament.public_id }}/admin/rounds/{{ round.round_number }}" class="btn btn-secondary">
+            بازگشت به مشاهده دور
+        </a>
+        <a href="/{{ tournament.public_id }}/admin/rounds" class="btn btn-secondary">
+            بازگشت به لیست دورها
+        </a>
+    </div>
+</div>
+
+<script>
+// Client-side validation for swap-players form
+// Ensures that two different boards are selected
+document.addEventListener('DOMContentLoaded', function() {
+    const board1Select = document.getElementById('board1');
+    const board2Select = document.getElementById('board2');
+    const submitBtn = document.getElementById('swap-submit-btn');
+    const warning = document.getElementById('swap-warning');
+
+    // If there's no swap form (less than 2 pairings), skip validation setup
+    if (!board1Select || !board2Select) return;
+
+    /**
+     * Validates that the two board dropdowns have different values
+     * Disables submit and shows warning if they match
+     */
+    function validateBoards() {
+        const b1 = board1Select.value;
+        const b2 = board2Select.value;
+
+        if (b1 && b2 && b1 === b2) {
+            warning.style.display = 'block';
+            submitBtn.disabled = true;
+        } else {
+            warning.style.display = 'none';
+            submitBtn.disabled = false;
+        }
+    }
+
+    board1Select.addEventListener('change', validateBoards);
+    board2Select.addEventListener('change', validateBoards);
+});
+</script>
+{% endblock %}

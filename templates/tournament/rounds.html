@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}دورها | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>مدیریت دورها</h1>
+    <p>{{ tournament.name }}</p>
+</div>
+
+
+<div class="admin-actions">
+    {% set last_round = rounds[-1] if rounds else None %}
+    {% set can_new_round = (not last_round or last_round.status == 'finished')
+                           and tournament.current_round < tournament.total_rounds %}
+
+    {% if can_new_round %}
+    <form method="POST" action="{{ url_for('round.round_new', public_id=tournament.public_id) }}">
+        <button type="submit" class="btn btn-primary">➕ ایجاد دور {{ tournament.current_round + 1 }}</button>
+    </form>
+    {% endif %}
+
+    <a href="{{ url_for('round.request_bye', public_id=tournament.public_id) }}" class="btn btn-secondary">⏸️ مدیریت Bye</a>
+</div>
+
+
+
+
+{% if rounds %}
+<div class="rounds-list">
+    {% for round in rounds|sort(attribute='round_number', reverse=true) %}
+    <div class="round-card">
+        <div class="round-header">
+            <h3>دور {{ round.round_number }}</h3>
+            <span class="badge {% if round.status == 'finished' %}badge-success
+                               {% elif round.status == 'ongoing' %}badge-warning
+                               {% else %}badge-error{% endif %}">
+                {% if round.status == 'finished' %}پایان یافته
+                {% elif round.status == 'ongoing' %}در جریان
+                {% else %}در انتظار{% endif %}
+            </span>
+        </div>
+        <div class="round-actions" style="display:flex; gap:6px; align-items:center;">
+            <a href="{{ url_for('round.round_view', public_id=tournament.public_id, round_number=round.round_number) }}" class="btn btn-primary">مشاهده و مدیریت</a>
+
+            {% if loop.first %}
+            <form method="POST"
+                  action="{{ url_for('round.delete_round', public_id=tournament.public_id, admin_code=tournament.admin_code, round_number=round.round_number) }}"
+                  onsubmit="return confirm('⚠️ حذف دور {{ round.round_number }}؟')"
+                  style="display:inline;">
+                <button type="submit" class="btn-small btn-danger" title="حذف دور">🗑️</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>هنوز دوری ایجاد نشده است.</p>
+    <p>برای شروع، روی دکمه «ایجاد دور ۱» کلیک کنید.</p>
+</div>
+{% endif %}
+{% endblock %}

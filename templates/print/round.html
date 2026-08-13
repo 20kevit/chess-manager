@@ -1,0 +1,49 @@
+{% extends "print/base.html" %}
+{% block title %}دور {{ round.round_number }} | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<h2 style="text-align:center; font-size:13px; margin-bottom:4mm;">
+    جفت‌گذاری دور {{ round.round_number }}
+</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>میز</th>
+            <th class="player-cell">سفید</th>
+            <th>ریتینگ</th>
+            <th>نتیجه</th>
+            <th>ریتینگ</th>
+            <th class="player-cell">سیاه</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for pairing in pairings %}
+        <tr>
+            <td>{{ pairing.board_number }}</td>
+            <td class="player-cell">
+                {% if pairing.white_player %}
+                    {{ pairing.white_player.fide_title or '' }}
+                    {{ pairing.white_player.full_name }}
+                {% endif %}
+            </td>
+            <td>{% if pairing.white_player %}{{ pairing.white_player.rating or 0 }}{% endif %}</td>
+            <td>
+                {% if pairing.result == 'bye' %}BYE
+                {% elif pairing.result == 'half-bye' %}½BY
+                {% elif pairing.result == 'zero-bye' %}0BY
+                {% elif pairing.result %}{{ pairing.result }}
+                {% else %}___{% endif %}
+            </td>
+            <td>{% if pairing.black_player %}{{ pairing.black_player.rating or 0 }}{% endif %}</td>
+            <td class="player-cell">
+                {% if pairing.black_player %}
+                    {{ pairing.black_player.fide_title or '' }}
+                    {{ pairing.black_player.full_name }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

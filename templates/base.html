@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}مدیریت تورنومنت شطرنج{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <meta name="description" content="سیستم مدیریت تورنومنت شطرنج سوییس - جفت‌گذاری، Tiebreak، محاسبه ریتینگ">
+    <meta name="theme-color" content="#1f2937">
+    <meta property="og:title" content="{% block og_title %}مدیریت تورنومنت شطرنج{% endblock %}">
+    <meta property="og:description" content="سیستم مدیریت تورنومنت شطرنج با جفت‌گذاری سوییس استاندارد فیده">
+    <meta property="og:type" content="website">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <!-- فونت وزیرمتن -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tournament.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- هدر -->
+    <header class="header">
+        <div class="container">
+            <a href="/" class="logo">♚ مدیریت تورنومنت شطرنج</a>
+            <nav class="nav">
+                <a href="/">خانه</a>
+                <a href="/create">ایجاد تورنومنت</a>
+            </nav>
+        </div>
+    </header>
+    
+    <!-- پیام‌ها -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                        <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- محتوای اصلی -->
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <!-- فوتر -->
+    <footer class="footer">
+        <div class="container">
+            <p>سیستم مدیریت تورنومنت شطرنج سوییس | ۲۰کویت</p>
+        </div>
+    </footer>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+
+    <script>
+    // Auto-inject CSRF token into all POST forms
+    document.addEventListener('DOMContentLoaded', function() {
+        var token = document.querySelector('meta[name="csrf-token"]');
+        if (!token) return;
+        var csrfValue = token.getAttribute('content');
+        
+        document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(function(form) {
+            if (!form.querySelector('input[name="csrf_token"]')) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'csrf_token';
+                input.value = csrfValue;
+                form.appendChild(input);
+            }
+        });
+    });
+    </script>
+</body>
+</html>

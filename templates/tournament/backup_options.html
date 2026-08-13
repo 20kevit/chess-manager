@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت پشتیبان‌گیری{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2 class="section-title">مدیریت پشتیبان‌گیری تورنمنت</h2>
+    
+    <!-- Export section -->
+    <div class="form-section">
+        <h3 class="section-title">خروجی گرفتن از تورنمنت</h3>
+        <p style="margin-bottom: 20px; color: #666;">
+            فایل پشتیبان JSON را برای استفاده در نرم‌افزار Coronate یا سایر سیستم‌ها دریافت کنید.
+        </p>
+        <div class="form-actions">
+            <a href="/{{ tournament.public_id }}/admin/backup/export/coronate" class="btn btn-primary btn-large">
+                خروجی Coronate
+            </a>
+        </div>
+    </div>
+
+    <!-- Import section -->
+    <div class="form-section">
+        <h3 class="section-title">وارد کردن تورنمنت از فایل پشتیبان</h3>
+        <p style="margin-bottom: 20px; color: #666;">
+            اگر فایل پشتیبان Coronate دارید، می‌توانید تورنمنت را از آن وارد کنید.
+        </p>
+        <div class="form-actions">
+            <a href="/create/from-backup" class="btn btn-secondary btn-large">
+                ایجاد از فایل پشتیبان Coronate
+            </a>
+        </div>
+    </div>
+
+    <!-- Back to admin panel -->
+    <div class="form-actions" style="margin-top: 30px; border-top: 2px dashed #ddd; padding-top: 20px;">
+        <a href="/{{ tournament.public_id }}/admin/" class="btn btn-secondary">
+            بازگشت به پنل مدیریت
+        </a>
+    </div>
+</div>
+{% endblock %}

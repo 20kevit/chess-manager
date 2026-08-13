@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}بازیابی | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>بازیابی از فایل پشتیبان</h1>
+    <p>{{ tournament.name }}</p>
+</div>
+
+<div class="admin-actions">
+    <a href="/{{ tournament.public_id }}/admin/"
+       class="btn btn-secondary">🔙 بازگشت</a>
+</div>
+
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-section">
+            <h2 class="section-title">آپلود فایل JSON</h2>
+
+            <div class="form-group">
+                <label for="json_file">فایل پشتیبان (.json)</label>
+                <input type="file" id="json_file" name="json_file"
+                       accept=".json" required class="file-input">
+            </div>
+
+            <div class="form-group">
+                <label>حالت بازیابی</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="mode" value="merge" checked>
+                        <span>ادغام (فقط بازیکنان جدید اضافه شوند)</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="mode" value="replace">
+                        <span>جایگزینی (⚠️ همه داده‌های فعلی حذف شوند)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="import-help">
+            <h3>⚠️ توجه</h3>
+            <ul>
+                <li><strong>ادغام:</strong> فقط بازیکنانی که قبلاً وجود ندارند اضافه می‌شوند.</li>
+                <li><strong>جایگزینی:</strong> تمام بازیکنان، دورها و نتایج فعلی حذف شده و از فایل بازیابی می‌شوند.</li>
+            </ul>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large"
+                    onclick="return confirm('آیا مطمئن هستید؟')">
+                بازیابی
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

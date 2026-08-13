@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}{{ player.full_name }} | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div style="float:left; display:flex; gap:6px;">
+        <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 بازگشت</a>
+        <a href="/{{ tournament.public_id }}/crosstable" class="btn btn-secondary">📋 جدول برخورد</a>
+    </div>
+    <h1>{{ player.full_name }}</h1>
+    <p>{{ tournament.name }}</p>
+</div>
+
+<!-- کارت اطلاعات بازیکن -->
+<div class="player-info-card">
+    <div class="player-info-grid">
+        <div class="info-item">
+            <span class="info-label">شماره</span>
+            <span class="info-value">{{ player.start_number }}</span>
+        </div>
+        {% if player.fide_title %}
+        <div class="info-item">
+            <span class="info-label">عنوان</span>
+            <span class="info-value">{{ player.fide_title }}</span>
+        </div>
+        {% endif %}
+        <div class="info-item">
+            <span class="info-label">ریتینگ</span>
+            <span class="info-value">{{ player.rating or 'بدون ریتینگ' }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">فدراسیون</span>
+            <span class="info-value">{{ player.federation }}</span>
+        </div>
+        {% if player.fide_id %}
+        <div class="info-item">
+            <span class="info-label">فیده</span>
+            <span class="info-value">
+                <a href="https://ratings.fide.com/profile/{{ player.fide_id }}" target="_blank">
+                    {{ player.fide_id }}
+                </a>
+            </span>
+        </div>
+        {% endif %}
+        {% if player.age_category %}
+        <div class="info-item">
+            <span class="info-label">رده سنی</span>
+            <span class="info-value">{{ player.age_category }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- آمار -->
+<div class="stats-row">
+    <div class="stat-card stat-total">
+        <div class="stat-value">{{ total_score }}</div>
+        <div class="stat-label">امتیاز کل</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-value">{{ total_games }}</div>
+        <div class="stat-label">بازی واقعی</div>
+    </div>
+
+    <div class="stat-card stat-win">
+        <div class="stat-value">{{ wins }}</div>
+        <div class="stat-label">برد</div>
+    </div>
+
+    <div class="stat-card stat-draw">
+        <div class="stat-value">{{ draws }}</div>
+        <div class="stat-label">تساوی</div>
+    </div>
+
+    <div class="stat-card stat-loss">
+        <div class="stat-value">{{ losses }}</div>
+        <div class="stat-label">باخت</div>
+    </div>
+
+    {% if full_byes %}
+    <div class="stat-card">
+        <div class="stat-value">{{ full_byes }}</div>
+        <div class="stat-label">BYE کامل</div>
+    </div>
+    {% endif %}
+
+    {% if half_byes %}
+    <div class="stat-card">
+        <div class="stat-value">{{ half_byes }}</div>
+        <div class="stat-label">½ BYE</div>
+    </div>
+    {% endif %}
+
+    {% if zero_byes %}
+    <div class="stat-card">
+        <div class="stat-value">{{ zero_byes }}</div>
+        <div class="stat-label">0 BYE</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- جدول بازی‌ها -->
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>دور</th>
+                <th>میز</th>
+                <th>رنگ</th>
+                <th>حریف</th>
+                <th>ریتینگ حریف</th>
+                <th>نتیجه</th>
+                <th>امتیاز</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for game in games %}
+            <tr class="{% if game.score == 1.0 %}row-win{% elif game.score == 0.0 %}row-loss{% endif %}">
+                <td>{{ game.round }}</td>
+                <td>{{ game.board }}</td>
+                <td>
+                    {% if game.color_code == 'white' %}
+                        <span class="color-dot color-white" title="سفید">⬜</span>
+                    {% else %}
+                        <span class="color-dot color-black" title="سیاه">⬛</span>
+                    {% endif %}
+                </td>
+                <td class="player-cell">
+                    {% if game.opponent %}
+                        <a href="/{{ tournament.public_id }}/player/{{ game.opponent.id }}">
+                            {% if game.opponent.fide_title %}
+                                <span class="player-title-badge">{{ game.opponent.fide_title }}</span>
+                            {% endif %}
+                            {{ game.opponent.full_name }}
+                        </a>
+                    {% elif game.result in ['bye', 'half-bye', 'zero-bye'] %}
+                        <em>استراحت</em>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ game.opponent_rating or '-' }}</td>
+                <td>
+                    {% if game.result == 'bye' %}
+                        <span class="badge badge-success">BYE</span>
+                    {% elif game.result == 'half-bye' %}
+                        <span class="badge badge-warning">½ BYE</span>
+                    {% elif game.result == 'zero-bye' %}
+                        <span class="badge badge-error">0 BYE</span>
+                    {% elif game.result %}
+                        <strong>{{ game.result }}</strong>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if game.score is not none %}
+                        {% if game.score == 1.0 %}
+                            <strong class="rating-up">1</strong>
+                        {% elif game.score == 0.5 %}
+                            <strong>½</strong>
+                        {% elif game.score == 0.0 %}
+                            <strong class="rating-down">0</strong>
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if rating_change and rating_change.get('details') %}
+<h2 style="margin-top:20px;">جزئیات تغییر ریتینگ</h2>
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>حریف</th>
+                <th>ریتینگ حریف</th>
+                <th>امتیاز</th>
+                <th>انتظار</th>
+                <th>تغییر</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in rating_change.get('details', []) %}
+            <tr>
+                <td class="player-cell">{{ d.get('opponent_name', '-') }}</td>
+                <td>{{ d.get('opponent_rating', 0) }}</td>
+                <td>{{ d.get('score', 0) }}</td>
+                <td>{{ d.get('expected', 0) }}</td>
+                <td>
+                    {% set ch = d.get('change', 0) %}
+                    {% if ch > 0 %}
+                        <span class="rating-up">+{{ ch }}</span>
+                    {% elif ch < 0 %}
+                        <span class="rating-down">{{ ch }}</span>
+                    {% else %}
+                        0
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

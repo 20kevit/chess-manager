@@ -1,0 +1,52 @@
+{% extends "print/base.html" %}
+{% block title %}جدول رده‌بندی | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<h2 style="text-align:center; font-size:13px; margin-bottom:4mm;">جدول رده‌بندی نهایی</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>رتبه</th>
+            <th>#</th>
+            <th>عنوان</th>
+            <th class="player-cell">نام</th>
+            <th class="player-cell">نام خانوادگی</th>
+            <th>فد</th>
+            <th>ریتینگ</th>
+            <th>امتیاز</th>
+            {% for tb in tiebreak_rules %}
+            <th>{{ tb_names.get(tb, tb)[:8] }}</th>
+            {% endfor %}
+            <th>+/-</th>
+            <th>Rp</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ps in player_standings %}
+        {% set player = ps.player %}
+        {% set rc = rating_changes.get(player.id, {}) %}
+        <tr>
+            <td><strong>{{ loop.index }}</strong></td>
+            <td>{{ player.start_number }}</td>
+            <td>{{ player.fide_title or '' }}</td>
+            <td class="player-cell">{{ player.first_name }}</td>
+            <td class="player-cell">{{ player.last_name }}</td>
+            <td>{{ player.federation }}</td>
+            <td>{{ player.rating or 0 }}</td>
+            <td><strong>{{ ps.points }}</strong></td>
+            {% for tb in tiebreak_rules %}
+            <td>{{ ps.tiebreaks.get(tb, 0) }}</td>
+            {% endfor %}
+            <td>
+                {% if player.rating and player.rating > 0 %}
+                    {% set change = rc.get('rating_change', 0) %}
+                    {% if change > 0 %}+{% endif %}{{ change|round(1) }}
+                {% else %}-{% endif %}
+            </td>
+            <td>{{ rc.get('performance') or '-' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

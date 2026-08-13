@@ -1,0 +1,711 @@
+/* هدر تورنومنت */
+.tournament-header {
+    background: white;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+}
+
+.tournament-header h1 {
+    margin-bottom: 8px;
+    font-size: 1.2em;
+}
+
+.tournament-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.meta-item {
+    color: var(--gray-600);
+    font-size: 0.8em;
+}
+
+.tournament-arbiters {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    gap: 16px;
+    color: var(--gray-600);
+    font-size: 0.8em;
+    flex-wrap: wrap;
+}
+
+/* تب‌ها */
+.tabs {
+    display: flex;
+    gap: 3px;
+    background: white;
+    padding: 4px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tab {
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85em;
+    border-radius: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    color: var(--gray-600);
+}
+
+.tab:hover { background: var(--gray-100); }
+
+.tab.active {
+    background: var(--primary);
+    color: white;
+}
+
+.tab-admin { margin-right: auto; }
+
+.tab-content {
+    display: none;
+    background: white;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.tab-content.active { display: block; }
+
+.empty-state {
+    text-align: center;
+    padding: 30px;
+    color: var(--gray-400);
+    font-size: 0.9em;
+}
+
+/* فیلتر */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--gray-100);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: var(--gray-600);
+    margin-left: 6px;
+    font-size: 0.85em;
+}
+
+.filter-btn {
+    padding: 4px 12px;
+    border: 2px solid var(--gray-300);
+    border-radius: 16px;
+    background: white;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8em;
+    transition: all 0.2s;
+    color: var(--gray-700);
+}
+
+.filter-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.filter-btn-custom { border-color: var(--success); color: var(--success); }
+.filter-btn-custom.active { background: var(--success); border-color: var(--success); color: white; }
+
+/* دورها */
+.rounds-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.round-card {
+    background: white;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.round-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.round-header h3 { margin: 0; font-size: 1em; }
+
+/* جفت‌گذاری */
+.pairings-table td { vertical-align: middle; }
+.player-cell { font-weight: 500; }
+
+.player-title-badge {
+    display: inline-block;
+    font-size: 0.7em;
+    color: var(--primary);
+    font-weight: 700;
+    min-width: 24px;
+}
+
+.result-select {
+    padding: 4px 8px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 0.85em;
+    cursor: pointer;
+    background: white;
+}
+
+.result-select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.result-display { font-weight: 700; font-size: 1em; }
+.result-cell { text-align: center; }
+.result-pending { color: var(--gray-400); font-style: italic; }
+
+.pairing-done { background: var(--success-light) !important; }
+
+.standings-link {
+    margin-bottom: 12px;
+    text-align: center;
+    padding: 10px;
+    background: var(--primary-light);
+    border-radius: var(--radius);
+}
+
+.category-section {
+    background: white;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+}
+
+.category-section h3 {
+    margin-bottom: 10px;
+    color: var(--primary);
+    font-size: 1em;
+}
+
+/* ============================================
+   کارت اطلاعات بازیکن
+   ============================================ */
+.player-info-card {
+    background: white;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+}
+
+.player-info-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 100px;
+}
+
+.info-label {
+    font-size: 0.75em;
+    color: var(--gray-500);
+    margin-bottom: 2px;
+}
+
+.info-value {
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+/* ============================================
+   آمار
+   ============================================ */
+.stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.stat-card {
+    background: white;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+    min-width: 80px;
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.stat-label {
+    font-size: 0.75em;
+    color: var(--gray-500);
+    margin-top: 2px;
+}
+
+.stat-win .stat-value { color: var(--success); }
+.stat-draw .stat-value { color: var(--warning); }
+.stat-loss .stat-value { color: var(--error); }
+
+/* رنگ ردیف بر اساس نتیجه */
+.row-win { background-color: #f0fdf4 !important; }
+.row-loss { background-color: #fef2f2 !important; }
+.row-win:hover { background-color: #dcfce7 !important; }
+.row-loss:hover { background-color: #fee2e2 !important; }
+
+/* نقطه رنگ */
+.color-dot { font-size: 0.9em; }
+
+/* ============================================
+   صفحه خلاصه
+   ============================================ */
+.summary-info {
+    background: white;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+}
+
+.summary-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+}
+
+.summary-label {
+    font-size: 0.75em;
+    color: var(--gray-500);
+}
+
+.summary-value {
+    font-weight: 600;
+}
+
+/* نوار نتایج */
+.result-stats {
+    background: white;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+}
+
+.result-stats h2 {
+    font-size: 1em;
+    margin-bottom: 12px;
+}
+
+.result-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.result-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.result-bar-label {
+    width: 80px;
+    font-size: 0.8em;
+    text-align: left;
+}
+
+.result-bar-track {
+    flex: 1;
+    height: 20px;
+    background: var(--gray-100);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.result-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s;
+}
+
+.bar-white-win { background: var(--gray-700); }
+.bar-draw { background: var(--warning); }
+.bar-black-win { background: var(--gray-900); }
+.bar-forfeit { background: var(--error); }
+
+.result-bar-value {
+    width: 90px;
+    font-size: 0.8em;
+    text-align: right;
+    color: var(--gray-600);
+}
+
+/* سکوی نفرات برتر */
+.podium-section {
+    background: white;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+}
+
+.podium-section h2 {
+    font-size: 1em;
+    margin-bottom: 12px;
+}
+
+.podium {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.podium-card {
+    flex: 1;
+    min-width: 150px;
+    padding: 14px;
+    border-radius: var(--radius);
+    text-align: center;
+    border: 2px solid var(--gray-200);
+}
+
+.podium-1 { border-color: #fbbf24; background: #fffbeb; }
+.podium-2 { border-color: #9ca3af; background: #f9fafb; }
+.podium-3 { border-color: #d97706; background: #fffbeb; }
+
+.podium-rank {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--gray-400);
+}
+
+.podium-1 .podium-rank { color: #f59e0b; }
+.podium-2 .podium-rank { color: #6b7280; }
+.podium-3 .podium-rank { color: #d97706; }
+
+.podium-name {
+    font-weight: 600;
+    margin: 6px 0;
+}
+
+.podium-name a {
+    color: var(--gray-800);
+    text-decoration: none;
+}
+
+.podium-rating {
+    font-size: 0.8em;
+    color: var(--gray-500);
+}
+
+.podium-points {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--primary);
+    margin-top: 4px;
+}
+
+/* جوایز */
+.awards-section, .category-winners {
+    background: white;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+}
+
+.awards-section h2, .category-winners h2 {
+    font-size: 1em;
+    margin-bottom: 12px;
+}
+
+.awards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.award-card {
+    padding: 14px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius);
+    text-align: center;
+}
+
+.award-icon {
+    font-size: 1.8em;
+    margin-bottom: 4px;
+}
+
+.award-title {
+    font-size: 0.8em;
+    color: var(--gray-500);
+    margin-bottom: 4px;
+}
+
+.award-player {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.award-player a {
+    color: var(--gray-800);
+    text-decoration: none;
+}
+
+.award-value {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* لینک‌ها */
+.summary-links {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+/* Admin Power User Mode Styles */
+.admin-dock {
+    background: #1e293b;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 0 0 15px 15px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    margin-bottom: 30px;
+    border-bottom: 3px solid var(--primary);
+    position: sticky;
+    top: 60px;
+    z-index: 99;
+}
+.admin-dock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 8px;
+}
+.admin-btn-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.btn-admin {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    border: none;
+    cursor: pointer;
+}
+.btn-admin-primary { background: var(--primary); color: white; }
+.btn-admin-success { background: var(--success); color: white; }
+.btn-admin-secondary { background: #475569; color: white; }
+.btn-admin-danger { background: #ef4444; color: white; }
+.btn-admin:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+.rank-badge {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    color: #475569;
+    font-size: 0.85em;
+}
+
+/* Professional Arbiter Toolbar */
+.arbiter-toolbar {
+    background: #0f172a; /* Slate 900 */
+    color: #f8fafc;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 2px solid var(--primary);
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.toolbar-btn {
+    color: #cbd5e1;
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 5px;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.05);
+}
+
+.toolbar-btn:hover {
+    color: white;
+    background: var(--primary);
+    text-decoration: none;
+}
+
+.toolbar-btn-success { background: #166534; color: white; }
+.toolbar-btn-success:hover { background: #15803d; }
+
+/* Modern Pro UI Updates */
+:root {
+    --admin-dark: #0f172a;
+    --admin-accent: #3b82f6;
+}
+
+/* Floating Management Trigger */
+.admin-trigger {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--admin-dark);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 1001;
+    border: 2px solid var(--admin-accent);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-trigger:hover {
+    transform: scale(1.1) rotate(90deg);
+}
+
+/* Standings Table - Pro Look */
+.standings-table {
+    border: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.standings-table th {
+    background: #f8fafc;
+    color: #64748b;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.025em;
+    padding: 12px 15px;
+}
+
+.standings-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Results Selection - Clean Style */
+.result-select-minimal {
+    border: 1px solid #e2e8f0;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+/* Sidebar Drawer for Admin Tasks */
+.admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 300px;
+    height: 100%;
+    background: white;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+    z-index: 1002;
+    transition: left 0.3s ease;
+    padding: 20px;
+}
+
+.admin-sidebar.active {
+    left: 0;
+}
+
+/* Filter Buttons */
+.filter-btn {
+    background: white;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.filter-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.filter-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Highlight Effect */
+.row-highlighted {
+    background-color: #fef08a !important; /* Yellow highlight */
+}
+/* Dim non-highlighted rows when a filter is active */
+.table-filtered .player-row:not(.row-highlighted) {
+    opacity: 0.4;
+}

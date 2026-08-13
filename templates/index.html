@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}سیستم مدیریت تورنومنت شطرنج{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>🏆 سیستم مدیریت تورنومنت شطرنج</h1>
+    <p class="hero-description">
+        ایجاد و مدیریت تورنومنت‌های شطرنج با سیستم سوییس
+    </p>
+    <a href="/create" class="btn btn-primary btn-large">ایجاد تورنومنت جدید</a>
+</div>
+
+<!-- آمار کلان سایت -->
+{% if stats and stats.tournaments > 0 %}
+<div class="stats-overview" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 30px 0;">
+    <div class="stat-card" style="flex: 1; min-width: 150px; background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border-bottom: 4px solid var(--primary);">
+        <div style="font-size: 2.2em; margin-bottom: 10px;">👨‍⚖️</div>
+        <div style="font-size: 1.8em; font-weight: bold; color: var(--gray-800);">{{ stats.arbiters }}</div>
+        <div style="color: var(--gray-500); font-size: 0.9em;">داور و برگزارکننده</div>
+    </div>
+    
+    <div class="stat-card" style="flex: 1; min-width: 150px; background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border-bottom: 4px solid var(--success);">
+        <div style="font-size: 2.2em; margin-bottom: 10px;">🏆</div>
+        <div style="font-size: 1.8em; font-weight: bold; color: var(--gray-800);">{{ stats.tournaments }}</div>
+        <div style="color: var(--gray-500); font-size: 0.9em;">تورنمنت معتبر</div>
+    </div>
+    
+    <div class="stat-card" style="flex: 1; min-width: 150px; background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border-bottom: 4px solid var(--warning);">
+        <div style="font-size: 2.2em; margin-bottom: 10px;">👥</div>
+        <div style="font-size: 1.8em; font-weight: bold; color: var(--gray-800);">{{ stats.players }}</div>
+        <div style="color: var(--gray-500); font-size: 0.9em;">بازیکن شطرنج</div>
+    </div>
+    
+    <div class="stat-card" style="flex: 1; min-width: 150px; background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border-bottom: 4px solid #8b5cf6;">
+        <div style="font-size: 2.2em; margin-bottom: 10px;">⚔️</div>
+        <div style="font-size: 1.8em; font-weight: bold; color: var(--gray-800);">{{ stats.matches }}</div>
+        <div style="color: var(--gray-500); font-size: 0.9em;">مسابقه (بازی) انجام‌شده</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- جستجو -->
+<div class="search-section">
+    <h2>مشاهده تورنومنت</h2>
+
+    <form class="search-form" action="/search" method="GET">
+        <input type="text" name="q" placeholder="جستجوی نام تورنومنت..." dir="auto">
+        <button type="submit" class="btn btn-primary">جستجو</button>
+    </form>
+
+    <div class="divider-text">یا</div>
+
+    <form class="search-form" onsubmit="goToTournament(event)">
+        <input type="text" id="tournament-id" placeholder="شناسه ۸ رقمی تورنومنت"
+               maxlength="8" pattern="[0-9]{8}" dir="ltr">
+        <button type="submit" class="btn btn-primary">مشاهده</button>
+    </form>
+</div>
+
+<!-- تورنومنت‌های اخیر -->
+{% if recent_tournaments %}
+<div class="recent-section">
+    <h2>تورنومنت‌های اخیر</h2>
+    <div class="recent-list">
+        {% for t in recent_tournaments %}
+        <a href="/{{ t.public_id }}" class="recent-card">
+            <div class="recent-name">{{ t.name }}</div>
+            <div class="recent-meta">
+                {% if t.city %}
+                    <span>📍 {{ t.city }}</span>
+                {% endif %}
+                <span>
+                    ♟️
+                    {% if t.time_control_type == 'standard' %}استاندارد
+                    {% elif t.time_control_type == 'rapid' %}سریع
+                    {% elif t.time_control_type == 'blitz' %}برق‌آسا{% endif %}
+                </span>
+                <span>👥 {{ t.players|length }}</span>
+                <span>🔄 {{ t.current_round }}/{{ t.total_rounds }}</span>
+                <span class="badge {% if t.status == 'finished' %}badge-success{% else %}badge-warning{% endif %}">
+                    {% if t.status == 'ongoing' %}در جریان
+                    {% elif t.status == 'finished' %}پایان یافته
+                    {% else %}آماده‌سازی{% endif %}
+                </span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- امکانات -->
+<div class="features">
+    <div class="feature-card">
+        <div class="feature-icon">♟️</div>
+        <h3>جفت‌گذاری سوییس</h3>
+        <p>استاندارد فیده (Dutch)</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Tiebreak</h3>
+        <p>۱۱ سیستم استاندارد</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3>اتصال به فیده</h3>
+        <p>دریافت خودکار اطلاعات</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>نمایش آنلاین</h3>
+        <p>جدول و نتایج زنده</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function goToTournament(e) {
+    e.preventDefault();
+    var id = document.getElementById('tournament-id').value.trim();
+    if (id.length === 8 && /^\d{8}$/.test(id)) {
+        window.location.href = '/' + id;
+    } else {
+        alert('لطفاً یک شناسه ۸ رقمی معتبر وارد کنید');
+    }
+}
+</script>
+{% endblock %}

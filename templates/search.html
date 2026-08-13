@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}جستجو | {{ query }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>نتایج جستجو</h1>
+    {% if query %}
+    <p>جستجو برای: <strong>{{ query }}</strong></p>
+    {% endif %}
+</div>
+
+<div class="search-section" style="margin-bottom:16px;">
+    <form class="search-form" action="/search" method="GET">
+        <input type="text" name="q" value="{{ query }}" placeholder="جستجوی نام تورنومنت..." dir="auto">
+        <button type="submit" class="btn btn-primary">جستجو</button>
+    </form>
+</div>
+
+{% if results %}
+<div class="recent-list">
+    {% for t in results %}
+    <a href="/{{ t.public_id }}" class="recent-card">
+        <div class="recent-name">{{ t.name }}</div>
+        <div class="recent-meta">
+            {% if t.city %}<span>📍 {{ t.city }}</span>{% endif %}
+            <span>
+                ♟️
+                {% if t.time_control_type == 'standard' %}استاندارد
+                {% elif t.time_control_type == 'rapid' %}سریع
+                {% elif t.time_control_type == 'blitz' %}برق‌آسا{% endif %}
+            </span>
+            <span>👥 {{ t.players|length }}</span>
+            <span>🔄 {{ t.current_round }}/{{ t.total_rounds }}</span>
+            <span class="badge {% if t.status == 'finished' %}badge-success{% else %}badge-warning{% endif %}">
+                {% if t.status == 'ongoing' %}در جریان
+                {% elif t.status == 'finished' %}پایان یافته
+                {% else %}آماده‌سازی{% endif %}
+            </span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% elif query %}
+<div class="empty-state">
+    <p>تورنومنتی با این نام یافت نشد.</p>
+    <a href="/" class="btn btn-secondary">بازگشت به خانه</a>
+</div>
+{% endif %}
+{% endblock %}

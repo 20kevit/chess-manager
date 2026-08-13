@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}چاپ{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+            font-size: 11px;
+            direction: rtl;
+            color: #000;
+            background: white;
+            padding: 10mm;
+        }
+
+        .print-header {
+            text-align: center;
+            margin-bottom: 8mm;
+            border-bottom: 2px solid #000;
+            padding-bottom: 4mm;
+        }
+
+        .print-header h1 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .print-header .meta {
+            font-size: 10px;
+            color: #333;
+        }
+
+        .print-header .meta span {
+            margin: 0 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4mm;
+        }
+
+        th, td {
+            border: 1px solid #333;
+            padding: 3px 5px;
+            text-align: center;
+            font-size: 10px;
+        }
+
+        th {
+            background: #e5e7eb;
+            font-weight: 700;
+            font-size: 9px;
+        }
+
+        .player-cell {
+            text-align: right;
+        }
+
+        .cell-win { background: #dcfce7; }
+        .cell-draw { background: #fef9c3; }
+        .cell-loss { background: #fee2e2; }
+
+        .print-footer {
+            margin-top: 8mm;
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 3mm;
+        }
+
+        .no-print {
+            margin-bottom: 5mm;
+        }
+
+        @media print {
+            body { padding: 5mm; }
+            .no-print { display: none !important; }
+            @page { size: A4 landscape; margin: 8mm; }
+        }
+
+        .btn-print {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            margin-left: 8px;
+        }
+
+        .btn-back {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #e5e7eb;
+            color: #333;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">🖨️ چاپ / ذخیره PDF</button>
+        <a href="javascript:history.back()" class="btn-back">🔙 بازگشت</a>
+    </div>
+
+    <div class="print-header">
+        <h1>{{ tournament.name }}</h1>
+        <div class="meta">
+            {% if tournament.city %}<span>📍 {{ tournament.city }}</span>{% endif %}
+            <span>♟️ {% if tournament.time_control_type == 'standard' %}استاندارد{% elif tournament.time_control_type == 'rapid' %}سریع{% elif tournament.time_control_type == 'blitz' %}برق‌آسا{% endif %}</span>
+            {% if tournament.time_control_description %}<span>({{ tournament.time_control_description }})</span>{% endif %}
+            <span>🔄 {{ tournament.current_round }} دور</span>
+            {% if tournament.chief_arbiter %}<span>سرداور: {{ tournament.chief_arbiter }}</span>{% endif %}
+            {% if tournament.arbiter %}<span>داور: {{ tournament.arbiter }}</span>{% endif %}
+        </div>
+    </div>
+
+    {% block content %}{% endblock %}
+
+    <div class="print-footer">
+        swiss.20kevit.ir/{{ tournament.public_id }}
+    </div>
+</body>
+</html>

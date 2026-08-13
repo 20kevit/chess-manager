@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}ویرایش {{ player.full_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+    <h1>✏️ ویرایش اطلاعات: {{ player.full_name }}</h1>
+    <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 انصراف</a>
+</div>
+
+<form method="POST" class="form-container" style="max-width: 900px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
+    <!-- 1️⃣ Identity Card -->
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+        <div class="form-row">
+            <div class="form-group">
+                <label>نام</label>
+                <input type="text" name="first_name" value="{{ player.first_name }}" required>
+            </div>
+            <div class="form-group">
+                <label>نام خانوادگی</label>
+                <input type="text" name="last_name" value="{{ player.last_name }}" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>جنسیت</label>
+                <select name="gender">
+                    <option value="M" {% if player.gender == 'M' %}selected{% endif %}>مرد</option>
+                    <option value="F" {% if player.gender == 'F' %}selected{% endif %}>زن</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>فدراسیون</label>
+                <input type="text" name="federation" value="{{ player.federation }}" maxlength="3">
+            </div>
+        </div>
+    </div>
+
+    <!-- 2️⃣ Rating & Categorization -->
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-top:20px;">
+        <div class="form-row">
+            <div class="form-group">
+                <label>ریتینگ فعلی</label>
+                <input type="number" name="rating" value="{{ player.rating }}">
+            </div>
+            <div class="form-group">
+                <label>عنوان</label>
+                <select name="fide_title">
+                    <option value="">بدون عنوان</option>
+                    <option value="GM" {% if player.fide_title == 'GM' %}selected{% endif %}>GM</option>
+                    <option value="IM" {% if player.fide_title == 'IM' %}selected{% endif %}>IM</option>
+                    <option value="FM" {% if player.fide_title == 'FM' %}selected{% endif %}>FM</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row" style="margin-top:15px;">
+            <div class="form-group">
+                <label>تاریخ تولد (میلادی)</label>
+                <input type="date" name="birth_date" value="{{ player.birth_date.strftime('%Y-%m-%d') if player.birth_date else '' }}">
+            </div>
+            <div class="form-group">
+                <label>رده سنی</label>
+                <select name="age_category">
+                    <option value="" {% if not player.age_category %}selected{% endif %}>نامشخص</option>
+                    <option value="U08" {% if player.age_category == 'U08' %}selected{% endif %}>U08</option>
+                    <option value="U10" {% if player.age_category == 'U10' %}selected{% endif %}>U10</option>
+                    <option value="U12" {% if player.age_category == 'U12' %}selected{% endif %}>U12</option>
+                    <option value="U14" {% if player.age_category == 'U14' %}selected{% endif %}>U14</option>
+                    <option value="U16" {% if player.age_category == 'U16' %}selected{% endif %}>U16</option>
+                    <option value="U18" {% if player.age_category == 'U18' %}selected{% endif %}>U18</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group" style="margin-top:15px;">
+            <label>دسته‌بندی سفارشی</label>
+            <input type="text" name="custom_category" value="{{ player.custom_category or '' }}">
+        </div>
+    </div>
+
+    <div class="form-actions" style="margin-top:25px;">
+        <button type="submit" class="btn btn-primary" style="padding:12px 50px;">💾 ذخیره تغییرات</button>
+        <form method="POST" action="{{ url_for('player.player_delete', public_id=tournament.public_id, player_id=player.id) }}" style="display:inline;" onsubmit="return confirm('آیا از حذف کامل این بازیکن اطمینان دارید؟')">
+            <button type="submit" class="btn btn-danger-outline">🗑️ حذف بازیکن</button>
+        </form>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,12 @@
+# Python / Virtual Environment
+venv/
+__pycache__/
+*.pyc
+
+# Local Database & Secrets
+*.db
+*.sqlite
+.env
+
+# Logs
+*.log
