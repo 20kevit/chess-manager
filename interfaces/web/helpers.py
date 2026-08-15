@@ -9,7 +9,8 @@ _SCORE_MAP = {
     "+/+": {"white": "-", "black": "-"},
 }
 
-def build_cell(result, color, opponent_id, players_map):
+def build_cell(result, color, opponent_id, participants_map):
+    """Builds a cell for the crosstable. Uses participants_map."""
     if result in ("bye", "half-bye", "zero-bye"):
         if result == "bye":
             return {"text": "BYE", "css": "cell-bye", "symbol": "+", "score": 1.0}
@@ -22,7 +23,8 @@ def build_cell(result, color, opponent_id, players_map):
         return {"text": "-", "css": "cell-pending", "symbol": "", "score": None}
 
     symbol = _SCORE_MAP[result][color]
-    opponent = players_map.get(opponent_id)
+    opponent = participants_map.get(opponent_id)
+    # Use start_number or pairing_no for display
     opp_num = opponent.start_number if opponent else "?"
 
     color_short = "W" if color == "white" else "B"

@@ -8,44 +8,36 @@ from datetime import datetime, date
 from flask import Blueprint, Response, request, redirect, url_for, flash, render_template, jsonify
 from interfaces.web.admin_auth import require_admin
 from infrastructure.repositories import (
-    PlayerRepository, PairingRepository, RoundRepository, TournamentRepository
+    ParticipantRepository, PairingRepository, RoundRepository, TournamentRepository
 )
 from infrastructure.db_models import (
-    TournamentModel, PlayerModel, RoundModel, PairingModel
+    TournamentModel, TournamentParticipantModel, PlayerProfileModel, RoundModel, PairingModel
 )
 from app.extensions import db
 
-# Import new import/export components
 from application.import_export_service import ImportExportService, ImportExportError
 from infrastructure.providers.coronate_provider import CoronateProvider
 from application.provider_registry import registry
 
-# Register Coronate provider globally when this module loads
 registry.register("coronate", CoronateProvider())
 
 backup_bp = Blueprint("backup", __name__)
 
 
 class DateEncoder(json.JSONEncoder):
-    """JSON encoder for date and datetime objects."""
     def default(self, obj):
         if isinstance(obj, (date, datetime)):
             return obj.isoformat()
         return super().default(obj)
 
 
-# ============================================================================
-# OLD ROUTES (preserved for backward compatibility)
-# ============================================================================
-
 @backup_bp.route("/<public_id>/admin/backup/export")
 def export_json(public_id):
-    """Export tournament data in internal JSON format (version 1.0)."""
     tournament = require_admin(public_id)
     if not tournament:
         return redirect(url_for("admin_auth.admin_login", public_id=public_id))
 
-    players = PlayerRepository.get_all(tournament.id)
+    participants = ParticipantRepository.get_all(tournament.id)
     rounds = RoundRepository.get_all(tournament.id)
     pairings = PairingRepository.get_all_for_tournament(tournament.id)
 
@@ -71,16 +63,14 @@ def export_json(public_id):
         "players": [
             {
                 "start_number": p.start_number,
-                "first_name": p.first_name,
-                "last_name": p.last_name,
-                "gender": p.gender,
-                "birth_date": p.birth_date,
-                "federation": p.federation,
-                "fide_id": p.fide_id or "",
-                "fide_title": p.fide_title or "",
-                "rating_standard": p.rating_standard,
-                "rating_rapid": p.rating_rapid,
-                "rating_blitz": p.rating_blitz,
+                "first_name": p.profile.first_name,
+                "last_name": p.profile.last_name,
+                "gender": p.profile.gender,
+                "birth_date": p.profile.birth_date,
+                "federation": p.profile.federation,
+                "fide_id": p.profile.fide_id or "",
+                "fide_title": p.fide_title_snapshot or "",
+                "rating": p.rating_snapshot,
                 "k_factor": p.k_factor,
                 "age_category": p.age_category or "",
                 "custom_category": p.custom_category or "",
@@ -89,7 +79,7 @@ def export_json(public_id):
                 "withdrawn_at_round": p.withdrawn_at_round,
                 "points": p.points,
             }
-            for p in players
+            for p in participants
         ],
         "rounds": [
             {
@@ -99,10 +89,10 @@ def export_json(public_id):
                     {
                         "board_number": pr.board_number,
                         "white_start_number": _get_start_number(
-                            pr.white_player_id, players
+                            pr.white_participant_id, participants
                         ),
                         "black_start_number": _get_start_number(
-                            pr.black_player_id, players
+                            pr.black_participant_id, participants
                         ),
                         "result": pr.result,
                     }
@@ -125,7 +115,6 @@ def export_json(public_id):
 
 @backup_bp.route("/<public_id>/backup/import", methods=["GET", "POST"])
 def import_json(public_id):
-    """Import tournament data from internal JSON format (version 1.0)."""
     tournament = require_admin(public_id)
     if not tournament:
         return redirect(url_for("admin_auth.admin_login", public_id=public_id))
@@ -169,21 +158,19 @@ def import_json(public_id):
     )
 
 
-def _get_start_number(player_id, players):
-    """Get start_number from player_id."""
-    if not player_id:
+def _get_start_number(participant_id, participants):
+    if not participant_id:
         return None
-    for p in players:
-        if p.id == player_id:
+    for p in participants:
+        if p.id == participant_id:
             return p.start_number
     return None
 
 
 def _replace_import(tournament, data):
-    """Replace all tournament data with imported data."""
     PairingModel.query.filter_by(tournament_id=tournament.id).delete()
     RoundModel.query.filter_by(tournament_id=tournament.id).delete()
-    PlayerModel.query.filter_by(tournament_id=tournament.id).delete()
+    TournamentParticipantModel.query.filter_by(tournament_id=tournament.id).delete()
     db.session.flush()
 
     t_data = data.get("tournament", {})
@@ -217,9 +204,7 @@ def _replace_import(tournament, data):
             except (ValueError, TypeError):
                 pass
 
-        player = PlayerModel(
-            tournament_id=tournament.id,
-            start_number=p_data["start_number"],
+        profile = PlayerProfileModel(
             first_name=p_data["first_name"],
             last_name=p_data["last_name"],
             gender=p_data.get("gender", "M"),
@@ -227,9 +212,16 @@ def _replace_import(tournament, data):
             federation=p_data.get("federation", "IRI"),
             fide_id=p_data.get("fide_id", ""),
             fide_title=p_data.get("fide_title", ""),
-            rating_standard=p_data.get("rating_standard", 0),
-            rating_rapid=p_data.get("rating_rapid", 0),
-            rating_blitz=p_data.get("rating_blitz", 0),
+        )
+        db.session.add(profile)
+        db.session.flush()
+
+        participant = TournamentParticipantModel(
+            tournament_id=tournament.id,
+            player_profile_id=profile.id,
+            start_number=p_data["start_number"],
+            rating_snapshot=p_data.get("rating", 0),
+            fide_title_snapshot=p_data.get("fide_title", ""),
             k_factor=p_data.get("k_factor", 20),
             age_category=p_data.get("age_category", ""),
             custom_category=p_data.get("custom_category", ""),
@@ -238,9 +230,9 @@ def _replace_import(tournament, data):
             withdrawn_at_round=p_data.get("withdrawn_at_round", 0),
             points=p_data.get("points", 0.0),
         )
-        db.session.add(player)
+        db.session.add(participant)
         db.session.flush()
-        start_num_to_id[player.start_number] = player.id
+        start_num_to_id[participant.start_number] = participant.id
 
     for r_data in data.get("rounds", []):
         round_obj = RoundModel(
@@ -258,8 +250,8 @@ def _replace_import(tournament, data):
                 round_id=round_obj.id,
                 tournament_id=tournament.id,
                 board_number=pr_data["board_number"],
-                white_player_id=start_num_to_id.get(w_num),
-                black_player_id=start_num_to_id.get(b_num),
+                white_participant_id=start_num_to_id.get(w_num),
+                black_participant_id=start_num_to_id.get(b_num),
                 result=pr_data.get("result", ""),
             )
             db.session.add(pairing)
@@ -268,10 +260,9 @@ def _replace_import(tournament, data):
 
 
 def _merge_import(tournament, data):
-    """Merge imported data with existing tournament data."""
-    existing = PlayerRepository.get_all(tournament.id)
+    existing = ParticipantRepository.get_all(tournament.id)
     existing_names = {
-        f"{p.first_name.strip().lower()}{p.last_name.strip().lower()}" for p in existing
+        f"{p.profile.first_name.strip().lower()}{p.profile.last_name.strip().lower()}" for p in existing
     }
 
     for p_data in data.get("players", []):
@@ -288,10 +279,7 @@ def _merge_import(tournament, data):
             except (ValueError, TypeError):
                 pass
 
-        next_num = PlayerRepository.next_start_number(tournament.id)
-        player = PlayerModel(
-            tournament_id=tournament.id,
-            start_number=next_num,
+        profile = PlayerProfileModel(
             first_name=p_data["first_name"],
             last_name=p_data["last_name"],
             gender=p_data.get("gender", "M"),
@@ -299,26 +287,29 @@ def _merge_import(tournament, data):
             federation=p_data.get("federation", "IRI"),
             fide_id=p_data.get("fide_id", ""),
             fide_title=p_data.get("fide_title", ""),
-            rating_standard=p_data.get("rating_standard", 0),
-            rating_rapid=p_data.get("rating_rapid", 0),
-            rating_blitz=p_data.get("rating_blitz", 0),
+        )
+        db.session.add(profile)
+        db.session.flush()
+
+        next_num = ParticipantRepository.next_start_number(tournament.id)
+        participant = TournamentParticipantModel(
+            tournament_id=tournament.id,
+            player_profile_id=profile.id,
+            start_number=next_num,
+            rating_snapshot=p_data.get("rating", 0),
+            fide_title_snapshot=p_data.get("fide_title", ""),
             k_factor=p_data.get("k_factor", 20),
             age_category=p_data.get("age_category", ""),
             custom_category=p_data.get("custom_category", ""),
             status="active",
         )
-        db.session.add(player)
+        db.session.add(participant)
 
     db.session.commit()
 
 
-# ============================================================================
-# NEW ROUTES (provider-based import/export)
-# ============================================================================
-
 @backup_bp.route("/<public_id>/backup/export/<provider_name>", methods=["GET", "POST"])
 def export_provider(public_id, provider_name):
-    """Export tournament data using the specified provider."""
     tournament = require_admin(public_id)
     if not tournament:
         return redirect(url_for("admin_auth.admin_login", public_id=public_id))
@@ -346,7 +337,6 @@ def export_provider(public_id, provider_name):
 
 @backup_bp.route("/<public_id>/admin/backup/import/<provider_name>", methods=["GET", "POST"])
 def import_provider(public_id, provider_name):
-    """Import tournament data using the specified provider."""
     tournament = require_admin(public_id)
     if not tournament:
         return redirect(url_for("admin_auth.admin_login", public_id=public_id))
@@ -360,7 +350,6 @@ def import_provider(public_id, provider_name):
         try:
             content = file.read().decode("utf-8")
 
-            # File size validation (5MB limit)
             if len(content) > 5 * 1024 * 1024:
                 flash("حجم فایل پشتیبان بیش از حد مجاز (5 مگابایت) است", "error")
                 return redirect(request.url)
@@ -393,13 +382,8 @@ def import_provider(public_id, provider_name):
     )
 
 
-# ============================================================================
-# NEW ROUTES (create tournament from backup)
-# ============================================================================
-
 @backup_bp.route("/create/from-backup/<provider_name>", methods=["POST"])
 def preview_tournaments_from_backup(provider_name):
-    """Preview tournaments available in backup file (AJAX endpoint)."""
     file = request.files.get("json_file")
     if not file:
         return jsonify({"success": False, "error": "فایلی انتخاب نشده"}), 400
@@ -407,7 +391,6 @@ def preview_tournaments_from_backup(provider_name):
     try:
         content = file.read().decode("utf-8")
 
-        # File size validation (5MB limit)
         if len(content) > 5 * 1024 * 1024:
             return jsonify({"success": False, "error": "حجم فایل پشتیبان بیش از حد مجاز (5 مگابایت) است"}), 400
 
@@ -416,7 +399,6 @@ def preview_tournaments_from_backup(provider_name):
             file_content=content
         )
 
-        # Return as JSON for AJAX
         return jsonify({
             "success": True,
             "tournaments": [
@@ -437,8 +419,6 @@ def preview_tournaments_from_backup(provider_name):
 
 @backup_bp.route("/create/execute/<provider_name>", methods=["POST"])
 def create_tournament_from_backup(provider_name):
-    """Create new tournament from backup file."""
-    # Detect AJAX request
     is_ajax = (
         request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         or 'application/json' in request.headers.get('Accept', '')
@@ -449,19 +429,18 @@ def create_tournament_from_backup(provider_name):
         if is_ajax:
             return jsonify({"success": False, "error": "فایلی انتخاب نشده"}), 400
         flash("فایلی انتخاب نشده", "error")
-        return redirect("/")  # Safe fallback to homepage since no tournament exists yet
+        return redirect("/")
 
     target_tournament_id = request.form.get("target_tournament_id")
     if not target_tournament_id:
         if is_ajax:
             return jsonify({"success": False, "error": "شناسه تورنمنت انتخاب نشده است"}), 400
         flash("شناسه تورنمنت انتخاب نشده است", "error")
-        return redirect("/")  # Safe fallback
+        return redirect("/")
 
     try:
         content = file.read().decode("utf-8")
 
-        # File size validation (5MB limit)
         if len(content) > 5 * 1024 * 1024:
             error_msg = "حجم فایل پشتیبان بیش از حد مجاز (5 مگابایت) است"
             if is_ajax:
@@ -469,7 +448,6 @@ def create_tournament_from_backup(provider_name):
             flash(error_msg, "error")
             return redirect("/")
 
-        # File extension validation
         if not file.filename.endswith('.json'):
             error_msg = "فقط فایل‌های JSON مجاز هستند"
             if is_ajax:
@@ -477,14 +455,12 @@ def create_tournament_from_backup(provider_name):
             flash(error_msg, "error")
             return redirect("/")
 
-        # Create tournament
         new_tournament = ImportExportService.create_tournament_from_backup(
             provider_name=provider_name,
             file_content=content,
             target_tournament_internal_id=target_tournament_id
         )
 
-        # SUCCESS: Flash message includes the crucial admin_code
         flash(
             f"تورنمنت '{new_tournament.name}' با موفقیت ایجاد شد. کد دسترسی ادمین: {new_tournament.admin_code}",
             "success"
@@ -499,18 +475,16 @@ def create_tournament_from_backup(provider_name):
                 "admin_code": new_tournament.admin_code
             })
 
-        # SUCCESS REDIRECT: Correctly uses the NEW tournament's public_id
         return redirect(url_for("admin_auth.admin_panel", public_id=new_tournament.public_id))
 
     except ImportExportError as e:
         if is_ajax:
             return jsonify({"success": False, "error": str(e)}), 400
         flash(f"خطا در ایجاد تورنمنت: {str(e)}", "error")
-        return redirect("/")  # Safe fallback on business logic error
+        return redirect("/")
     except Exception as e:
-        import traceback
         traceback.print_exc()
         if is_ajax:
             return jsonify({"success": False, "error": f"خطای غیرمنتظره: {str(e)}"}), 500
         flash(f"خطای غیرمنتظره: {str(e)}", "error")
-        return redirect("/")  # Safe fallback on system error
+        return redirect("/")

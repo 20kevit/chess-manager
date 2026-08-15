@@ -8,13 +8,12 @@
 </div>
 
 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:20px;">
-    <!-- 🟢 Bye Request Card -->
     <div class="form-container" style="margin:0; border:none; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
         <h2 class="section-title">ثبت استراحت (Bye) برای دور {{ next_round }}</h2>
         <form method="POST" action="{{ url_for('round.request_bye', public_id=tournament.public_id) }}">
             <div class="form-group">
                 <label>انتخاب بازیکن</label>
-                <select name="player_id" required>
+                <select name="participant_id" required>
                     {% for p in players %}<option value="{{ p.id }}">{{ p.full_name }}</option>{% endfor %}
                 </select>
             </div>
@@ -29,19 +28,18 @@
         </form>
     </div>
 
-    <!-- 🔵 Manual Pairing Card -->
     <div class="form-container" style="margin:0; border:none; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
         <h2 class="section-title">جفت‌گذاری اجباری (Lock)</h2>
         <form method="POST" action="{{ url_for('round.manual_pairing_add', public_id=tournament.public_id) }}">
             <div class="form-group">
                 <label>بازیکن سفید</label>
-                <select name="white_player_id" required>
+                <select name="white_participant_id" required>
                     {% for p in players %}<option value="{{ p.id }}">{{ p.full_name }}</option>{% endfor %}
                 </select>
             </div>
             <div class="form-group">
                 <label>بازیکن سیاه</label>
-                <select name="black_player_id" required>
+                <select name="black_participant_id" required>
                     {% for p in players %}<option value="{{ p.id }}">{{ p.full_name }}</option>{% endfor %}
                 </select>
             </div>
@@ -49,7 +47,7 @@
         </form>
     </div>
 </div>
-<!-- 📋 لیست درخواست‌های ثبت‌شده -->
+
 <div class="form-container" style="margin-top:30px; border:none; box-shadow:0 4px 12px rgba(0,0,0,0.08); max-width: 100%;">
     <h2 class="section-title">📋 درخواست‌های ثبت‌شده برای دور {{ next_round }}</h2>
     
@@ -69,12 +67,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- استراحت‌ها (Byes) -->
                     {% for bye in existing_byes %}
                     <tr>
                         <td><span class="badge badge-warning">استراحت (Bye)</span></td>
                         <td class="player-cell" style="text-align: right; font-weight: bold;">
-                            {{ bye.player.full_name }}
+                            {{ bye.participant.full_name }}
                         </td>
                         <td>
                             {% if bye.bye_type == 'half-bye' %}نیم امتیاز (0.5){% else %}صفر امتیاز (0){% endif %}
@@ -87,18 +84,17 @@
                     </tr>
                     {% endfor %}
 
-                    <!-- جفت‌گذاری‌های دستی (Manual Pairings) -->
                     {% for mp in manual_pairings %}
                     <tr>
                         <td><span class="badge badge-success">جفت‌گذاری قفل‌شده</span></td>
                         <td class="player-cell" style="text-align: right;">
-                            <strong>سفید:</strong> {{ mp.white_player.full_name }}<br>
-                            <strong>سیاه:</strong> {{ mp.black_player.full_name }}
+                            <strong>سفید:</strong> {{ mp.white_participant.full_name }}<br>
+                            <strong>سیاه:</strong> {{ mp.black_participant.full_name }}
                         </td>
                         <td>الزام به بازی با یکدیگر</td>
                         <td>
                             <form method="POST" action="{{ url_for('round.manual_pairing_remove', public_id=tournament.public_id) }}" style="display: inline;">
-                                <input type="hidden" name="player_id" value="{{ mp.white_player_id }}">
+                                <input type="hidden" name="participant_id" value="{{ mp.white_participant_id }}">
                                 <button type="submit" class="btn btn-small btn-danger-outline" onclick="return confirm('آیا از لغو این جفت‌گذاری دستی اطمینان دارید؟');">لغو / حذف</button>
                             </form>
                         </td>

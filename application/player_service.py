@@ -1,144 +1,121 @@
-"""
-Player use-cases.
-"""
 from datetime import datetime, date
 from typing import Optional
-
-from infrastructure.repositories import PlayerRepository
-from infrastructure.db_models import PlayerModel
 from app.extensions import db
+from infrastructure.repositories import PlayerProfileRepository, ParticipantRepository
+from infrastructure.db_models import PlayerProfileModel, TournamentParticipantModel
 
-
-_AGE_CATEGORY_MAP = [
-    (8, "U08"), (10, "U10"), (12, "U12"), (14, "U14"),
-    (16, "U16"), (18, "U18"), (20, "U20"),
-]
-
+_AGE_CATEGORY_MAP = [(8, "U08"), (10, "U10"), (12, "U12"), (14, "U14"), (16, "U16"), (18, "U18"), (20, "U20")]
 
 def _detect_age_category(birth_date: date) -> str:
     today = date.today()
-    age = today.year - birth_date.year - (
-        (today.month, today.day) < (birth_date.month, birth_date.day)
-    )
+    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
     for limit, cat in _AGE_CATEGORY_MAP:
-        if age < limit:
-            return cat
-    if age >= 65:
-        return "S65"
-    if age >= 50:
-        return "S50"
+        if age < limit: return cat
+    if age >= 65: return "S65"
+    if age >= 50: return "S50"
     return ""
-
-
-def _get_tournament_rating(player: PlayerModel, time_control_type: str) -> int:
-    if time_control_type == "standard":
-        return player.rating_standard or 0
-    elif time_control_type == "rapid":
-        return player.rating_rapid or 0
-    elif time_control_type == "blitz":
-        return player.rating_blitz or 0
-    return 0
-
 
 class PlayerService:
 
     @staticmethod
-    def create(tournament, form_data: dict) -> PlayerModel:
-        """Create a new player in a tournament."""
+    def create(tournament, form_data: dict) -> TournamentParticipantModel:
         first_name = form_data.get("first_name", "").strip()
         last_name = form_data.get("last_name", "").strip()
+        fide_id = form_data.get("fide_id", "").strip()
 
-        birth_date = None
-        birth_str = form_data.get("birth_date", "").strip()
-        if birth_str:
-            try:
-                birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
-            except ValueError:
-                pass
+        # 1. Find or Create Player Profile
+        profile = None
+        if fide_id:
+            profile = PlayerProfileRepository.get_by_fide_id(fide_id)
+        
+        if not profile:
+            birth_date = None
+            birth_str = form_data.get("birth_date", "").strip()
+            if birth_str:
+                try: birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
+                except ValueError: pass
 
+            profile = PlayerProfileModel(
+                first_name=first_name, last_name=last_name,
+                gender=form_data.get("gender", "M"),
+                birth_date=birth_date,
+                federation=form_data.get("federation", "IRI").strip() or "IRI",
+                fide_id=fide_id,
+                fide_title=form_data.get("fide_title", "").strip(),
+            )
+            profile = PlayerProfileRepository.save(profile)
+        else:
+            # Update profile if needed
+            profile.first_name = first_name
+            profile.last_name = last_name
+
+        # 2. Create Participant with Snapshot
         age_category = form_data.get("age_category", "").strip()
-        if not age_category and birth_date:
-            age_category = _detect_age_category(birth_date)
+        if not age_category and profile.birth_date:
+            age_category = _detect_age_category(profile.birth_date)
 
         rating = int(form_data.get("rating", 0) or 0)
-        player = PlayerModel(
+        
+        participant = TournamentParticipantModel(
             tournament_id=tournament.id,
-            start_number=PlayerRepository.next_start_number(tournament.id),
-            first_name=first_name,
-            last_name=last_name,
-            gender=form_data.get("gender", "M"),
-            birth_date=birth_date,
-            federation=form_data.get("federation", "IRI").strip() or "IRI",
-            fide_id=form_data.get("fide_id", "").strip(),
-            fide_title=form_data.get("fide_title", "").strip(),
+            player_profile_id=profile.id,
+            start_number=ParticipantRepository.next_start_number(tournament.id),
+            rating_snapshot=rating, # Snapshot taken here
+            fide_title_snapshot=profile.fide_title,
             k_factor=int(form_data.get("k_factor", 20) or 20),
             age_category=age_category,
             custom_category=form_data.get("custom_category", "").strip(),
             joined_from_round=max(1, tournament.current_round + 1) if tournament.current_round > 0 else 1,
         )
-
-        if tournament.time_control_type == "standard":
-            player.rating_standard = rating
-        elif tournament.time_control_type == "rapid":
-            player.rating_rapid = rating
-        elif tournament.time_control_type == "blitz":
-            player.rating_blitz = rating
-
-        player = PlayerRepository.save(player)
+        
+        participant = ParticipantRepository.save(participant)
         db.session.commit()
-        return player
+        return participant
 
     @staticmethod
-    def update(player: PlayerModel, tournament, form_data: dict) -> None:
-        """Update an existing player."""
-        player.first_name = form_data.get("first_name", "").strip()
-        player.last_name = form_data.get("last_name", "").strip()
-        player.gender = form_data.get("gender", "M")
-        player.federation = (
-            form_data.get("federation", "IRI").strip() or "IRI"
-        )
-        player.fide_id = form_data.get("fide_id", "").strip()
-        player.fide_title = form_data.get("fide_title", "").strip()
-        player.k_factor = int(form_data.get("k_factor", 20) or 20)
-        player.age_category = form_data.get("age_category", "").strip()
-        player.custom_category = form_data.get("custom_category", "").strip()
-
+    def update(participant: TournamentParticipantModel, tournament, form_data: dict) -> None:
+        profile = participant.profile
+        
+        profile.first_name = form_data.get("first_name", "").strip()
+        profile.last_name = form_data.get("last_name", "").strip()
+        profile.gender = form_data.get("gender", "M")
+        profile.federation = form_data.get("federation", "IRI").strip() or "IRI"
+        profile.fide_id = form_data.get("fide_id", "").strip()
+        profile.fide_title = form_data.get("fide_title", "").strip()
+        
         birth_str = form_data.get("birth_date", "").strip()
         if birth_str:
-            try:
-                player.birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
-            except ValueError:
-                pass
+            try: profile.birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
+            except ValueError: pass
         else:
-            player.birth_date = None
+            profile.birth_date = None
 
-        if not player.age_category and player.birth_date:
-            player.age_category = _detect_age_category(player.birth_date)
+        participant.fide_title_snapshot = profile.fide_title
+        participant.k_factor = int(form_data.get("k_factor", 20) or 20)
+        participant.age_category = form_data.get("age_category", "").strip()
+        participant.custom_category = form_data.get("custom_category", "").strip()
+        
+        if not participant.age_category and profile.birth_date:
+            participant.age_category = _detect_age_category(profile.birth_date)
 
-        rating = int(form_data.get("rating", 0) or 0)
-        if tournament.time_control_type == "standard":
-            player.rating_standard = rating
-        elif tournament.time_control_type == "rapid":
-            player.rating_rapid = rating
-        elif tournament.time_control_type == "blitz":
-            player.rating_blitz = rating
+        participant.rating_snapshot = int(form_data.get("rating", 0) or 0)
 
-        PlayerRepository.save(player)
+        ParticipantRepository.save(participant)
         db.session.commit()
 
     @staticmethod
-    def toggle_withdraw(player: PlayerModel, current_round: int) -> None:
-        if player.status == "active":
-            player.status = "withdrawn"
-            player.withdrawn_at_round = current_round or 1
+    def toggle_withdraw(participant: TournamentParticipantModel, current_round: int) -> None:
+        if participant.status == "active":
+            participant.status = "withdrawn"
+            participant.withdrawn_at_round = current_round or 1
         else:
-            player.status = "active"
-            player.withdrawn_at_round = 0
-        PlayerRepository.save(player)
+            participant.status = "active"
+            participant.withdrawn_at_round = 0
+        ParticipantRepository.save(participant)
         db.session.commit()
 
     @staticmethod
-    def delete(player: PlayerModel, tournament_id: int) -> None:
-        PlayerRepository.delete(player)
-        PlayerRepository.renumber(tournament_id)
+    def delete(participant: TournamentParticipantModel, tournament_id: int) -> None:
+        ParticipantRepository.delete(participant)
+        ParticipantRepository.renumber(tournament_id)
         db.session.commit()

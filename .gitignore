@@ -1,6 +1,7 @@
 # Python / Virtual Environment
 venv/
 __pycache__/
+_AI_CONTEXT/
 *.pyc
 
 # Local Database & Secrets

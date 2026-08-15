@@ -7,7 +7,7 @@ from flask import (
     url_for, flash, jsonify, abort, session, Response
 )
 from interfaces.web.admin_auth import require_admin
-from infrastructure.repositories import TournamentRepository, PlayerRepository
+from infrastructure.repositories import TournamentRepository, ParticipantRepository
 from application.player_service import PlayerService
 from app.extensions import csrf
 
@@ -28,7 +28,6 @@ def player_list(public_id):
 
 @player_bp.route("/<public_id>/players/add", methods=["GET", "POST"])
 def player_add(public_id):
-    # Rule 4: Session-based admin check
     tournament = require_admin(public_id)
     if not tournament:
         return redirect(url_for("admin_auth.admin_login", public_id=public_id))
@@ -44,65 +43,57 @@ def player_add(public_id):
     return render_template("tournament/player_add.html", tournament=tournament, is_admin=True)
 
 
-@player_bp.route("/<public_id>/players/<int:player_id>/edit", methods=["GET", "POST"])
-def player_edit(public_id, player_id):
+@player_bp.route("/<public_id>/players/<int:participant_id>/edit", methods=["GET", "POST"])
+def player_edit(public_id, participant_id):
     tournament = require_admin(public_id)
     if not tournament: abort(403)
 
-    player = PlayerRepository.get_by_id(player_id, tournament.id)
-    if not player: abort(404)
+    participant = ParticipantRepository.get_by_id(participant_id, tournament.id)
+    if not participant: abort(404)
 
     if request.method == "POST":
-        PlayerService.update(player, tournament, request.form)
-        flash(f"اطلاعات {player.full_name} بروزرسانی شد.", "success")
+        PlayerService.update(participant, tournament, request.form)
+        flash(f"اطلاعات {participant.full_name} بروزرسانی شد.", "success")
         return redirect(url_for("tournament.view", public_id=public_id))
 
-    return render_template("tournament/player_edit.html", tournament=tournament, player=player, is_admin=True)
+    return render_template("tournament/player_edit.html", tournament=tournament, player=participant, is_admin=True)
 
 
-@player_bp.route(
-    "/<public_id>/players/<int:player_id>/delete",
-    methods=["POST"]
-)
-def player_delete(public_id, player_id):
+@player_bp.route("/<public_id>/players/<int:participant_id>/delete", methods=["POST"])
+def player_delete(public_id, participant_id):
     tournament, redir = _require_admin_or_redirect(public_id)
     if redir:
         return redir
 
-    player = PlayerRepository.get_by_id(player_id, tournament.id)
-    if not player:
+    participant = ParticipantRepository.get_by_id(participant_id, tournament.id)
+    if not participant:
         abort(404)
 
     if tournament.current_round > 0:
         flash(
-            f"بازیکن {player.full_name} در قرعه‌کشی شرکت کرده و قابل حذف نیست. لطفاً برای خروج او از مسابقه، از گزینه انصراف (Withdraw) استفاده کنید.", 
+            f"بازیکن {participant.full_name} در قرعه‌کشی شرکت کرده و قابل حذف نیست. لطفاً برای خروج او از مسابقه، از گزینه انصراف (Withdraw) استفاده کنید.", 
             "error"
         )
         return redirect(url_for("player.player_list", public_id=public_id))
 
-    name = f"{player.first_name} {player.last_name}"
-    PlayerService.delete(player, tournament.id)
+    name = participant.full_name
+    PlayerService.delete(participant, tournament.id)
     flash(f"بازیکن {name} با موفقیت حذف شد.", "success")
     return redirect(url_for("player.player_list", public_id=public_id))
 
 
-@player_bp.route("/<public_id>/players/<int:player_id>/withdraw", methods=["POST"])
-def player_withdraw(public_id, player_id):
+@player_bp.route("/<public_id>/players/<int:participant_id>/withdraw", methods=["POST"])
+def player_withdraw(public_id, participant_id):
     tournament = require_admin(public_id)
     if not tournament: abort(403)
 
-    player = PlayerRepository.get_by_id(player_id, tournament.id)
-    if not player: abort(404)
+    participant = ParticipantRepository.get_by_id(participant_id, tournament.id)
+    if not participant: abort(404)
 
-    player = PlayerRepository.get_by_id(player_id, tournament.id)
-    PlayerService.toggle_withdraw(player, tournament.current_round)
+    PlayerService.toggle_withdraw(participant, tournament.current_round)
     return redirect(url_for("tournament.view", public_id=public_id))
 
-
-@player_bp.route(
-    "/<public_id>/players/import",
-    methods=["GET", "POST"]
-)
+@player_bp.route("/<public_id>/players/import", methods=["GET", "POST"])
 def player_import(public_id):
     tournament, redir = _require_admin_or_redirect(public_id)
     if redir:
@@ -110,10 +101,8 @@ def player_import(public_id):
 
     if request.method == "POST":
         action = request.form.get("action", "")
-
         if action == "preview":
             return _handle_csv_preview(tournament, public_id)
-
         elif action == "confirm":
             return _handle_csv_confirm(tournament, public_id)
 
@@ -236,9 +225,7 @@ def _handle_csv_confirm(tournament, public_id):
 
     if not players_data:
         flash("داده‌ای برای ذخیره وجود ندارد", "error")
-        return redirect(url_for(
-            "player.player_import", public_id=public_id
-        ))
+        return redirect(url_for("player.player_import", public_id=public_id))
 
     added = 0
     errors = []

@@ -11,33 +11,32 @@
     <p>{{ tournament.name }}</p>
 </div>
 
-<!-- کارت اطلاعات بازیکن -->
 <div class="player-info-card">
     <div class="player-info-grid">
         <div class="info-item">
             <span class="info-label">شماره</span>
             <span class="info-value">{{ player.start_number }}</span>
         </div>
-        {% if player.fide_title %}
+        {% if player.fide_title_snapshot %}
         <div class="info-item">
             <span class="info-label">عنوان</span>
-            <span class="info-value">{{ player.fide_title }}</span>
+            <span class="info-value">{{ player.fide_title_snapshot }}</span>
         </div>
         {% endif %}
         <div class="info-item">
             <span class="info-label">ریتینگ</span>
-            <span class="info-value">{{ player.rating or 'بدون ریتینگ' }}</span>
+            <span class="info-value">{{ player.rating_snapshot or 'بدون ریتینگ' }}</span>
         </div>
         <div class="info-item">
             <span class="info-label">فدراسیون</span>
-            <span class="info-value">{{ player.federation }}</span>
+            <span class="info-value">{{ player.profile.federation }}</span>
         </div>
-        {% if player.fide_id %}
+        {% if player.profile.fide_id %}
         <div class="info-item">
             <span class="info-label">فیده</span>
             <span class="info-value">
-                <a href="https://ratings.fide.com/profile/{{ player.fide_id }}" target="_blank">
-                    {{ player.fide_id }}
+                <a href="https://ratings.fide.com/profile/{{ player.profile.fide_id }}" target="_blank">
+                    {{ player.profile.fide_id }}
                 </a>
             </span>
         </div>
@@ -51,47 +50,39 @@
     </div>
 </div>
 
-<!-- آمار -->
 <div class="stats-row">
     <div class="stat-card stat-total">
         <div class="stat-value">{{ total_score }}</div>
         <div class="stat-label">امتیاز کل</div>
     </div>
-
     <div class="stat-card">
         <div class="stat-value">{{ total_games }}</div>
         <div class="stat-label">بازی واقعی</div>
     </div>
-
     <div class="stat-card stat-win">
         <div class="stat-value">{{ wins }}</div>
         <div class="stat-label">برد</div>
     </div>
-
     <div class="stat-card stat-draw">
         <div class="stat-value">{{ draws }}</div>
         <div class="stat-label">تساوی</div>
     </div>
-
     <div class="stat-card stat-loss">
         <div class="stat-value">{{ losses }}</div>
         <div class="stat-label">باخت</div>
     </div>
-
     {% if full_byes %}
     <div class="stat-card">
         <div class="stat-value">{{ full_byes }}</div>
         <div class="stat-label">BYE کامل</div>
     </div>
     {% endif %}
-
     {% if half_byes %}
     <div class="stat-card">
         <div class="stat-value">{{ half_byes }}</div>
         <div class="stat-label">½ BYE</div>
     </div>
     {% endif %}
-
     {% if zero_byes %}
     <div class="stat-card">
         <div class="stat-value">{{ zero_byes }}</div>
@@ -100,7 +91,6 @@
     {% endif %}
 </div>
 
-<!-- جدول بازی‌ها -->
 <div class="table-responsive">
     <table class="data-table">
         <thead>
@@ -129,8 +119,8 @@
                 <td class="player-cell">
                     {% if game.opponent %}
                         <a href="/{{ tournament.public_id }}/player/{{ game.opponent.id }}">
-                            {% if game.opponent.fide_title %}
-                                <span class="player-title-badge">{{ game.opponent.fide_title }}</span>
+                            {% if game.opponent.fide_title_snapshot %}
+                                <span class="player-title-badge">{{ game.opponent.fide_title_snapshot }}</span>
                             {% endif %}
                             {{ game.opponent.full_name }}
                         </a>

@@ -1,9 +1,9 @@
 """
 Print-friendly pages for PDF export.
 """
-from flask import Blueprint, render_template, abort
+from flask import Blueprint, render_template, abort, Response
 from infrastructure.repositories import (
-    TournamentRepository, PlayerRepository, PairingRepository
+    TournamentRepository, ParticipantRepository, PairingRepository
 )
 from infrastructure.db_models import RoundModel
 from application.tournament_service import TournamentService
@@ -18,7 +18,6 @@ def _validate_public_id(public_id):
 
 @print_bp.route("/<public_id>/print/standings")
 def print_standings(public_id):
-    """جدول رده‌بندی قابل چاپ"""
     _validate_public_id(public_id)
     tournament = TournamentRepository.get_by_public_id(public_id)
     if not tournament:
@@ -35,7 +34,6 @@ def print_standings(public_id):
 
 @print_bp.route("/<public_id>/print/round/<int:round_number>")
 def print_round(public_id, round_number):
-    """جفت‌گذاری یک دور قابل چاپ"""
     _validate_public_id(public_id)
     tournament = TournamentRepository.get_by_public_id(public_id)
     if not tournament:
@@ -49,60 +47,59 @@ def print_round(public_id, round_number):
         abort(404)
 
     pairings = PairingRepository.get_all_for_round(round_obj.id)
-    players = {p.id: p for p in PlayerRepository.get_all(tournament.id)}
+    participants = {p.id: p for p in ParticipantRepository.get_all(tournament.id)}
 
     return render_template(
         "print/round.html",
         tournament=tournament,
         round=round_obj,
         pairings=pairings,
-        players=players,
+        players=participants,
     )
 
 
 @print_bp.route("/<public_id>/print/crosstable")
 def print_crosstable(public_id):
-    """Cross-Table قابل چاپ"""
     _validate_public_id(public_id)
     tournament = TournamentRepository.get_by_public_id(public_id)
     if not tournament:
         abort(404)
 
-    players = PlayerRepository.get_all(tournament.id)
+    participants = ParticipantRepository.get_all(tournament.id)
     all_pairings = PairingRepository.get_all_for_tournament(tournament.id)
     rounds = RoundModel.query.filter_by(
         tournament_id=tournament.id
     ).order_by(RoundModel.round_number).all()
 
     round_map = {r.id: r.round_number for r in rounds}
-    players_map = {p.id: p for p in players}
+    participants_map = {p.id: p for p in participants}
     total_rounds = tournament.current_round or 0
 
-    from interfaces.web.tournament_routes import _build_cell
+    from interfaces.web.helpers import build_cell as _build_cell
 
     cross_data = {}
-    for p in players:
+    for p in participants:
         cross_data[p.id] = {"player": p, "rounds": {}}
 
     for pairing in all_pairings:
         round_num = round_map.get(pairing.round_id)
         if not round_num:
             continue
-        w_id = pairing.white_player_id
-        b_id = pairing.black_player_id
+        w_id = pairing.white_participant_id
+        b_id = pairing.black_participant_id
 
         if w_id and w_id in cross_data:
             cross_data[w_id]["rounds"][round_num] = _build_cell(
-                pairing.result, "white", b_id, players_map
+                pairing.result, "white", b_id, participants_map
             )
         if b_id and b_id in cross_data:
             cross_data[b_id]["rounds"][round_num] = _build_cell(
-                pairing.result, "black", w_id, players_map
+                pairing.result, "black", w_id, participants_map
             )
 
     sorted_players = sorted(
         cross_data.values(),
-        key=lambda x: (-(x["player"].points or 0), -(x["player"].rating or 0))
+        key=lambda x: (-(x["player"].points or 0), -(x["player"].rating_snapshot or 0))
     )
 
     return render_template(
@@ -120,14 +117,14 @@ def export_trf(public_id):
     if not tournament:
         abort(404)
 
-    players = PlayerRepository.get_all(tournament.id)
+    participants = ParticipantRepository.get_all(tournament.id)
     all_pairings = PairingRepository.get_all_for_tournament(tournament.id)
     rounds = RoundModel.query.filter_by(
         tournament_id=tournament.id
     ).order_by(RoundModel.round_number).all()
 
     round_map = {r.id: r.round_number for r in rounds}
-    players_map = {p.id: p for p in players}
+    participants_map = {p.id: p for p in participants}
 
     lines = []
 
@@ -137,8 +134,8 @@ def export_trf(public_id):
     lines.append(f"032 {tournament.federation or 'IRI'}")
     lines.append(f"042 {tournament.start_date or ''}")
     lines.append(f"052 {tournament.end_date or ''}")
-    lines.append(f"062 {len(players)}")
-    lines.append(f"072 {len(players)}")
+    lines.append(f"062 {len(participants)}")
+    lines.append(f"072 {len(participants)}")
     lines.append(f"082 {tournament.current_round}")
     lines.append(f"092 {tournament.time_control_type}")
 
@@ -147,10 +144,10 @@ def export_trf(public_id):
     lines.append(f"112 {tournament.arbiter or ''}")
     lines.append(f"122 {tournament.time_control_description or ''}")
 
-    # Players
-    sorted_players = sorted(players, key=lambda p: p.start_number)
+    # Participants
+    sorted_participants = sorted(participants, key=lambda p: p.start_number)
 
-    for player in sorted_players:
+    for participant in sorted_participants:
         # Build round results
         round_results = {}
         for pairing in all_pairings:
@@ -158,37 +155,38 @@ def export_trf(public_id):
             if not rn:
                 continue
 
-            if pairing.white_player_id == player.id:
-                opp = players_map.get(pairing.black_player_id)
+            if pairing.white_participant_id == participant.id:
+                opp = participants_map.get(pairing.black_participant_id)
                 opp_num = opp.start_number if opp else 0
                 color = "w"
                 result = _trf_result(pairing.result, "white")
                 round_results[rn] = f"  {opp_num:4d} {color} {result}"
-            elif pairing.black_player_id == player.id:
-                opp = players_map.get(pairing.white_player_id)
+            elif pairing.black_participant_id == participant.id:
+                opp = participants_map.get(pairing.white_participant_id)
                 opp_num = opp.start_number if opp else 0
                 color = "b"
                 result = _trf_result(pairing.result, "black")
                 round_results[rn] = f"  {opp_num:4d} {color} {result}"
 
-        # Format player line
-        sex = "m" if player.gender == "M" else "w"
-        title = player.fide_title or ""
-        name = f"{player.last_name}, {player.first_name}"
-        rating = player.rating or 0
-        fide_id = player.fide_id or ""
+        # Format player line using participant data and profile
+        profile = participant.profile
+        sex = "m" if profile.gender == "M" else "w"
+        title = participant.fide_title_snapshot or ""
+        name = f"{profile.last_name}, {profile.first_name}"
+        rating = participant.rating_snapshot or 0
+        fide_id = profile.fide_id or ""
         birth = ""
-        if player.birth_date:
-            birth = player.birth_date.strftime("%Y/%m/%d")
-        points = player.points or 0
+        if profile.birth_date:
+            birth = profile.birth_date.strftime("%Y/%m/%d")
+        points = participant.points or 0
 
         # TRF line
-        line = f"001 {player.start_number:4d}"
+        line = f"001 {participant.start_number:4d}"
         line += f" {sex:1s}"
         line += f" {title:3s}"
         line += f" {name:33s}"
         line += f" {rating:4d}"
-        line += f" {player.federation or 'IRI':3s}"
+        line += f" {profile.federation or 'IRI':3s}"
         line += f" {fide_id:11s}"
         line += f" {birth:10s}"
         line += f" {points:4.1f}"
@@ -204,7 +202,6 @@ def export_trf(public_id):
 
     trf_content = "\n".join(lines)
 
-    from flask import Response
     response = Response(
         trf_content,
         mimetype="text/plain",

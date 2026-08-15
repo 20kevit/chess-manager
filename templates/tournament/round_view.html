@@ -24,11 +24,11 @@
                     <tr>
                         <td>{{ pairing.board_number }}</td>
                         <td class="player-cell" style="text-align:right;">
-                            <strong>{{ pairing.white_player.ranking_label }}</strong>. {{ pairing.white_player_name }}
-                            <small>({{ pairing.white_player.rating }})</small>
+                            <strong>{{ pairing.white_participant.ranking_label }}</strong>. {{ pairing.white_participant.full_name }}
+                            <small>({{ pairing.white_participant.rating }})</small>
                         </td>
                         <td class="result-cell">
-                            {% if pairing.black_player_id %}
+                            {% if pairing.black_participant_id %}
                                 {% if round.status == 'finished' %}
                                     <span class="result-display">{{ pairing.result_display }}</span>
                                 {% else %}
@@ -47,9 +47,9 @@
                             {% endif %}
                         </td>
                         <td class="player-cell" style="text-align:right;">
-                            {% if pairing.black_player_id %}
-                                <strong>{{ pairing.black_player.ranking_label }}</strong>. {{ pairing.black_player_name }}
-                                <small>({{ pairing.black_player.rating }})</small>
+                            {% if pairing.black_participant_id %}
+                                <strong>{{ pairing.black_participant.ranking_label }}</strong>. {{ pairing.black_participant.full_name }}
+                                <small>({{ pairing.black_participant.rating }})</small>
                             {% else %}
                                 <span class="badge badge-warning">استراحت (Bye)</span>
                             {% endif %}
@@ -75,7 +75,6 @@
     </div>
 </form>
 
-<!-- فرم مخفی برای پایان دور -->
 <form id="finish_form" method="POST" action="{{ url_for('round.finish_round', public_id=tournament.public_id, round_number=round.round_number) }}">
 </form>
 {% endblock %}

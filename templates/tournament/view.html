@@ -3,13 +3,9 @@
 
 {% block content %}
 
-<!-- 🔘 Floating Admin Trigger (Visible only if is_admin) -->
 {% if is_admin %}
-<div class="admin-trigger" onclick="toggleAdminSidebar()" title="پنل مدیریت">
-    ⚙️
-</div>
+<div class="admin-trigger" onclick="toggleAdminSidebar()" title="پنل مدیریت">⚙️</div>
 
-<!-- ⬅️ Admin Sidebar (Drawer) for heavy tasks -->
 <div id="admin-sidebar" class="admin-sidebar">
     <div style="display:flex; flex-direction:column; gap:10px;">
         <p style="font-size:0.8em; color:#666; text-align:center; background:#f1f5f9; padding:5px; border-radius:5px;">کد ادمین: <code style="user-select:all; font-weight:bold;">{{ tournament.admin_code }}</code></p>
@@ -36,7 +32,6 @@
 </div>
 {% endif %}
 
-<!-- 🏆 Tournament Header -->
 <div class="tournament-header" style="border-right: 5px solid var(--primary); padding-right: 20px;">
     <h1 style="font-size: 1.8em; margin-bottom: 5px;">{{ tournament.name }}</h1>
     <div class="tournament-meta" style="color: #64748b;">
@@ -46,7 +41,6 @@
     </div>
 </div>
 
-<!-- 📑 Tab Navigation -->
 <div class="tabs" style="margin-top: 25px; border-bottom: 1px solid #e2e8f0; background: none; box-shadow: none;">
     <button class="tab active" onclick="showTab('standings')">رده‌بندی</button>
     {% for r in tournament.rounds|sort(attribute='round_number') %}
@@ -56,11 +50,8 @@
     <button class="tab" onclick="showTab('summary')">خلاصه و آمار</button>
 </div>
 
-<!-- 1️⃣ STANDINGS TAB -->
-<!-- 1️⃣ STANDINGS TAB -->
 <div id="tab-standings" class="tab-content active" style="box-shadow:none; padding: 20px 0;">
     
-    <!-- 🎛️ Highlight Bar (Age Categories Only) -->
     {% set unique_ages = [] %}
     {% for ps in player_standings %}
         {% if ps.player.age_category and ps.player.age_category not in unique_ages %}
@@ -80,7 +71,6 @@
     </div>
     {% endif %}
 
-    <!-- 📊 Table -->
     <div class="table-responsive">
         <table class="standings-table" id="main-standings-table" style="width:100%; border-collapse: collapse;">
             <thead>
@@ -108,20 +98,20 @@
                     
                     <td style="text-align:right;">
                         <a href="/{{ tournament.public_id }}/player/{{ ps.player.id }}" style="color:var(--gray-800); font-weight:500;">
-                            {% if ps.player.fide_title %}<span class="badge" style="background:#e0e7ff; color:#1e40af; font-size:0.7em;">{{ ps.player.fide_title }}</span>{% endif %}
+                            {% if ps.player.fide_title_snapshot %}<span class="badge" style="background:#e0e7ff; color:#1e40af; font-size:0.7em;">{{ ps.player.fide_title_snapshot }}</span>{% endif %}
                             {{ ps.player.full_name }}
                         </a>
                     </td>
                     
                     <td style="text-align:center; color:#64748b;">
-                        {% if ps.player.gender == 'M' %}آقا{% elif ps.player.gender == 'F' %}خانم{% else %}-{% endif %}
+                        {% if ps.player.profile.gender == 'M' %}آقا{% elif ps.player.profile.gender == 'F' %}خانم{% else %}-{% endif %}
                     </td>
                     
                     <td style="text-align:center;">
                         <span class="badge" style="background:#f1f5f9; color:#475569;">{{ ps.player.age_category or '-' }}</span>
                     </td>
                     
-                    <td style="text-align:center;">{{ ps.player.rating or 0 }}</td>
+                    <td style="text-align:center;">{{ ps.player.rating_snapshot or 0 }}</td>
                     <td style="text-align:center;"><strong style="font-size:1.1rem; color:var(--primary-dark);">{{ ps.points }}</strong></td>
                     
                     {% for tb in tiebreak_rules %}
@@ -137,7 +127,7 @@
                     
                     {% if is_admin %}
                     <td style="text-align:center;">
-                        <a href="{{ url_for('player.player_edit', public_id=tournament.public_id, player_id=ps.player.id) }}" title="ویرایش" style="text-decoration:none;">✏️</a>
+                        <a href="{{ url_for('player.player_edit', public_id=tournament.public_id, participant_id=ps.player.id) }}" title="ویرایش" style="text-decoration:none;">✏️</a>
                     </td>
                     {% endif %}
                 </tr>
@@ -147,7 +137,6 @@
     </div>
 </div>
 
-<!-- 2️⃣ ROUND TABS -->
 {% for r in tournament.rounds %}
 <div id="tab-round-{{ r.round_number }}" class="tab-content" style="box-shadow:none;">
     {% if is_admin and r.status == 'ongoing' %}
@@ -169,11 +158,11 @@
                 <tr>
                     <td style="text-align:center; color:#94a3b8;">{{ p.board_number }}</td>
                     <td style="text-align:right;">
-                        {{ p.white_player.ranking_label }}. {{ p.white_player_name }} 
-                        <span style="font-size:0.8em; color:#94a3b8;">({{ p.white_player.rating }})</span>
+                        {{ p.white_participant.ranking_label }}. {{ p.white_participant.full_name }} 
+                        <span style="font-size:0.8em; color:#94a3b8;">({{ p.white_participant.rating }})</span>
                     </td>
                     <td style="text-align:center;">
-                        {% if is_admin and r.status == 'ongoing' and p.black_player_id %}
+                        {% if is_admin and r.status == 'ongoing' and p.black_participant_id %}
                             <select name="result_{{ p.id }}" class="result-select-minimal">
                                 <option value="" {% if p.result == '' %}selected{% endif %}>-</option>
                                 <option value="1-0" {% if p.result == '1-0' %}selected{% endif %}>1 - 0</option>
@@ -187,9 +176,9 @@
                         {% endif %}
                     </td>
                     <td style="text-align:right;">
-                        {% if p.black_player_id %}
-                            {{ p.black_player.ranking_label }}. {{ p.black_player_name }}
-                            <span style="font-size:0.8em; color:#94a3b8;">({{ p.black_player.rating }})</span>
+                        {% if p.black_participant_id %}
+                            {{ p.black_participant.ranking_label }}. {{ p.black_participant.full_name }}
+                            <span style="font-size:0.8em; color:#94a3b8;">({{ p.black_participant.rating }})</span>
                         {% else %}
                             <span style="color:#eab308; font-size:0.9em;">استراحت</span>
                         {% endif %}
@@ -211,9 +200,7 @@
 </div>
 {% endfor %}
 
-<!-- 3️⃣ OTHER TABS (Crosstable & Summary) -->
 <div id="tab-crosstable" class="tab-content" style="box-shadow:none;">
-    <!-- Simple trigger to old crosstable logic or embed it here -->
     <div style="text-align:center; padding:40px;">
         <a href="/{{ tournament.public_id }}/crosstable" class="btn btn-secondary">مشاهده جدول کامل برخوردها</a>
     </div>
@@ -226,9 +213,6 @@
 </div>
 
 <script>
-/**
- * Tab Switching Logic
- */
 function showTab(tabName) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -239,29 +223,20 @@ function showTab(tabName) {
     document.getElementById('tab-' + tabName).classList.add('active');
 }
 
-/**
- * Sidebar Toggle Logic (Admin Only)
- */
 function toggleAdminSidebar() {
     const sidebar = document.getElementById('admin-sidebar');
     sidebar.classList.toggle('active');
 }
 
-/**
- * Highlight Logic for Age Categories
- */
 function highlightTable(filterType, btnElement) {
-    // 1. Update button styling
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
 
     const tableBody = document.getElementById('standings-body');
     const rows = document.querySelectorAll('.player-row');
     
-    // Check if cumulative mode is active from server (True/False string)
     const cumulativeMode = {{ 'true' if tournament.cumulative_age_category else 'false' }};
     
-    // Order of age categories for cumulative logic
     const ageOrder = {
         'U08': 8, 'U10': 10, 'U12': 12, 'U14': 14, 
         'U16': 16, 'U18': 18, 'U20': 20,
@@ -269,13 +244,11 @@ function highlightTable(filterType, btnElement) {
     };
 
     if (filterType === 'none') {
-        // Reset everything
         tableBody.classList.remove('table-filtered');
         rows.forEach(row => row.classList.remove('row-highlighted'));
         return;
     }
 
-    // Activate filtered mode (dims non-highlighted rows)
     tableBody.classList.add('table-filtered');
     const targetAge = filterType.replace('age-', '');
 
@@ -286,21 +259,18 @@ function highlightTable(filterType, btnElement) {
         let shouldHighlight = false;
 
         if (cumulativeMode && targetAge.startsWith('U') && rowAge.startsWith('U')) {
-            // Under (U): Player limit must be <= Selected limit
             const selectedLimit = ageOrder[targetAge] || 0;
             const playerLimit = ageOrder[rowAge] || 0;
             if (playerLimit > 0 && playerLimit <= selectedLimit) {
                 shouldHighlight = true;
             }
         } else if (cumulativeMode && targetAge.startsWith('S') && rowAge.startsWith('S')) {
-            // Senior (S): Player limit must be >= Selected limit
             const selectedLimit = ageOrder[targetAge] || 0;
             const playerLimit = ageOrder[rowAge] || 0;
             if (playerLimit > 0 && playerLimit >= selectedLimit) {
                 shouldHighlight = true;
             }
         } else {
-            // Exact match
             if (rowAge === targetAge) {
                 shouldHighlight = true;
             }

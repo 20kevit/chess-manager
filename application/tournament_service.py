@@ -7,7 +7,7 @@ from typing import Optional
 import json
 
 from infrastructure.repositories import (
-    TournamentRepository, PlayerRepository,
+    TournamentRepository, ParticipantRepository,
     PairingRepository
 )
 from infrastructure.db_models import TournamentModel, RoundModel
@@ -128,39 +128,40 @@ class TournamentService:
         Calculate full standings with tiebreaks and rating changes.
         Supports both initial seeding (Round 0) and active standings.
         """
-        players = PlayerRepository.get_all(tournament.id)
+        # 1. Fetch participants instead of players
+        participants = ParticipantRepository.get_all(tournament.id)
         all_pairings = PairingRepository.get_all_for_tournament(tournament.id)
         tiebreak_rules = json.loads(tournament.tiebreak_rules or "[]")
 
         # Build raw tiebreak data from historical pairings
-        tb_data = TournamentService._build_tiebreak_data(players, all_pairings)
+        tb_data = TournamentService._build_tiebreak_data(participants, all_pairings)
 
         player_standings = []
-        for player in players:
-            # Skip withdrawn players with zero points to keep standings clean
-            if player.status != "active" and (player.points or 0) == 0:
+        for p in participants:
+            # Skip withdrawn participants with zero points to keep standings clean
+            if p.status != "active" and (p.points or 0) == 0:
                 continue
             
             # Calculate tiebreak values if data exists
             tb_values = {}
-            if player.id in tb_data:
+            if p.id in tb_data:
                 tb_values = calculate_all(
-                    tb_data[player.id], tb_data,
+                    tb_data[p.id], tb_data,
                     tiebreak_rules, tournament.current_round
                 )
 
             player_standings.append({
-                "player": player,
-                "points": player.points or 0.0,
+                "player": p, # Keep key as 'player' for template compatibility
+                "points": p.points or 0.0,
                 "tiebreaks": tb_values,
-                "rank_no": player.pairing_no or player.start_number or 999
+                "rank_no": p.pairing_no or p.start_number or 999
             })
 
         # Professional Seeding & Ranking Logic
         def sort_key(ps):
             if tournament.current_round == 0:
-                # Initial Seed: Higher rating first, then earlier registration
-                return (-(ps["player"].rating or 0), ps["player"].start_number)
+                # Initial Seed: Higher rating snapshot first, then earlier registration
+                return (-(ps["player"].rating_snapshot or 0), ps["player"].start_number)
             
             # Active Standings: Points -> Tiebreaks -> Ranking Number
             tb_sort = [-ps["tiebreaks"].get(r, 0) for r in tiebreak_rules]
@@ -171,7 +172,7 @@ class TournamentService:
         
         # Calculate rating changes for the display
         rating_changes = TournamentService._calculate_rating_changes(
-            players, all_pairings, tournament.time_control_type
+            participants, all_pairings, tournament.time_control_type
         )
 
         return {
@@ -182,7 +183,7 @@ class TournamentService:
         }
 
     @staticmethod
-    def _build_tiebreak_data(players, pairings) -> dict:
+    def _build_tiebreak_data(participants, pairings) -> dict:
         """Build PlayerTiebreakData dict from DB models."""
         result_scores = {
             "1-0": (1.0, 0.0), "0-1": (0.0, 1.0),
@@ -190,7 +191,8 @@ class TournamentService:
             "-/+": (0.0, 1.0), "+/+": (0.0, 0.0),
             "bye": (1.0, 0.0), "half-bye": (0.5, 0.0), "zero-bye": (0.0, 0.0)
         }
-        players_map = {p.id: p for p in players}
+        # Map participants by their ID (which is now the pairing engine ID)
+        participants_map = {p.id: p for p in participants}
         
         round_ids = {p.round_id for p in pairings}
         round_number_map = {}
@@ -200,8 +202,9 @@ class TournamentService:
             round_number_map = {r.id: r.round_number for r in round_objs}
             
         tb_map = {}
-        for p in players:
-            rating = p.rating or 0
+        for p in participants:
+            # Use rating_snapshot for tiebreak calculations
+            rating = p.rating_snapshot or 0
             tb_map[p.id] = PlayerTiebreakData(
                 player_id=p.id,
                 rating=rating,
@@ -215,21 +218,20 @@ class TournamentService:
                 continue
                 
             w_score, b_score = result_scores[pairing.result]
-            w_id = pairing.white_player_id
-            b_id = pairing.black_player_id
+            w_id = pairing.white_participant_id
+            b_id = pairing.black_participant_id
             actual_round_number = round_number_map.get(pairing.round_id, 0)
             
             is_unplayed = pairing.result in ["+/-", "-/+", "+/+", "bye", "half-bye", "zero-bye"]
             
             if w_id and w_id in tb_map:
                 if is_unplayed or not b_id:
-                    # ثبت حریف مجازی برای بازیکن سفید
                     tb_map[w_id].games.append(GameRecord(
                         opponent_id=VIRTUAL_OPPONENT_ID, opponent_rating=0,
                         score=w_score, color="white", round_number=actual_round_number
                     ))
-                elif b_id in players_map:
-                    b_rating = players_map[b_id].rating or 0
+                elif b_id in participants_map:
+                    b_rating = participants_map[b_id].rating_snapshot or 0
                     tb_map[w_id].games.append(GameRecord(
                         opponent_id=b_id, opponent_rating=b_rating,
                         score=w_score, color="white", round_number=actual_round_number
@@ -237,13 +239,12 @@ class TournamentService:
                     
             if b_id and b_id in tb_map:
                 if is_unplayed or not w_id:
-                    # ثبت حریف مجازی برای بازیکن سیاه
                     tb_map[b_id].games.append(GameRecord(
                         opponent_id=VIRTUAL_OPPONENT_ID, opponent_rating=0,
                         score=b_score, color="black", round_number=actual_round_number
                     ))
-                elif w_id in players_map:
-                    w_rating = players_map[w_id].rating or 0
+                elif w_id in participants_map:
+                    w_rating = participants_map[w_id].rating_snapshot or 0
                     tb_map[b_id].games.append(GameRecord(
                         opponent_id=w_id, opponent_rating=w_rating,
                         score=b_score, color="black", round_number=actual_round_number
@@ -252,23 +253,18 @@ class TournamentService:
         return tb_map
 
     @staticmethod
-    def _calculate_rating_changes(players, pairings, time_control_type):
+    def _calculate_rating_changes(participants, pairings, time_control_type):
         """Build rating player data and calculate Elo changes."""
-        def get_rating(player):
-            if time_control_type == "standard":
-                return player.rating_standard or 0
-            elif time_control_type == "rapid":
-                return player.rating_rapid or 0
-            elif time_control_type == "blitz":
-                return player.rating_blitz or 0
-            return 0
+        # We use the rating_snapshot stored at the time of tournament registration
+        def get_rating(participant):
+            return participant.rating_snapshot or 0
     
         result_scores = {
             "1-0": (1.0, 0.0), "0-1": (0.0, 1.0),
             "1/2": (0.5, 0.5),
         }
     
-        players_map = {p.id: p for p in players}
+        participants_map = {p.id: p for p in participants}
     
         rating_data = {
             p.id: RatingPlayerData(
@@ -276,7 +272,7 @@ class TournamentService:
                 current_rating=get_rating(p),
                 k_factor=p.k_factor or 20,
             )
-            for p in players
+            for p in participants
         }
     
         for pairing in pairings:
@@ -284,31 +280,31 @@ class TournamentService:
                 continue
     
             w_score, b_score = result_scores[pairing.result]
-            w_id = pairing.white_player_id
-            b_id = pairing.black_player_id
+            w_id = pairing.white_participant_id
+            b_id = pairing.black_participant_id
     
             if not w_id or not b_id:
                 continue
     
-            w_player = players_map.get(w_id)
-            b_player = players_map.get(b_id)
+            w_participant = participants_map.get(w_id)
+            b_participant = participants_map.get(b_id)
     
-            if not w_player or not b_player:
+            if not w_participant or not b_participant:
                 continue
     
-            w_rating = get_rating(w_player)
-            b_rating = get_rating(b_player)
+            w_rating = get_rating(w_participant)
+            b_rating = get_rating(b_participant)
     
             if w_id in rating_data:
                 rating_data[w_id].games.append(RatingGameRecord(
                     opponent_id=b_id, opponent_rating=b_rating,
-                    score=w_score, k_factor=w_player.k_factor or 20
+                    score=w_score, k_factor=w_participant.k_factor or 20
                 ))
     
             if b_id in rating_data:
                 rating_data[b_id].games.append(RatingGameRecord(
                     opponent_id=w_id, opponent_rating=w_rating,
-                    score=b_score, k_factor=b_player.k_factor or 20
+                    score=b_score, k_factor=b_participant.k_factor or 20
                 ))
     
         raw = calculate_tournament_ratings(list(rating_data.values()))
@@ -316,9 +312,10 @@ class TournamentService:
         # Add opponent names to details for cleaner reporting
         for pid, rating_result in raw.items():
             for detail in rating_result.details:
-                opp = players_map.get(detail.get("opponent_id"))
+                opp = participants_map.get(detail.get("opponent_id"))
                 if opp:
-                    detail["opponent_name"] = f"{opp.first_name} {opp.last_name}"
+                    # Access profile through participant
+                    detail["opponent_name"] = opp.full_name
     
         return {
             pid: {

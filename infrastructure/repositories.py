@@ -6,7 +6,8 @@ Repositories do NOT commit. Caller (service layer) is responsible for commit.
 from typing import Optional, List
 from app.extensions import db
 from infrastructure.db_models import (
-    TournamentModel, PlayerModel, RoundModel, PairingModel, ManualPairingModel
+    TournamentModel, PlayerProfileModel, TournamentParticipantModel,
+    RoundModel, PairingModel, ManualPairingModel
 )
 import random
 import string
@@ -46,8 +47,6 @@ class TournamentRepository:
 
     @staticmethod
     def get_global_stats() -> dict:
-        from infrastructure.db_models import PlayerModel, PairingModel
-        
         stats = {
             "tournaments": 0,
             "arbiters": 0,
@@ -55,108 +54,114 @@ class TournamentRepository:
             "matches": 0
         }
         
-        # فقط تورنمنت‌هایی که از حالت setup خارج شده‌اند
         valid_tournaments = TournamentModel.query.filter(TournamentModel.status != "setup")
         stats["tournaments"] = valid_tournaments.count()
         
         if stats["tournaments"] > 0:
-            # تعداد داوران/برگزارکنندگان (بر اساس کدهای ادمین یکتا)
             stats["arbiters"] = db.session.query(TournamentModel.admin_code).filter(
                 TournamentModel.status != "setup"
             ).distinct().count()
             
-            # تعداد کل بازیکنان حاضر در تورنمنت‌های معتبر
-            stats["players"] = db.session.query(PlayerModel.id).join(
-                TournamentModel, PlayerModel.tournament_id == TournamentModel.id
+            stats["players"] = db.session.query(TournamentParticipantModel.id).join(
+                TournamentModel, TournamentParticipantModel.tournament_id == TournamentModel.id
             ).filter(TournamentModel.status != "setup").count()
             
-            # تعداد کل مسابقات انجام‌شده (بدون احتساب Bye که در آن black_player_id خالی است)
             stats["matches"] = db.session.query(PairingModel.id).join(
                 TournamentModel, PairingModel.tournament_id == TournamentModel.id
             ).filter(
                 TournamentModel.status != "setup",
-                PairingModel.black_player_id.isnot(None)
+                PairingModel.black_participant_id.isnot(None)
             ).count()
             
         return stats
 
 
-class PlayerRepository:
+class PlayerProfileRepository:
     @staticmethod
-    def get_by_id(player_id: int, tournament_id: int) -> Optional[PlayerModel]:
-        return PlayerModel.query.filter_by(
-            id=player_id, tournament_id=tournament_id
+    def get_by_id(profile_id: int) -> Optional[PlayerProfileModel]:
+        return PlayerProfileModel.query.get(profile_id)
+
+    @staticmethod
+    def get_by_fide_id(fide_id: str) -> Optional[PlayerProfileModel]:
+        return PlayerProfileModel.query.filter_by(fide_id=fide_id).first()
+
+    @staticmethod
+    def save(profile: PlayerProfileModel) -> PlayerProfileModel:
+        db.session.add(profile)
+        db.session.flush()
+        return profile
+
+
+class ParticipantRepository:
+    @staticmethod
+    def get_by_id(participant_id: int, tournament_id: int) -> Optional[TournamentParticipantModel]:
+        return TournamentParticipantModel.query.filter_by(
+            id=participant_id, tournament_id=tournament_id
         ).first()
 
     @staticmethod
-    def get_all(tournament_id: int) -> List[PlayerModel]:
-        return PlayerModel.query.filter_by(
+    def get_all(tournament_id: int) -> List[TournamentParticipantModel]:
+        return TournamentParticipantModel.query.filter_by(
             tournament_id=tournament_id
-        ).order_by(PlayerModel.start_number).all()
+        ).order_by(TournamentParticipantModel.start_number).all()
 
     @staticmethod
-    def get_active(tournament_id: int) -> List[PlayerModel]:
-        return PlayerModel.query.filter_by(
+    def get_active(tournament_id: int) -> List[TournamentParticipantModel]:
+        return TournamentParticipantModel.query.filter_by(
             tournament_id=tournament_id, status="active"
         ).all()
 
     @staticmethod
     def next_start_number(tournament_id: int) -> int:
         result = db.session.query(
-            db.func.max(PlayerModel.start_number)
+            db.func.max(TournamentParticipantModel.start_number)
         ).filter_by(tournament_id=tournament_id).scalar()
         return (result or 0) + 1
 
     @staticmethod
-    def save(player: PlayerModel) -> PlayerModel:
-        db.session.add(player)
+    def save(participant: TournamentParticipantModel) -> TournamentParticipantModel:
+        db.session.add(participant)
         db.session.flush()
-        return player
+        return participant
 
     @staticmethod
-    def delete(player: PlayerModel) -> None:
-        db.session.delete(player)
+    def delete(participant: TournamentParticipantModel) -> None:
+        db.session.delete(participant)
         db.session.flush()
 
     @staticmethod
     def renumber(tournament_id: int) -> None:
-        players = PlayerModel.query.filter_by(
+        participants = TournamentParticipantModel.query.filter_by(
             tournament_id=tournament_id
-        ).order_by(PlayerModel.start_number).all()
-        for i, p in enumerate(players, 1):
+        ).order_by(TournamentParticipantModel.start_number).all()
+        for i, p in enumerate(participants, 1):
             p.start_number = i
         db.session.flush()
 
     @staticmethod
     def update_points(tournament_id: int) -> None:
-        players = PlayerModel.query.filter_by(tournament_id=tournament_id).all()
+        participants = ParticipantRepository.get_all(tournament_id)
         pairings = PairingModel.query.filter_by(tournament_id=tournament_id).all()
-        score_map = {p.id: 0.0 for p in players}
+        score_map = {p.id: 0.0 for p in participants}
         result_scores = {
-            "1-0": (1.0, 0.0),
-            "0-1": (0.0, 1.0),
-            "1/2": (0.5, 0.5),
-            "+/-": (1.0, 0.0),
-            "-/+": (0.0, 1.0),
-            "+/+": (0.0, 0.0),
-            "bye": (1.0, None),
-            "half-bye": (0.5, None),
-            "zero-bye": (0.0, None),
+            "1-0": (1.0, 0.0), "0-1": (0.0, 1.0), "1/2": (0.5, 0.5),
+            "+/-": (1.0, 0.0), "-/+": (0.0, 1.0), "+/+": (0.0, 0.0),
+            "bye": (1.0, None), "half-bye": (0.5, None), "zero-bye": (0.0, None),
         }
         for pairing in pairings:
             if pairing.result not in result_scores:
                 continue
             w_score, b_score = result_scores[pairing.result]
-            if pairing.white_player_id and w_score is not None:
-                score_map[pairing.white_player_id] = (
-                    score_map.get(pairing.white_player_id, 0.0) + w_score
+            if pairing.white_participant_id and w_score is not None:
+                score_map[pairing.white_participant_id] = (
+                    score_map.get(pairing.white_participant_id, 0.0) + w_score
                 )
-            if pairing.black_player_id and b_score is not None:
-                score_map[pairing.black_player_id] = (
-                    score_map.get(pairing.black_player_id, 0.0) + b_score
+            if pairing.black_participant_id and b_score is not None:
+                score_map[pairing.black_participant_id] = (
+                    score_map.get(pairing.black_participant_id, 0.0) + b_score
                 )
-        for player in players:
-            player.points = score_map.get(player.id, 0.0)
+        for participant in participants:
+            participant.points = score_map.get(participant.id, 0.0)
         db.session.flush()
 
 
@@ -209,32 +214,20 @@ class PairingRepository:
 
 
 class ManualPairingRepository:
-    """Repository for pre-pairing locks (manual_pairings table)."""
-
     @staticmethod
-    def get_for_round(
-        tournament_id: int,
-        round_number: int,
-    ) -> List[ManualPairingModel]:
-        """Get all manual pairings locked for a specific round."""
+    def get_for_round(tournament_id: int, round_number: int) -> List[ManualPairingModel]:
         return ManualPairingModel.query.filter_by(
-            tournament_id=tournament_id,
-            round_number=round_number,
+            tournament_id=tournament_id, round_number=round_number
         ).all()
 
     @staticmethod
-    def get_by_player(
-        tournament_id: int,
-        round_number: int,
-        player_id: int,
-    ) -> Optional[ManualPairingModel]:
-        """Get the manual pairing involving a specific player."""
+    def get_by_player(tournament_id: int, round_number: int, participant_id: int) -> Optional[ManualPairingModel]:
         return ManualPairingModel.query.filter(
             ManualPairingModel.tournament_id == tournament_id,
             ManualPairingModel.round_number == round_number,
             db.or_(
-                ManualPairingModel.white_player_id == player_id,
-                ManualPairingModel.black_player_id == player_id,
+                ManualPairingModel.white_participant_id == participant_id,
+                ManualPairingModel.black_participant_id == participant_id,
             ),
         ).first()
 
@@ -250,14 +243,9 @@ class ManualPairingRepository:
         db.session.flush()
 
     @staticmethod
-    def delete_all_for_round(
-        tournament_id: int,
-        round_number: int,
-    ) -> int:
-        """Delete all manual pairings for a round. Returns count deleted."""
+    def delete_all_for_round(tournament_id: int, round_number: int) -> int:
         count = ManualPairingModel.query.filter_by(
-            tournament_id=tournament_id,
-            round_number=round_number,
+            tournament_id=tournament_id, round_number=round_number
         ).delete()
         db.session.flush()
         return count

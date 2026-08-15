@@ -3,7 +3,7 @@ Tournament HTTP handlers.
 No business logic here.
 """
 from flask import Blueprint, render_template, request, session, abort, url_for, flash, redirect
-from infrastructure.repositories import TournamentRepository, PlayerRepository, PairingRepository
+from infrastructure.repositories import TournamentRepository, ParticipantRepository, PairingRepository
 from application.tournament_service import TournamentService
 from interfaces.web.helpers import build_cell as _build_cell
 from interfaces.web.admin_auth import require_admin
@@ -93,8 +93,8 @@ def view(public_id):
         **standings
     )
 
-@tournament_bp.route("/<public_id>/player/<int:player_id>")
-def player_detail(public_id, player_id):
+@tournament_bp.route("/<public_id>/player/<int:participant_id>")
+def player_detail(public_id, participant_id):
     """نمایش جزئیات بازی‌های یک بازیکن"""
     _validate_public_id(public_id)
 
@@ -102,15 +102,15 @@ def player_detail(public_id, player_id):
     if not tournament:
         abort(404)
 
-    from infrastructure.repositories import PlayerRepository, PairingRepository
-    from infrastructure.db_models import PlayerModel, RoundModel
-
-    player = PlayerRepository.get_by_id(player_id, tournament.id)
-    if not player:
+    # Use ParticipantRepository instead of PlayerRepository
+    participant = ParticipantRepository.get_by_id(participant_id, tournament.id)
+    if not participant:
         abort(404)
 
     all_pairings = PairingRepository.get_all_for_tournament(tournament.id)
-    all_players = {p.id: p for p in PlayerRepository.get_all(tournament.id)}
+    all_participants = {p.id: p for p in ParticipantRepository.get_all(tournament.id)}
+    
+    from infrastructure.db_models import RoundModel
     rounds = {r.id: r for r in RoundModel.query.filter_by(
         tournament_id=tournament.id
     ).all()}
@@ -122,26 +122,28 @@ def player_detail(public_id, player_id):
         if not round_obj:
             continue
 
-        if pairing.white_player_id == player_id:
-            opponent = all_players.get(pairing.black_player_id)
+        # Check white_participant_id
+        if pairing.white_participant_id == participant_id:
+            opponent = all_participants.get(pairing.black_participant_id)
             games.append({
                 "round": round_obj.round_number,
                 "color": "سفید",
                 "color_code": "white",
                 "opponent": opponent,
-                "opponent_rating": opponent.rating if opponent else 0,
+                "opponent_rating": opponent.rating_snapshot if opponent else 0,
                 "result": pairing.result,
                 "score": _get_score(pairing.result, "white"),
                 "board": pairing.board_number,
             })
-        elif pairing.black_player_id == player_id:
-            opponent = all_players.get(pairing.white_player_id)
+        # Check black_participant_id
+        elif pairing.black_participant_id == participant_id:
+            opponent = all_participants.get(pairing.white_participant_id)
             games.append({
                 "round": round_obj.round_number,
                 "color": "سیاه",
                 "color_code": "black",
                 "opponent": opponent,
-                "opponent_rating": opponent.rating if opponent else 0,
+                "opponent_rating": opponent.rating_snapshot if opponent else 0,
                 "result": pairing.result,
                 "score": _get_score(pairing.result, "black"),
                 "board": pairing.board_number,
@@ -171,12 +173,12 @@ def player_detail(public_id, player_id):
 
     # محاسبه تغییر ریتینگ
     standings = TournamentService.get_standings(tournament)
-    rc = standings["rating_changes"].get(player_id, {})
+    rc = standings["rating_changes"].get(participant_id, {})
 
     return render_template(
         "tournament/player_detail.html",
         tournament=tournament,
-        player=player,
+        player=participant,  # Pass participant as 'player' to template
         games=games,
         total_score=total_score,
         total_games=total_games,
@@ -215,26 +217,24 @@ def crosstable(public_id):
     if not tournament:
         abort(404)
 
-    from infrastructure.repositories import PlayerRepository, PairingRepository
-    from infrastructure.db_models import RoundModel
-
-    players = PlayerRepository.get_all(tournament.id)
+    participants = ParticipantRepository.get_all(tournament.id)
     all_pairings = PairingRepository.get_all_for_tournament(tournament.id)
 
+    from infrastructure.db_models import RoundModel
     rounds = RoundModel.query.filter_by(
         tournament_id=tournament.id
     ).order_by(RoundModel.round_number).all()
 
     round_map = {r.id: r.round_number for r in rounds}
-    players_map = {p.id: p for p in players}
+    participants_map = {p.id: p for p in participants}
     total_rounds = tournament.current_round or 0
 
     # ساخت cross-table data
     cross_data = {}
-    for p in players:
+    for p in participants:
         cross_data[p.id] = {
             "player": p,
-            "rounds": {},  # round_number -> cell_info
+            "rounds": {},
         }
 
     for pairing in all_pairings:
@@ -242,24 +242,23 @@ def crosstable(public_id):
         if not round_num:
             continue
 
-        w_id = pairing.white_player_id
-        b_id = pairing.black_player_id
+        w_id = pairing.white_participant_id
+        b_id = pairing.black_participant_id
         result = pairing.result
 
         if w_id and w_id in cross_data:
             cross_data[w_id]["rounds"][round_num] = _build_cell(
-                result, "white", b_id, players_map
+                result, "white", b_id, participants_map
             )
 
         if b_id and b_id in cross_data:
             cross_data[b_id]["rounds"][round_num] = _build_cell(
-                result, "black", w_id, players_map
+                result, "black", w_id, participants_map
             )
 
-    # مرتب‌سازی بر اساس امتیاز
     sorted_players = sorted(
         cross_data.values(),
-        key=lambda x: (-(x["player"].points or 0), -(x["player"].rating or 0))
+        key=lambda x: (-(x["player"].points or 0), -(x["player"].rating_snapshot or 0))
     )
 
     return render_template(
@@ -279,12 +278,9 @@ def summary(public_id):
     if not tournament:
         abort(404)
 
-    from infrastructure.repositories import PlayerRepository, PairingRepository
-    from infrastructure.db_models import RoundModel
-
-    players = PlayerRepository.get_all(tournament.id)
+    participants = ParticipantRepository.get_all(tournament.id)
     all_pairings = PairingRepository.get_all_for_tournament(tournament.id)
-    players_map = {p.id: p for p in players}
+    participants_map = {p.id: p for p in participants}
 
     standings = TournamentService.get_standings(tournament)
 
@@ -302,7 +298,6 @@ def summary(public_id):
     black_pct = round(black_wins / total_real * 100, 1) if total_real else 0
     draw_pct = round(draws / total_real * 100, 1) if total_real else 0
 
-    # --- نفرات برتر ---
     top_players = standings["player_standings"][:3]
 
     # --- بهترین پرفورمنس ---
@@ -314,7 +309,7 @@ def summary(public_id):
         if perf and perf > best_perf_value:
             best_perf_value = perf
             best_performance = {
-                "player": players_map.get(pid),
+                "player": participants_map.get(pid),
                 "performance": perf,
             }
 
@@ -323,8 +318,8 @@ def summary(public_id):
     best_gain_value = -999
     for pid, data in rc.items():
         change = data.get("rating_change", 0)
-        player = players_map.get(pid)
-        if player and (player.rating or 0) > 0 and change > best_gain_value:
+        player = participants_map.get(pid)
+        if player and (player.rating_snapshot or 0) > 0 and change > best_gain_value:
             best_gain_value = change
             best_gain = {
                 "player": player,
@@ -334,16 +329,16 @@ def summary(public_id):
     # --- بیشترین برد ---
     win_counts = {}
     for pairing in all_pairings:
-        if pairing.result == "1-0" and pairing.white_player_id:
-            win_counts[pairing.white_player_id] = win_counts.get(pairing.white_player_id, 0) + 1
-        elif pairing.result == "0-1" and pairing.black_player_id:
-            win_counts[pairing.black_player_id] = win_counts.get(pairing.black_player_id, 0) + 1
+        if pairing.result == "1-0" and pairing.white_participant_id:
+            win_counts[pairing.white_participant_id] = win_counts.get(pairing.white_participant_id, 0) + 1
+        elif pairing.result == "0-1" and pairing.black_participant_id:
+            win_counts[pairing.black_participant_id] = win_counts.get(pairing.black_participant_id, 0) + 1
 
     most_wins = None
     if win_counts:
         max_pid = max(win_counts, key=win_counts.get)
         most_wins = {
-            "player": players_map.get(max_pid),
+            "player": participants_map.get(max_pid),
             "wins": win_counts[max_pid],
         }
 
@@ -359,7 +354,6 @@ def summary(public_id):
             custom_stats.setdefault(p.custom_category, [])
             custom_stats[p.custom_category].append(ps)
 
-    # نفر اول هر رده
     age_winners = {}
     for cat, cat_players in age_stats.items():
         if cat_players:
@@ -371,15 +365,15 @@ def summary(public_id):
             custom_winners[cat] = cat_players[0]
 
     # --- میانگین ریتینگ ---
-    rated_players = [p for p in players if (p.rating or 0) > 0]
+    rated_players = [p for p in participants if (p.rating_snapshot or 0) > 0]
     avg_rating = round(
-        sum(p.rating for p in rated_players) / len(rated_players)
+        sum(p.rating_snapshot for p in rated_players) / len(rated_players)
     ) if rated_players else 0
 
     return render_template(
         "tournament/summary.html",
         tournament=tournament,
-        total_players=len(players),
+        total_players=len(participants),
         total_games=total_real,
         white_wins=white_wins,
         black_wins=black_wins,
@@ -415,7 +409,6 @@ def search():
 
 @tournament_bp.route("/<public_id>/settings", methods=["GET", "POST"])
 def settings(public_id):
-    # Rule 4: Ensure arbiter is logged in via session
     tournament = require_admin(public_id)
     if not tournament:
         return redirect(url_for("admin_auth.admin_login", public_id=public_id))
@@ -428,7 +421,6 @@ def settings(public_id):
         except Exception as e:
             flash(f"خطا در ذخیره تنظیمات: {str(e)}", "error")
 
-    # Prepare data for the tiebreak drag-and-drop list
     current_tiebreaks = json.loads(tournament.tiebreak_rules or "[]")
     
     return render_template(

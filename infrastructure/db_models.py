@@ -1,12 +1,76 @@
 from datetime import datetime
 from app.extensions import db
 
+class UserModel(db.Model):
+    __tablename__ = "users"
+    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False) # Global system admin
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    roles = db.relationship("UserRoleModel", backref="user", cascade="all, delete-orphan")
+    profile = db.relationship("PlayerProfileModel", backref="user", uselist=False)
+
+
+class UserRoleModel(db.Model):
+    __tablename__ = "user_roles"
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "role", name="uq_user_role"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    # System roles: 'player', 'organizer', 'arbiter'
+    role = db.Column(db.String(50), nullable=False)
+
+
+class FidePlayerModel(db.Model):
+    __tablename__ = "fide_players"
+    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
+
+    fide_id = db.Column(db.String(20), primary_key=True)
+    first_name = db.Column(db.String(100), default="")
+    last_name = db.Column(db.String(100), nullable=False, index=True)
+    gender = db.Column(db.String(1), default="M")
+    federation = db.Column(db.String(5), default="")
+    fide_title = db.Column(db.String(5), default="")
+    rating_standard = db.Column(db.Integer, default=0)
+    rating_rapid = db.Column(db.Integer, default=0)
+    rating_blitz = db.Column(db.Integer, default=0)
+    birth_year = db.Column(db.String(4), default="")
+    k_factor = db.Column(db.Integer, default=20)
+    # To track which monthly dataset this data belongs to
+    dataset_date = db.Column(db.Date, nullable=True)
+
+
+class PlayerProfileModel(db.Model):
+    __tablename__ = "player_profiles"
+    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    fide_id = db.Column(db.String(20), nullable=True, index=True)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    gender = db.Column(db.String(1), default="M")
+    birth_date = db.Column(db.Date, nullable=True)
+    federation = db.Column(db.String(5), default="IRI")
+    fide_title = db.Column(db.String(5), default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+
 class TournamentModel(db.Model):
     __tablename__ = "tournaments"
-    __table_args__ = {
-        "mysql_charset": "utf8mb4",
-        "mysql_collate": "utf8mb4_unicode_ci",
-    }
+    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
 
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String(8), unique=True, nullable=False, index=True)
@@ -29,240 +93,143 @@ class TournamentModel(db.Model):
     )
     cumulative_age_category = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # New: Link to organizer
+    organizer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
-    players = db.relationship("PlayerModel", backref="tournament", lazy="select")
     rounds = db.relationship("RoundModel", backref="tournament", lazy="select")
 
 
-class PlayerModel(db.Model):
-    __tablename__ = "players"
+class TournamentParticipantModel(db.Model):
+    __tablename__ = "tournament_participants"
+    __table_args__ = (
+        db.UniqueConstraint("tournament_id", "player_profile_id", name="uq_participant_tournament_profile"),
+        db.UniqueConstraint("tournament_id", "start_number", name="uq_participant_tournament_startnum"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(
-        db.Integer, db.ForeignKey("tournaments.id"), nullable=False
-    )
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
+    player_profile_id = db.Column(db.Integer, db.ForeignKey("player_profiles.id"), nullable=False)
+    
     start_number = db.Column(db.Integer, nullable=False)
     pairing_no = db.Column(db.Integer, nullable=True) # FIDE fixed ranking number
-    first_name = db.Column(db.String(100), nullable=False)
-    last_name = db.Column(db.String(100), nullable=False)
-    gender = db.Column(db.String(1), default="M")
-    birth_date = db.Column(db.Date, nullable=True)
-    federation = db.Column(db.String(5), default="IRI")
-    fide_id = db.Column(db.String(20), default="")
-    fide_title = db.Column(db.String(5), default="")
-    rating_standard = db.Column(db.Integer, default=0)
-    rating_rapid = db.Column(db.Integer, default=0)
-    rating_blitz = db.Column(db.Integer, default=0)
+    
+    # Historical Snapshots (Preserved at time of entry)
+    rating_snapshot = db.Column(db.Integer, default=0)
+    fide_title_snapshot = db.Column(db.String(5), default="")
     k_factor = db.Column(db.Integer, default=20)
     age_category = db.Column(db.String(10), default="")
     custom_category = db.Column(db.String(50), default="")
-    status = db.Column(db.String(20), default="active")
+    
+    # State
+    status = db.Column(db.String(20), default="active") # active, withdrawn
     joined_from_round = db.Column(db.Integer, default=1)
     withdrawn_at_round = db.Column(db.Integer, default=0)
     
-    # Incremental fields for FIDE compliance and performance
+    # Incremental fields for pairing engine
     points = db.Column(db.Float, default=0.0)
     color_history = db.Column(db.String(255), default="")
     float_history = db.Column(db.String(255), default="")
     received_bye = db.Column(db.Boolean, default=False)
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    __table_args__ = (
-        db.UniqueConstraint(
-            "tournament_id", "start_number",
-            name="uq_player_tournament_startnum"
-        ),
-        {
-            "mysql_charset": "utf8mb4",
-            "mysql_collate": "utf8mb4_unicode_ci",
-        },
-    )
-
+    profile = db.relationship("PlayerProfileModel", lazy="joined")
+    
     @property
     def full_name(self):
-        return f"{self.first_name} {self.last_name}"
+        return self.profile.full_name if self.profile else "Unknown"
 
     @property
     def rating(self):
-        """Rating matching tournament time control."""
-        if self.tournament:
-            tc = self.tournament.time_control_type
-            if tc == "standard":
-                return self.rating_standard or 0
-            elif tc == "rapid":
-                return self.rating_rapid or 0
-            elif tc == "blitz":
-                return self.rating_blitz or 0
-        return self.rating_standard or 0
-    
+        return self.rating_snapshot
+
     @property
     def ranking_label(self):
-        """نمایش شماره قرعه ثابت فیده یا شماره شروع"""
         return self.pairing_no or self.start_number
 
 
 class RoundModel(db.Model):
     __tablename__ = "rounds"
+    __table_args__ = (
+        db.UniqueConstraint("tournament_id", "round_number", name="uq_round_tournament_number"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(
-        db.Integer, db.ForeignKey("tournaments.id"), nullable=False
-    )
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
     round_number = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), default="pending")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     finished_at = db.Column(db.DateTime, nullable=True)
 
-    pairings = db.relationship(
-        "PairingModel",
-        backref="round",
-        lazy="select",
-        cascade="all, delete-orphan"
-    )
-
-    __table_args__ = (
-        db.UniqueConstraint(
-            "tournament_id", "round_number",
-            name="uq_round_tournament_number"
-        ),
-        {
-            "mysql_charset": "utf8mb4",
-            "mysql_collate": "utf8mb4_unicode_ci",
-        },
-    )
-    
-    @property
-    def status_label(self):
-        labels = {"pending": "در انتظار", "ongoing": "در جریان", "finished": "پایان یافته"}
-        return labels.get(self.status, "نامشخص")
+    pairings = db.relationship("PairingModel", backref="round", lazy="select", cascade="all, delete-orphan")
 
 
 class PairingModel(db.Model):
     __tablename__ = "pairings"
+    __table_args__ = (
+        db.UniqueConstraint("round_id", "board_number", name="uq_pairing_round_board"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     round_id = db.Column(db.Integer, db.ForeignKey("rounds.id"), nullable=False)
-    tournament_id = db.Column(
-        db.Integer, db.ForeignKey("tournaments.id"), nullable=False
-    )
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
     board_number = db.Column(db.Integer, nullable=False)
-    white_player_id = db.Column(
-        db.Integer, db.ForeignKey("players.id"), nullable=True
-    )
-    black_player_id = db.Column(
-        db.Integer, db.ForeignKey("players.id"), nullable=True
-    )
+    
+    white_participant_id = db.Column(db.Integer, db.ForeignKey("tournament_participants.id"), nullable=True)
+    black_participant_id = db.Column(db.Integer, db.ForeignKey("tournament_participants.id"), nullable=True)
+    
     result = db.Column(db.String(10), default="")
-    
-    # Store engine float tags
-    white_float = db.Column(db.String(1), default="") # 'D', 'U', or ''
+    white_float = db.Column(db.String(1), default="")
     black_float = db.Column(db.String(1), default="")
-    
     is_confirmed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    white_player = db.relationship(
-        "PlayerModel", foreign_keys=[white_player_id], lazy="joined"
-    )
-    black_player = db.relationship(
-        "PlayerModel", foreign_keys=[black_player_id], lazy="joined"
-    )
+    white_participant = db.relationship("TournamentParticipantModel", foreign_keys=[white_participant_id], lazy="joined")
+    black_participant = db.relationship("TournamentParticipantModel", foreign_keys=[black_participant_id], lazy="joined")
 
-    __table_args__ = (
-        db.UniqueConstraint(
-            "round_id", "board_number",
-            name="uq_pairing_round_board"
-        ),
-        {
-            "mysql_charset": "utf8mb4",
-            "mysql_collate": "utf8mb4_unicode_ci",
-        },
-    )
     @property
     def white_player_name(self):
-        return self.white_player.full_name if self.white_player else "-"
+        return self.white_participant.full_name if self.white_participant else "-"
 
     @property
     def black_player_name(self):
-        return self.black_player.full_name if self.black_player else None
-
-    @property
-    def result_display(self):
-        if not self.result: return "در انتظار"
-        results = {
-            "1-0": "۱ - ۰", "0-1": "۰ - ۱", "1/2": "½ - ½",
-            "+/-": "+ - -", "-/+": "- - +", "+/+": "- - -",
-            "bye": "1 - 0 (Bye)", "half-bye": "½ - 0 (Bye)", "zero-bye": "0 - 0 (Bye)"
-        }
-        return results.get(self.result, self.result)
+        return self.black_participant.full_name if self.black_participant else None
 
 
 class ByeRequestModel(db.Model):
     __tablename__ = "bye_requests"
+    __table_args__ = (
+        db.UniqueConstraint("tournament_id", "participant_id", "for_round", name="uq_bye_tournament_participant_round"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(
-        db.Integer, db.ForeignKey("tournaments.id"), nullable=False
-    )
-    player_id = db.Column(
-        db.Integer, db.ForeignKey("players.id"), nullable=False
-    )
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
+    participant_id = db.Column(db.Integer, db.ForeignKey("tournament_participants.id"), nullable=False)
     bye_type = db.Column(db.String(10), default="half-bye")
     for_round = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    player = db.relationship("PlayerModel", foreign_keys=[player_id])
-
-    __table_args__ = (
-        db.UniqueConstraint(
-            "tournament_id", "player_id", "for_round",
-            name="uq_bye_tournament_player_round"
-        ),
-        {
-            "mysql_charset": "utf8mb4",
-            "mysql_collate": "utf8mb4_unicode_ci",
-        },
-    )
+    participant = db.relationship("TournamentParticipantModel", foreign_keys=[participant_id])
 
 
 class ManualPairingModel(db.Model):
     __tablename__ = "manual_pairings"
+    __table_args__ = (
+        db.UniqueConstraint("tournament_id", "round_number", "white_participant_id", name="uq_manual_pairing_white"),
+        db.UniqueConstraint("tournament_id", "round_number", "black_participant_id", name="uq_manual_pairing_black"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(
-        db.Integer, db.ForeignKey("tournaments.id"), nullable=False
-    )
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
     round_number = db.Column(db.Integer, nullable=False)
-    white_player_id = db.Column(
-        db.Integer, db.ForeignKey("players.id"), nullable=False
-    )
-    black_player_id = db.Column(
-        db.Integer, db.ForeignKey("players.id"), nullable=False
-    )
+    white_participant_id = db.Column(db.Integer, db.ForeignKey("tournament_participants.id"), nullable=False)
+    black_participant_id = db.Column(db.Integer, db.ForeignKey("tournament_participants.id"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    white_player = db.relationship(
-        "PlayerModel", foreign_keys=[white_player_id], lazy="joined"
-    )
-    black_player = db.relationship(
-        "PlayerModel", foreign_keys=[black_player_id], lazy="joined"
-    )
-
-    __table_args__ = (
-        db.UniqueConstraint(
-            "tournament_id", "round_number", "white_player_id",
-            name="uq_manual_pairing_white"
-        ),
-        db.UniqueConstraint(
-            "tournament_id", "round_number", "black_player_id",
-            name="uq_manual_pairing_black"
-        ),
-        {
-            "mysql_charset": "utf8mb4",
-            "mysql_collate": "utf8mb4_unicode_ci",
-        },
-    )
+    white_participant = db.relationship("TournamentParticipantModel", foreign_keys=[white_participant_id], lazy="joined")
+    black_participant = db.relationship("TournamentParticipantModel", foreign_keys=[black_participant_id], lazy="joined")

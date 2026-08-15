@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from app.extensions import db
 from infrastructure.repositories import (
-    PlayerRepository,
+    ParticipantRepository,
     RoundRepository,
     PairingRepository,
     ManualPairingRepository,
@@ -17,7 +17,7 @@ from infrastructure.db_models import (
     PairingModel,
     ByeRequestModel,
     ManualPairingModel,
-    PlayerModel,
+    TournamentParticipantModel,
 )
 
 from domain.pairing import SwissEngine, PlayerData
@@ -34,10 +34,6 @@ class RoundService:
 
     @staticmethod
     def create_next_round(tournament) -> RoundModel:
-        """
-        Creates next round. 
-        Uses Incremental fields (color_history, float_history) for FIDE compliance.
-        """
         last_round = RoundRepository.get_last(tournament.id)
         if last_round and last_round.status not in ["finished", "pending"]:
             raise ValueError("Cannot create new round. Previous round is not finished.")
@@ -46,28 +42,24 @@ class RoundService:
         if next_number > tournament.total_rounds:
             raise ValueError("Tournament has reached the maximum number of rounds.")
 
-        # Assign fixed FIDE pairing numbers at the very beginning
         if next_number == 1:
             RoundService._initialize_pairing_numbers(tournament.id)
 
-        active_players = PlayerRepository.get_active(tournament.id)
-        if len(active_players) < 2:
+        active_participants = ParticipantRepository.get_active(tournament.id)
+        if len(active_participants) < 2:
             raise ValueError("Not enough active players to create a round.")
 
-        # Build exclude list (Bye requests)
         bye_requests = ByeRequestModel.query.filter_by(
             tournament_id=tournament.id, for_round=next_number
         ).all()
-        bye_player_ids = {br.player_id: br.bye_type for br in bye_requests}
+        bye_participant_ids = {br.participant_id: br.bye_type for br in bye_requests}
 
-        # Manual pairing locks (pre-pairing)
         manual_pairings = ManualPairingRepository.get_for_round(tournament.id, next_number)
-        locked_pairs = [(mp.white_player_id, mp.black_player_id) for mp in manual_pairings]
+        locked_pairs = [(mp.white_participant_id, mp.black_participant_id) for mp in manual_pairings]
 
-        # Convert DB models to Engine Input (using high-performance incremental fields)
         pairing_players = []
-        for p in active_players:
-            if p.id in bye_player_ids: continue
+        for p in active_participants:
+            if p.id in bye_participant_ids: continue
             
             pairing_players.append(PlayerData(
                 id=p.id,
@@ -80,7 +72,6 @@ class RoundService:
                 opponents=frozenset(RoundService._get_opponent_ids(p.id, tournament.id))
             ))
 
-        # Generate pairings using the modular engine
         engine = SwissEngine(
             players=pairing_players,
             round_number=next_number,
@@ -88,32 +79,29 @@ class RoundService:
         )
         result = engine.generate()
 
-        # Save Round to DB
         new_round = RoundModel(tournament_id=tournament.id, round_number=next_number, status="ongoing")
         db.session.add(new_round)
         db.session.flush()
 
-        # Save Pairings (including float tags for next round's compliance)
         pairing_models = []
         for card in result.pairings:
             pm = PairingModel(
                 round_id=new_round.id,
                 tournament_id=tournament.id,
                 board_number=card.board,
-                white_player_id=card.white_id,
-                black_player_id=card.black_id,
+                white_participant_id=card.white_id,
+                black_participant_id=card.black_id,
                 result="bye" if card.is_bye else "",
                 white_float=card.white_float,
                 black_float=card.black_float
             )
             pairing_models.append(pm)
 
-        # Append requested manual byes
         board = len(pairing_models) + 1
-        for pid, btype in bye_player_ids.items():
+        for pid, btype in bye_participant_ids.items():
             pm = PairingModel(
                 round_id=new_round.id, tournament_id=tournament.id, board_number=board,
-                white_player_id=pid, black_player_id=None, result=btype,
+                white_participant_id=pid, black_participant_id=None, result=btype,
                 white_float="", black_float=""
             )
             pairing_models.append(pm)
@@ -121,7 +109,6 @@ class RoundService:
 
         PairingRepository.save_all(pairing_models)
         
-        # Consumed requests
         for br in bye_requests: db.session.delete(br)
         ManualPairingRepository.delete_all_for_round(tournament.id, next_number)
 
@@ -131,14 +118,14 @@ class RoundService:
         if next_number == 1:
             auto_pair_index = 0
             for pm in pairing_models:
-                if not pm.black_player_id:
+                if not pm.black_participant_id:
                     continue
-                is_manual = (pm.white_player_id, pm.black_player_id) in locked_pairs or \
-                            (pm.black_player_id, pm.white_player_id) in locked_pairs
+                is_manual = (pm.white_participant_id, pm.black_participant_id) in locked_pairs or \
+                            (pm.black_participant_id, pm.white_participant_id) in locked_pairs
                 
                 if not is_manual:
                     if auto_pair_index % 2 == 1:
-                        pm.white_player_id, pm.black_player_id = pm.black_player_id, pm.white_player_id
+                        pm.white_participant_id, pm.black_participant_id = pm.black_participant_id, pm.white_participant_id
                     auto_pair_index += 1
 
         db.session.commit()
@@ -146,17 +133,14 @@ class RoundService:
 
     @staticmethod
     def finish_round(round_obj, tournament) -> None:
-        """Finishes round and burns history into PlayerModel incrementally."""
         pairings = PairingRepository.get_all_for_round(round_obj.id)
 
         for p in pairings:
-            if p.result == "" and p.black_player_id is not None:
+            if p.result == "" and p.black_participant_id is not None:
                 raise ValueError(f"Board {p.board_number} result is missing.")
         
-        # --- CRITICAL: UPDATE INCREMENTAL STATS ---
-        # This makes subsequent pairings and standings extremely fast
         for p in pairings:
-            RoundService._update_player_stats_incremental(p)
+            RoundService._update_participant_stats_incremental(p)
 
         round_obj.status = "finished"
         round_obj.finished_at = datetime.utcnow()
@@ -168,12 +152,10 @@ class RoundService:
 
     @staticmethod
     def save_results(round_obj, form_data) -> None:
-        """Saves results from the arbiter's round form."""
         pairings = PairingRepository.get_all_for_round(round_obj.id)
         valid_results = {"1-0", "0-1", "1/2", "+/-", "-/+", "+/+", ""}
 
         for pairing in pairings:
-            # Skip byes as their result is fixed
             if pairing.result in {"bye", "half-bye", "zero-bye"}: continue
             
             key = f"result_{pairing.id}"
@@ -190,23 +172,20 @@ class RoundService:
 
     @staticmethod
     def swap_colors_in_board(round_obj, board: int) -> None:
-        """Swaps White/Black colors on a specific board."""
         if round_obj.status == "finished": raise SwapError("Cannot edit a finished round.")
         
         pairings = PairingRepository.get_all_for_round(round_obj.id)
         pairing = next((p for p in pairings if p.board_number == board), None)
 
-        if not pairing or not pairing.black_player_id: 
+        if not pairing or not pairing.black_participant_id: 
             raise SwapError("Board not found or is a Bye.")
         
-        w_id, b_id = pairing.white_player_id, pairing.black_player_id
+        w_id, b_id = pairing.white_participant_id, pairing.black_participant_id
         
-        # Verify color legality after swap
         RoundService._validate_color_swap(b_id, "w", round_obj.tournament_id)
         RoundService._validate_color_swap(w_id, "b", round_obj.tournament_id)
 
-        # Execute Swap
-        pairing.white_player_id, pairing.black_player_id = b_id, w_id
+        pairing.white_participant_id, pairing.black_participant_id = b_id, w_id
         pairing.white_float, pairing.black_float = pairing.black_float, pairing.white_float
 
         flip = {"1-0": "0-1", "0-1": "1-0", "+/-": "-/+", "-/+": "+/-"}
@@ -216,44 +195,40 @@ class RoundService:
 
     @staticmethod
     def swap_players_between_boards(round_obj, board1, pos1, board2, pos2) -> None:
-        """Arbitrary swap between two boards."""
         if round_obj.status == "finished": raise SwapError("Cannot edit a finished round.")
 
         pairings = PairingRepository.get_all_for_round(round_obj.id)
         p1 = next((p for p in pairings if p.board_number == board1), None)
         p2 = next((p for p in pairings if p.board_number == board2), None)
         
-        if not p1 or not p2 or not p1.black_player_id or not p2.black_player_id:
+        if not p1 or not p2 or not p1.black_participant_id or not p2.black_participant_id:
             raise SwapError("Selected boards must be valid pairings (not Byes).")
 
-        pid1 = p1.white_player_id if pos1 == "white" else p1.black_player_id
+        pid1 = p1.white_participant_id if pos1 == "white" else p1.black_participant_id
         float1 = p1.white_float if pos1 == "white" else p1.black_float
 
-        pid2 = p2.white_player_id if pos2 == "white" else p2.black_player_id
+        pid2 = p2.white_participant_id if pos2 == "white" else p2.black_participant_id
         float2 = p2.white_float if pos2 == "white" else p2.black_float
         
-        # Check Opponent History (No repeat games)
-        opp1 = p1.black_player_id if pos1 == "white" else p1.white_player_id
-        opp2 = p2.black_player_id if pos2 == "white" else p2.white_player_id
+        opp1 = p1.black_participant_id if pos1 == "white" else p1.white_participant_id
+        opp2 = p2.black_participant_id if pos2 == "white" else p2.white_participant_id
         
         if RoundService._have_played(pid1, opp2, round_obj.tournament_id) or \
            RoundService._have_played(pid2, opp1, round_obj.tournament_id):
             raise SwapError("Players have already faced the new opponents.")
 
-        # Color Validity Check
         RoundService._validate_color_swap(pid1, ("w" if pos2 == "white" else "b"), round_obj.tournament_id)
         RoundService._validate_color_swap(pid2, ("w" if pos1 == "white" else "b"), round_obj.tournament_id)
 
-        # Apply Swap in DB
         if pos1 == "white":
-            p1.white_player_id, p1.white_float = pid2, float2
+            p1.white_participant_id, p1.white_float = pid2, float2
         else:
-            p1.black_player_id, p1.black_float = pid2, float2
+            p1.black_participant_id, p1.black_float = pid2, float2
             
         if pos2 == "white":
-            p2.white_player_id, p2.white_float = pid1, float1
+            p2.white_participant_id, p2.white_float = pid1, float1
         else:
-            p2.black_player_id, p2.black_float = pid1, float1
+            p2.black_participant_id, p2.black_float = pid1, float1
             
         db.session.commit()
 
@@ -263,14 +238,13 @@ class RoundService:
 
     @staticmethod
     def add_manual_pairing(tournament, round_number, white_id, black_id):
-        """Force two players to play against each other in a future round."""
         if white_id == black_id:
             raise ManualPairingError("یک بازیکن نمی‌تواند با خودش بازی کند.")
         
         bye_exists = ByeRequestModel.query.filter(
             ByeRequestModel.tournament_id == tournament.id,
             ByeRequestModel.for_round == round_number,
-            ByeRequestModel.player_id.in_([white_id, black_id])
+            ByeRequestModel.participant_id.in_([white_id, black_id])
         ).first()
         if bye_exists:
             raise ManualPairingError("یکی از این بازیکنان برای این دور استراحت (Bye) دارد.")
@@ -285,22 +259,21 @@ class RoundService:
         RoundService._validate_color_swap(black_id, "b", tournament.id)
 
         mp = ManualPairingModel(tournament_id=tournament.id, round_number=round_number,
-                                white_player_id=white_id, black_player_id=black_id)
+                                white_participant_id=white_id, black_participant_id=black_id)
         db.session.add(mp)
         db.session.commit()
 
     @staticmethod
-    def add_manual_bye(tournament, player_id: int, bye_type: str) -> None:
-        """Register a half-point or zero-point bye request for next round."""
+    def add_manual_bye(tournament, participant_id: int, bye_type: str) -> None:
         next_round = (tournament.current_round + 1)
         mp_exists = ManualPairingModel.query.filter(
             ManualPairingModel.tournament_id == tournament.id,
             ManualPairingModel.round_number == next_round,
-            (ManualPairingModel.white_player_id == player_id) | (ManualPairingModel.black_player_id == player_id)
+            (ManualPairingModel.white_participant_id == participant_id) | (ManualPairingModel.black_participant_id == participant_id)
         ).first()
         if mp_exists:
             raise ValueError("این بازیکن در قرعه‌کشی دستی قفل شده است و نمی‌تواند همزمان استراحت بگیرد.")
-        bye_req = ByeRequestModel(tournament_id=tournament.id, player_id=player_id,
+        bye_req = ByeRequestModel(tournament_id=tournament.id, participant_id=participant_id,
                                   bye_type=bye_type, for_round=next_round)
         db.session.add(bye_req)
         db.session.commit()
@@ -311,32 +284,26 @@ class RoundService:
 
     @staticmethod
     def delete_round(round_obj, tournament):
-        """Safely deletes a round and REBUILDS player histories to maintain consistency."""
         db.session.delete(round_obj)
         tournament.current_round = max(0, round_obj.round_number - 1)
         db.session.commit()
-        # Rollback stats by recalculating from surviving pairings
         RoundService._full_refresh_stats(tournament.id)
 
     @staticmethod
     def _full_refresh_stats(tournament_id):
-        """Re-calculates points, color_history, and float_history from scratch."""
-        players = PlayerModel.query.filter_by(tournament_id=tournament_id).all()
-        # Use existing rounds in order
+        participants = TournamentParticipantModel.query.filter_by(tournament_id=tournament_id).all()
         rounds = RoundModel.query.filter_by(tournament_id=tournament_id).order_by(RoundModel.round_number).all()
         
-        # Reset everyone
-        for p in players:
+        for p in participants:
             p.points = 0.0
             p.color_history = ""
             p.float_history = ""
             p.received_bye = False
         
-        # Re-apply round by round
         for r in rounds:
             pairings = PairingModel.query.filter_by(round_id=r.id).all()
             for pr in pairings:
-                RoundService._update_player_stats_incremental(pr)
+                RoundService._update_participant_stats_incremental(pr)
         
         db.session.commit()
 
@@ -346,16 +313,14 @@ class RoundService:
 
     @staticmethod
     def _initialize_pairing_numbers(tournament_id: int):
-        """Standard FIDE Ranking (Rating DESC, StartNumber ASC). Fixed for the whole event."""
-        players = PlayerModel.query.filter_by(tournament_id=tournament_id).all()
-        sorted_players = sorted(players, key=lambda p: (-(p.rating or 0), p.start_number))
-        for idx, p in enumerate(sorted_players, start=1):
+        participants = TournamentParticipantModel.query.filter_by(tournament_id=tournament_id).all()
+        sorted_participants = sorted(participants, key=lambda p: (-(p.rating_snapshot or 0), p.start_number))
+        for idx, p in enumerate(sorted_participants, start=1):
             p.pairing_no = idx
         db.session.flush()
 
     @staticmethod
-    def _update_player_stats_incremental(pairing: PairingModel):
-        """The heart of Incremental Updates."""
+    def _update_participant_stats_incremental(pairing: PairingModel):
         res_scores = {
             "1-0": (1.0, 0.0), "0-1": (0.0, 1.0), "1/2": (0.5, 0.5),
             "+/-": (1.0, 0.0), "-/+": (0.0, 1.0), "+/+" : (0.0, 0.0),
@@ -365,53 +330,36 @@ class RoundService:
         
         is_unplayed = pairing.result in ["+/-", "-/+", "+/+", "bye", "half-bye", "zero-bye"]
 
-        if pairing.white_player:
-            wp = pairing.white_player
+        if pairing.white_participant:
+            wp = pairing.white_participant
             wp.points = (wp.points or 0.0) + w_score
-            wp.color_history = (wp.color_history or "") + ("-" if is_unplayed else ("w" if pairing.black_player_id else "-"))
+            wp.color_history = (wp.color_history or "") + ("-" if is_unplayed else ("w" if pairing.black_participant_id else "-"))
             wp.float_history = (wp.float_history or "") + (pairing.white_float or "-")
             if pairing.result == "bye": wp.received_bye = True
         
-        if pairing.black_player:
-            bp = pairing.black_player
+        if pairing.black_participant:
+            bp = pairing.black_participant
             bp.points = (bp.points or 0.0) + b_score
-            
             bp.color_history = (bp.color_history or "") + ("-" if is_unplayed else "b")
             bp.float_history = (bp.float_history or "") + (pairing.black_float or "-")
 
     @staticmethod
-    def _validate_color_swap(player_id, new_color, tournament_id):
-        p = PlayerModel.query.get(player_id)
+    def _validate_color_swap(participant_id, new_color, tournament_id):
+        p = TournamentParticipantModel.query.get(participant_id)
         state = compute_color(p.color_history or "")
 
-        if new_color == "w" and state.last_two == "ww": raise SwapError(f"Cannot swap: Player {p.last_name} would have 3 Whites.")
-        if new_color == "b" and state.last_two == "bb": raise SwapError(f"Cannot swap: Player {p.last_name} would have 3 Blacks.")
+        if new_color == "w" and state.last_two == "ww": raise SwapError(f"Cannot swap: Player {p.full_name} would have 3 Whites.")
+        if new_color == "b" and state.last_two == "bb": raise SwapError(f"Cannot swap: Player {p.full_name} would have 3 Blacks.")
 
         new_bal = state.balance + (1 if new_color == "w" else -1)
-        if abs(new_bal) > 2: raise SwapError(f"Cannot swap: Player {p.last_name} color balance would exceed 2.")
+        if abs(new_bal) > 2: raise SwapError(f"Cannot swap: Player {p.full_name} color balance would exceed 2.")
 
     @staticmethod
-    def _get_opponent_ids(player_id: int, tournament_id: int) -> Set[int]:
-        """Fastest way to get all opponents."""
-        p1 = db.session.query(PairingModel.black_player_id).filter_by(tournament_id=tournament_id, white_player_id=player_id).all()
-        p2 = db.session.query(PairingModel.white_player_id).filter_by(tournament_id=tournament_id, black_player_id=player_id).all()
+    def _get_opponent_ids(participant_id: int, tournament_id: int) -> Set[int]:
+        p1 = db.session.query(PairingModel.black_participant_id).filter_by(tournament_id=tournament_id, white_participant_id=participant_id).all()
+        p2 = db.session.query(PairingModel.white_participant_id).filter_by(tournament_id=tournament_id, black_participant_id=participant_id).all()
         return {id[0] for id in p1 if id[0]} | {id[0] for id in p2 if id[0]}
 
     @staticmethod
     def _have_played(p1_id, p2_id, tournament_id):
         return p2_id in RoundService._get_opponent_ids(p1_id, tournament_id)
-
-    @staticmethod
-    def _get_next_round_number(tournament) -> int:
-        last = RoundRepository.get_last(tournament.id)
-        return (last.round_number + 1) if last else 1
-
-    @staticmethod
-    def remove_manual_pairing(tournament, round_number, player_id):
-        mp = ManualPairingRepository.get_by_player(tournament.id, round_number, player_id)
-        if mp: db.session.delete(mp)
-        db.session.commit()
-
-    @staticmethod
-    def get_manual_pairings(tournament, round_number):
-        return ManualPairingRepository.get_for_round(tournament.id, round_number)
