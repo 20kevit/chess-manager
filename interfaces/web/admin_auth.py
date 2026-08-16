@@ -14,6 +14,7 @@ def get_admin_tournament(public_id):
     Check if current session has admin access to this tournament.
     Returns tournament or None.
     """
+    tournament = TournamentRepository.get_by_public_id(public_id)
     if not tournament:
         return None
 

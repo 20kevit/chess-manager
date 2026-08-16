@@ -2,6 +2,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from application.auth_service import AuthService
+from urllib.parse import urlparse
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -40,8 +41,10 @@ def login():
             flash("ورود موفقیت‌آمیز بود.", "success")
             next_page = request.args.get("next")
             # جلوگیری از Open Redirect
-            if next_page and not next_page.startswith('/'):
-                next_page = None
+            if next_page:
+                parsed = urlparse(next_page)
+                if parsed.netloc or not next_page.startswith('/'):
+                    next_page = None
             return redirect(next_page or url_for("tournament.index"))
         else:
             flash("ایمیل یا رمز عبور اشتباه است.", "error")

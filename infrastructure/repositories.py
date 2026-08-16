@@ -263,7 +263,7 @@ class UserRepository:
     @staticmethod
     def save(user: UserModel) -> UserModel:
         db.session.add(user)
-        db.session.commit()
+        db.session.flush()
         return user
 
     @staticmethod
