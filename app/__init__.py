@@ -41,6 +41,7 @@ def create_app(config_class=None) -> Flask:
     from interfaces.web.auth_routes import auth_bp
     from interfaces.web.admin_routes import admin_bp
     from interfaces.web.dashboard_routes import dashboard_bp
+    from interfaces.web.registration_routes import registration_bp
 
     flask_app.register_blueprint(tournament_bp)
     flask_app.register_blueprint(player_bp)
@@ -51,6 +52,7 @@ def create_app(config_class=None) -> Flask:
     flask_app.register_blueprint(auth_bp)
     flask_app.register_blueprint(admin_bp)
     flask_app.register_blueprint(dashboard_bp)
+    flask_app.register_blueprint(registration_bp)
 
     from app.cli import register_cli
     register_cli(flask_app)
@@ -67,4 +69,11 @@ def create_app(config_class=None) -> Flask:
     def server_error(e):
         return render_template("errors/500.html"), 500
 
+    @flask_app.template_filter('toman_formatter')
+    def toman_formatter(value):
+        try:
+            return f"{int(value):,} تومان"
+        except (ValueError, TypeError):
+            return "0 تومان"
+        
     return flask_app

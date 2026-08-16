@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}تنظیمات مالی - {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 20px auto;">
+    <h2>تنظیمات ثبت‌نام و قیمت‌گذاری</h2>
+    <form method="POST" action="{{ url_for('registration.pricing_settings', public_id=tournament.public_id) }}">
+        
+        <h3 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">قوانین کلی</h3>
+        <div class="form-group">
+            <label>قیمت پایه (تومان)</label>
+            <input type="number" name="base_price" value="{{ tournament.base_price or 0 }}" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>حداکثر ظرفیت بازیکنان (خالی = نامحدود)</label>
+            <input type="number" name="max_players" value="{{ tournament.max_players or '' }}" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>مهلت ثبت‌نام (تاریخ)</label>
+            <input type="date" name="registration_deadline" value="{{ tournament.registration_deadline.strftime('%Y-%m-%d') if tournament.registration_deadline else '' }}" class="form-control">
+        </div>
+
+        <h3 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">قوانین تخفیف</h3>
+        
+        <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+            <div style="flex: 1;">
+                <label>تخفیف بانوان (٪)</label>
+                <input type="number" name="women_discount_percent" value="{{ tournament.women_discount_percent or 0 }}" class="form-control">
+            </div>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h4>تخفیف زودهنگام (Early Bird)</h4>
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <label>درصد تخفیف (٪)</label>
+                    <input type="number" name="early_bird_percent" value="{{ early_bird.percent or 0 }}" class="form-control">
+                </div>
+                <div style="flex: 1;">
+                    <label>تاریخ انقضا</label>
+                    <input type="date" name="early_bird_deadline" value="{{ early_bird.deadline or '' }}" class="form-control">
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h4>تخفیف پیشکسوتان (Veteran)</h4>
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <label>حداقل سن</label>
+                    <input type="number" name="veteran_min_age" value="{{ veteran.min_age or 0 }}" class="form-control">
+                </div>
+                <div style="flex: 1;">
+                    <label>درصد تخفیف (٪)</label>
+                    <input type="number" name="veteran_percent" value="{{ veteran.percent or 0 }}" class="form-control">
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h4>تخفیف عناوین فیده (٪)</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;">
+                {% for t in ['GM', 'IM', 'FM', 'CM', 'WGM', 'WIM', 'WFM', 'WCM'] %}
+                <div>
+                    <label>{{ t }}</label>
+                    <input type="number" name="title_discount_{{ t }}" value="{{ titles.get(t, '') }}" class="form-control">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">ذخیره تنظیمات</button>
+    </form>
+</div>
+{% endblock %}
