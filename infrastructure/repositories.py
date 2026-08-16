@@ -8,7 +8,7 @@ from app.extensions import db
 from infrastructure.db_models import (
     TournamentModel, PlayerProfileModel, TournamentParticipantModel,
     RoundModel, PairingModel, ManualPairingModel, UserModel, UserRoleModel,
-    PromoCodeModel, RegistrationModel
+    PromoCodeModel, RegistrationModel, PaymentModel
 )
 import random
 import string
@@ -317,3 +317,24 @@ class PromoCodeRepository:
         db.session.add(promo)
         db.session.commit()
         return promo
+
+class PaymentRepository:
+    @staticmethod
+    def get_by_id(payment_id: int) -> Optional[PaymentModel]:
+        return PaymentModel.query.get(payment_id)
+
+    @staticmethod
+    def get_by_authority(authority: str) -> Optional[PaymentModel]:
+        return PaymentModel.query.filter_by(authority=authority).first()
+
+    @staticmethod
+    def get_pending_for_registration(registration_id: int) -> Optional[PaymentModel]:
+        return PaymentModel.query.filter_by(
+            registration_id=registration_id, status="pending"
+        ).first()
+
+    @staticmethod
+    def save(payment: PaymentModel) -> PaymentModel:
+        db.session.add(payment)
+        db.session.flush()
+        return payment

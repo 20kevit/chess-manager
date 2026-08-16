@@ -314,3 +314,26 @@ class RegistrationModel(db.Model):
     profile = db.relationship("PlayerProfileModel", backref="registrations")
     user = db.relationship("UserModel", backref="registrations")
     promo_code = db.relationship("PromoCodeModel", backref="registrations")
+    payments = db.relationship("PaymentModel", backref="registration", cascade="all, delete-orphan")
+
+
+class PaymentModel(db.Model):
+    __tablename__ = "payments"
+    __table_args__ = (
+        db.UniqueConstraint("authority", name="uq_payment_authority"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    registration_id = db.Column(db.Integer, db.ForeignKey("registrations.id"), nullable=False, index=True)
+    
+    amount = db.Column(db.Integer, nullable=False)  # مبلغ به تومان
+    status = db.Column(db.String(20), default="pending") # pending, successful, failed, cancelled
+    
+    gateway = db.Column(db.String(50), default="zarinpal")
+    authority = db.Column(db.String(100), nullable=True, index=True)
+    card_mask = db.Column(db.String(20), nullable=True) 
+    
+    gateway_metadata = db.Column(db.Text, default="{}")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    paid_at = db.Column(db.DateTime, nullable=True)
