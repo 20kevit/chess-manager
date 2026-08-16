@@ -15,6 +15,7 @@
                 <th>تخفیفات</th>
                 <th>مبلغ نهایی</th>
                 <th>وضعیت</th>
+                <th>کد پیگیری</th>
                 <th>عملیات</th>
             </tr>
         </thead>
@@ -37,15 +38,20 @@
                 <td><strong>{{ bd.final_price | toman_formatter }}</strong></td>
                 <td>
                     {% if reg.status == 'pending' %}
-                        <span class="badge" style="background: #fef3c7; color: #92400e;">در انتظار</span>
+                        <span class="badge" style="background: #fef3c7; color: #92400e;">در انتظار تأیید/پرداخت</span>
+                    {% elif reg.status == 'payment_pending' %}
+                        <span class="badge" style="background: #e0e7ff; color: #3730a3;">در حال پرداخت</span>
+                    {% elif reg.status == 'paid' %}
+                        <span class="badge" style="background: #dbeafe; color: #1e40af;">پرداخت شده (منتظر تأیید)</span>
                     {% elif reg.status == 'approved' %}
                         <span class="badge" style="background: #d1fae5; color: #065f46;">تأیید شده</span>
                     {% elif reg.status == 'rejected' %}
                         <span class="badge" style="background: #fee2e2; color: #991b1b;">رد شده</span>
                     {% endif %}
                 </td>
+                <td>{{ item.ref_id or '-' }}</td>
                 <td>
-                    {% if reg.status == 'pending' %}
+                    {% if reg.status in ['pending', 'paid'] %}
                     <div style="display: flex; gap: 5px;">
                         <form method="POST" action="{{ url_for('registration.approve_registration', public_id=tournament.public_id, reg_id=reg.id) }}">
                             <button type="submit" class="btn btn-success" style="padding: 5px 10px;">تأیید</button>

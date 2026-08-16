@@ -6,14 +6,29 @@
     <h2>فرم ثبت‌نام: {{ tournament.name }}</h2>
 
     {% if existing_reg %}
-        <div class="alert alert-info">
-            وضعیت ثبت‌نام شما: 
+        <div class="alert alert-info" style="text-align: right;">
+            <h4 style="margin-top:0;">وضعیت ثبت‌نام شما</h4>
+            <p>
             {% if existing_reg.status == 'pending' %}
-                <strong>در انتظار تأیید</strong>
+                در انتظار پرداخت و تأیید برگزارکننده
+            {% elif existing_reg.status == 'payment_pending' %}
+                در حال فرآیند پرداخت (اگر پرداخت را لغو کردید، می‌توانید دوباره تلاش کنید)
+            {% elif existing_reg.status == 'paid' %}
+                پرداخت موفق بود (منتظر تأیید نهایی برگزارکننده)
             {% elif existing_reg.status == 'approved' %}
-                <strong>تأیید شده</strong>
+                تأیید شده
             {% elif existing_reg.status == 'rejected' %}
-                <strong>رد شده</strong>
+                رد شده
+            {% endif %}
+            </p>
+            
+            {% if existing_reg.final_price > 0 and existing_reg.status in ['pending', 'payment_pending'] %}
+                <div style="margin-top: 15px; padding: 10px; background: #fff; border-radius: 5px; border: 1px solid #ccc;">
+                    <p style="margin-bottom: 10px;">مبلغ قابل پرداخت: <strong>{{ existing_reg.final_price }} تومان</strong></p>
+                    <form action="{{ url_for('payment.initiate_payment', reg_id=existing_reg.id) }}" method="POST">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">پرداخت آنلاین</button>
+                    </form>
+                </div>
             {% endif %}
         </div>
     {% else %}

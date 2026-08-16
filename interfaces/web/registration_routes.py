@@ -53,9 +53,18 @@ def manage_registrations(public_id):
     parsed_regs = []
     for reg in registrations:
         breakdown = json.loads(reg.pricing_breakdown or "{}")
+        
+        # استخراج کد پیگیری پرداخت موفق (در صورت وجود)
+        ref_id = ""
+        for payment in reg.payments:
+            if payment.status == "successful":
+                ref_id = payment.ref_id
+                break
+                
         parsed_regs.append({
             "reg": reg,
-            "breakdown": breakdown
+            "breakdown": breakdown,
+            "ref_id": ref_id
         })
         
     return render_template(
