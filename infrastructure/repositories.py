@@ -7,7 +7,8 @@ from typing import Optional, List
 from app.extensions import db
 from infrastructure.db_models import (
     TournamentModel, PlayerProfileModel, TournamentParticipantModel,
-    RoundModel, PairingModel, ManualPairingModel, UserModel, UserRoleModel
+    RoundModel, PairingModel, ManualPairingModel, UserModel, UserRoleModel,
+    PromoCodeModel, RegistrationModel
 )
 import random
 import string
@@ -273,3 +274,46 @@ class UserRepository:
             new_role = UserRoleModel(user_id=user.id, role=role_name)
             db.session.add(new_role)
             db.session.commit()
+
+
+# در انتهای فایل infrastructure/repositories.py اضافه کنید:
+
+class RegistrationRepository:
+    @staticmethod
+    def get_by_id(reg_id: int) -> Optional[RegistrationModel]:
+        return RegistrationModel.query.get(reg_id)
+
+    @staticmethod
+    def get_for_tournament(tournament_id: int, status: Optional[str] = None) -> List[RegistrationModel]:
+        query = RegistrationModel.query.filter_by(tournament_id=tournament_id)
+        if status:
+            query = query.filter_by(status=status)
+        return query.order_by(RegistrationModel.created_at.desc()).all()
+
+    @staticmethod
+    def get_pending_for_tournament(tournament_id: int) -> List[RegistrationModel]:
+        return RegistrationRepository.get_for_tournament(tournament_id, status="pending")
+
+    @staticmethod
+    def save(reg: RegistrationModel) -> RegistrationModel:
+        db.session.add(reg)
+        db.session.commit()
+        return reg
+
+class PromoCodeRepository:
+    @staticmethod
+    def get_by_code(tournament_id: int, code: str) -> Optional[PromoCodeModel]:
+        # کد تخفیف می‌تواند مخصوص این تورنمنت باشد یا سراسری (tournament_id == None)
+        return PromoCodeModel.query.filter(
+            PromoCodeModel.code == code,
+            db.or_(
+                PromoCodeModel.tournament_id == tournament_id,
+                PromoCodeModel.tournament_id.is_(None)
+            )
+        ).first()
+
+    @staticmethod
+    def save(promo: PromoCodeModel) -> PromoCodeModel:
+        db.session.add(promo)
+        db.session.commit()
+        return promo
