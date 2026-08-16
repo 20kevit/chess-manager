@@ -4,6 +4,13 @@ from flask_login import login_user, logout_user, login_required, current_user
 from application.auth_service import AuthService
 from urllib.parse import urlparse
 
+def _is_safe_redirect_url(target):
+    if not target:
+        return False
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
 auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/register", methods=["GET", "POST"])

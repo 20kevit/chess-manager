@@ -95,6 +95,21 @@ class PlayerProfileModel(db.Model):
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
 
+class PromoCodeModel(db.Model):
+    __tablename__ = "promo_codes"
+    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
+
+    id = db.Column(db.Integer, primary_key=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=True) # null = global
+    code = db.Column(db.String(50), nullable=False, index=True)
+    discount_percent = db.Column(db.Integer, nullable=False, default=0)
+    valid_until = db.Column(db.DateTime, nullable=True)
+    max_uses = db.Column(db.Integer, nullable=True) # null = unlimited
+    used_count = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    tournament = db.relationship("TournamentModel", backref="promo_codes")
 
 class TournamentModel(db.Model):
     __tablename__ = "tournaments"
@@ -125,6 +140,17 @@ class TournamentModel(db.Model):
     
     # New: Link to organizer
     organizer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    # ── Phase 3: Registration & Pricing Fields ──
+    base_price = db.Column(db.Integer, default=0)
+    registration_deadline = db.Column(db.DateTime, nullable=True)
+    max_players = db.Column(db.Integer, nullable=True) # null = unlimited
+    
+    # JSON fields for flexible discount rules
+    early_bird_config = db.Column(db.Text, default='{"deadline": null, "percent": 0}')
+    veteran_config = db.Column(db.Text, default='{"min_age": 0, "percent": 0}')
+    women_discount_percent = db.Column(db.Integer, default=0)
+    title_discounts = db.Column(db.Text, default='{"GM": 100, "IM": 50, "FM": 25, "WGM": 100, "WIM": 50, "WFM": 25}')
 
     rounds = db.relationship("RoundModel", backref="tournament", lazy="select")
 
@@ -261,3 +287,30 @@ class ManualPairingModel(db.Model):
 
     white_participant = db.relationship("TournamentParticipantModel", foreign_keys=[white_participant_id], lazy="joined")
     black_participant = db.relationship("TournamentParticipantModel", foreign_keys=[black_participant_id], lazy="joined")
+
+
+class RegistrationModel(db.Model):
+    __tablename__ = "registrations"
+    __table_args__ = (
+        db.UniqueConstraint("tournament_id", "player_profile_id", name="uq_registration_tournament_profile"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
+    player_profile_id = db.Column(db.Integer, db.ForeignKey("player_profiles.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True) # Who submitted the request
+    
+    status = db.Column(db.String(20), default="pending") # pending, approved, rejected, withdrawn, payment_pending
+    final_price = db.Column(db.Integer, default=0)
+    pricing_breakdown = db.Column(db.Text, default="{}") # JSON string of pricing details
+    
+    promo_code_id = db.Column(db.Integer, db.ForeignKey("promo_codes.id"), nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tournament = db.relationship("TournamentModel", backref="registrations")
+    profile = db.relationship("PlayerProfileModel", backref="registrations")
+    user = db.relationship("UserModel", backref="registrations")
+    promo_code = db.relationship("PromoCodeModel", backref="registrations")
