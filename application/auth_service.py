@@ -26,7 +26,9 @@ class AuthService:
         # کاربر به صورت پیش‌فرض نقش player می‌گیرد
         user.roles.append(UserRoleModel(role=default_role))
         
-        return UserRepository.save(user)
+        saved_user = UserRepository.save(user)
+        db.session.commit()
+        return saved_user   
 
     @staticmethod
     def authenticate(email: str, password: str) -> Optional[UserModel]:

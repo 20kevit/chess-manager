@@ -56,45 +56,56 @@ class RegistrationService:
 
         # 3. Get or Create PlayerProfile
         profile = None
-        fide_id = form_data.get("fide_id", "").strip()
-        if fide_id:
-            profile = PlayerProfileRepository.get_by_fide_id(fide_id)
         
-        if not profile:
-            first_name = form_data.get("first_name", "").strip()
-            last_name = form_data.get("last_name", "").strip()
-            if not first_name or not last_name:
-                raise ValueError("نام و نام خانوادگی الزامی است.")
-
-            birth_date = None
-            birth_str = form_data.get("birth_date", "").strip()
-            if birth_str:
-                try: birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
-                except ValueError: pass
-
-            profile = PlayerProfileModel(
-                user_id=user.id if user else None,
-                first_name=first_name, last_name=last_name,
-                gender=form_data.get("gender", "M"),
-                birth_date=birth_date,
-                federation=form_data.get("federation", "IRI").strip() or "IRI",
-                fide_id=fide_id,
-                fide_title=form_data.get("fide_title", "").strip(),
-            )
-            db.session.add(profile)
-            db.session.flush()
+        if user and user.profile:
+            profile = user.profile
         else:
-            # Claim profile if user is logged in and profile is unclaimed
-            if user and not profile.user_id:
-                profile.user_id = user.id
-                db.session.flush()
+            # دومین اولویت: جستجو بر اساس FIDE ID
+            fide_id = form_data.get("fide_id", "").strip()
+            if fide_id:
+                profile = PlayerProfileRepository.get_by_fide_id(fide_id)
+            
+            # سومین اولویت: ساخت پروفایل جدید
+            if not profile:
+                first_name = form_data.get("first_name", "").strip()
+                last_name = form_data.get("last_name", "").strip()
+                if not first_name or not last_name:
+                    raise ValueError("نام و نام خانوادگی الزامی است.")
 
-        # 4. Check Duplicate Registration
-        existing_reg = RegistrationModel.query.filter_by(
-            tournament_id=tournament.id, player_profile_id=profile.id
-        ).first()
-        if existing_reg and existing_reg.status in ["pending", "approved", "payment_pending"]:
-            raise ValueError("شما قبلاً در این مسابقه ثبت‌نام کرده‌اید و درخواست شما در حال بررسی است.")
+                birth_date = None
+                birth_str = form_data.get("birth_date", "").strip()
+                if birth_str:
+                    try: birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
+                    except ValueError: pass
+
+                profile = PlayerProfileModel(
+                    user_id=user.id if user else None,
+                    first_name=first_name, last_name=last_name,
+                    gender=form_data.get("gender", "M"),
+                    birth_date=birth_date,
+                    federation=form_data.get("federation", "IRI").strip() or "IRI",
+                    fide_id=fide_id,
+                    fide_title=form_data.get("fide_title", "").strip(),
+                )
+                db.session.add(profile)
+                db.session.flush()
+                if user and not profile.user_id:
+                    profile.user_id = user.id
+                    db.session.flush()
+
+        # 4. Check Duplicate Registration 
+        if user:
+            existing_reg = RegistrationModel.query.filter_by(
+                tournament_id=tournament.id, user_id=user.id
+            ).first()
+            if existing_reg and existing_reg.status in ["pending", "approved", "payment_pending"]:
+                raise ValueError("شما قبلاً در این مسابقه ثبت‌نام کرده‌اید و درخواست شما در حال بررسی است.")
+        else:
+            existing_reg = RegistrationModel.query.filter_by(
+                tournament_id=tournament.id, player_profile_id=profile.id
+            ).first()
+            if existing_reg and existing_reg.status in ["pending", "approved", "payment_pending"]:
+                raise ValueError("این پروفایل قبلاً در این مسابقه ثبت‌نام کرده است.")
 
         # 5. Validate Promo Code
         promo_code = None

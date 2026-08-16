@@ -39,6 +39,20 @@
         <span>♟️ {{ tournament.time_control_type|capitalize }}</span> | 
         <span>🔄 دور {{ tournament.current_round }} از {{ tournament.total_rounds }}</span>
     </div>
+    
+    {% if current_user.is_authenticated and not is_admin %}
+    <div style="margin-top: 15px;">
+        <a href="{{ url_for('registration.register', public_id=tournament.public_id) }}" class="btn btn-success">
+            📝 ثبت‌نام آنلاین در مسابقه
+        </a>
+    </div>
+    {% elif not current_user.is_authenticated %}
+    <div style="margin-top: 15px;">
+        <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-outline-primary">
+            برای ثبت‌نام لطفاً وارد شوید
+        </a>
+    </div>
+    {% endif %}
 </div>
 
 <div class="tabs" style="margin-top: 25px; border-bottom: 1px solid #e2e8f0; background: none; box-shadow: none;">
