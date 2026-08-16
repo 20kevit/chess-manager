@@ -15,7 +15,7 @@ from domain.tiebreak.calculators import calculate_all, TIEBREAK_NAMES_FA
 from domain.tiebreak.models import PlayerTiebreakData, GameRecord
 from domain.rating.calculator import calculate_tournament_ratings
 from domain.rating.models import RatingPlayerData, RatingGameRecord
-
+from flask_login import current_user
 
 class TournamentService:
 
@@ -43,7 +43,10 @@ class TournamentService:
                 ).date()
             except ValueError:
                 pass
-
+        organizer_id = None
+        if current_user.is_authenticated and current_user.has_role('organizer'):
+            organizer_id = current_user.id
+        
         tournament = TournamentModel(
             public_id=TournamentRepository.generate_public_id(),
             admin_code=TournamentRepository.generate_admin_code(),
@@ -63,6 +66,7 @@ class TournamentService:
             cumulative_age_category=(
                 form_data.get("cumulative_age_category") == "1"
             ),
+            organizer_id=organizer_id,
         )
         return TournamentRepository.save(tournament)
 

@@ -1,7 +1,10 @@
+# infrastructure/db_models.py
 from datetime import datetime
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
 
-class UserModel(db.Model):
+class UserModel(db.Model, UserMixin):
     __tablename__ = "users"
     __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
 
@@ -14,6 +17,31 @@ class UserModel(db.Model):
 
     roles = db.relationship("UserRoleModel", backref="user", cascade="all, delete-orphan")
     profile = db.relationship("PlayerProfileModel", backref="user", uselist=False)
+
+    # ── Password Security ──
+    def set_password(self, password: str):
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
+
+    # ── RBAC Helper Properties ──
+    @property
+    def role_names(self):
+        """Returns a list of role names for this user."""
+        return [role.role for role in self.roles]
+
+    def has_role(self, role_name: str) -> bool:
+        """Check if user has a specific role."""
+        if self.is_admin:
+            return True
+        return role_name in self.role_names
+
+    def has_any_role(self, roles: list) -> bool:
+        """Check if user has any of the specified roles."""
+        if self.is_admin:
+            return True
+        return any(role in self.role_names for role in roles)
 
 
 class UserRoleModel(db.Model):

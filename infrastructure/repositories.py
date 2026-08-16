@@ -7,7 +7,7 @@ from typing import Optional, List
 from app.extensions import db
 from infrastructure.db_models import (
     TournamentModel, PlayerProfileModel, TournamentParticipantModel,
-    RoundModel, PairingModel, ManualPairingModel
+    RoundModel, PairingModel, ManualPairingModel, UserModel, UserRoleModel
 )
 import random
 import string
@@ -249,3 +249,27 @@ class ManualPairingRepository:
         ).delete()
         db.session.flush()
         return count
+
+
+class UserRepository:
+    @staticmethod
+    def get_by_id(user_id: int) -> Optional[UserModel]:
+        return UserModel.query.get(user_id)
+
+    @staticmethod
+    def get_by_email(email: str) -> Optional[UserModel]:
+        return UserModel.query.filter_by(email=email.lower()).first()
+
+    @staticmethod
+    def save(user: UserModel) -> UserModel:
+        db.session.add(user)
+        db.session.commit()
+        return user
+
+    @staticmethod
+    def add_role(user: UserModel, role_name: str):
+        existing = UserRoleModel.query.filter_by(user_id=user.id, role=role_name).first()
+        if not existing:
+            new_role = UserRoleModel(user_id=user.id, role=role_name)
+            db.session.add(new_role)
+            db.session.commit()

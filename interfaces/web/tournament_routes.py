@@ -8,6 +8,7 @@ from application.tournament_service import TournamentService
 from interfaces.web.helpers import build_cell as _build_cell
 from interfaces.web.admin_auth import require_admin
 from domain.tiebreak.calculators import ALL_TIEBREAKS_DISPLAY
+from interfaces.web.decorators import role_required
 import json
 
 tournament_bp = Blueprint("tournament", __name__)
@@ -40,6 +41,7 @@ def index():
 
 
 @tournament_bp.route("/create", methods=["GET", "POST"])
+@role_required('organizer')
 def create():
     if request.method == "POST":
         try:
@@ -67,10 +69,10 @@ def create():
                 admin_code=tournament.admin_code,
             )
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return f"خطا: {str(e)}", 500
-
+            # در صورت بروز خطا
+            flash(f"خطا در ایجاد تورنمنت: {str(e)}", "error")
+            return render_template("tournament/create.html")
+            
     return render_template("tournament/create.html")
 
 

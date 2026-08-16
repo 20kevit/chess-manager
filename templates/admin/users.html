@@ -1,0 +1,54 @@
+<!-- templates/admin/users.html -->
+{% extends "base.html" %}
+
+{% block title %}مدیریت کاربران سیستم{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>مدیریت کاربران و نقش‌ها</h2>
+    
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ایمیل</th>
+                <th>ادمین سیستمی</th>
+                <th>نقش‌ها</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.email }}</td>
+                <td>
+                    {% if user.is_admin %}
+                        <span class="badge badge-danger">بله</span>
+                    {% else %}
+                        <span class="badge badge-secondary">خیر</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% for role in user.roles %}
+                        <span class="badge badge-info">{{ role.role }}</span>
+                    {% endfor %}
+                </td>
+                <td>
+                    <form action="{{ url_for('admin.toggle_role', user_id=user.id, role_name='organizer') }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm {% if 'organizer' in user.role_names %}btn-danger{% else %}btn-success{% endif %}">
+                            {% if 'organizer' in user.role_names %}حذف نقش برگزارکننده{% else %}افزودن نقش برگزارکننده{% endif %}
+                        </button>
+                    </form>
+                    <form action="{{ url_for('admin.toggle_role', user_id=user.id, role_name='arbiter') }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm {% if 'arbiter' in user.role_names %}btn-danger{% else %}btn-success{% endif %}">
+                            {% if 'arbiter' in user.role_names %}حذف نقش داور{% else %}افزودن نقش داور{% endif %}
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

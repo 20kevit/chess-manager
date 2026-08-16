@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}ساخت پروفایل شطرنج{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>ساخت پروفایل شطرنج</h2>
+    
+    <form method="POST" action="{{ url_for('dashboard.create_profile') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label>نام:</label>
+                <input type="text" name="first_name" class="form-control" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label>نام خانوادگی:</label>
+                <input type="text" name="last_name" class="form-control" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label>کد فیده (در صورت داشتن):</label>
+                <input type="text" name="fide_id" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+                <label>تاریخ تولد:</label>
+                <input type="date" name="birth_date" class="form-control">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label>جنسیت:</label>
+                <select name="gender" class="form-control">
+                    <option value="M">مرد</option>
+                    <option value="F">زن</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label>فدراسیون:</label>
+                <input type="text" name="federation" class="form-control" value="IRI">
+            </div>
+            <div class="form-group col-md-4">
+                <label>عنوان فیده:</label>
+                <select name="fide_title" class="form-control">
+                    <option value="">انتخاب کنید...</option>
+                    <option value="GM">GM</option>
+                    <option value="IM">IM</option>
+                    <option value="FM">FM</option>
+                    <option value="CM">CM</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success">ایجاد پروفایل</button>
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">انصراف</a>
+    </form>
+</div>
+{% endblock %}

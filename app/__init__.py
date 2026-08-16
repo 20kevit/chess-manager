@@ -2,9 +2,8 @@
 Flask application factory.
 """
 from flask import Flask, render_template
-from app.extensions import db
+from app.extensions import db, login_manager
 from config import Config
-
 
 def create_app(config_class=None) -> Flask:
     flask_app = Flask(
@@ -26,12 +25,22 @@ def create_app(config_class=None) -> Flask:
     from app.extensions import csrf
     csrf.init_app(flask_app)
 
+    login_manager.init_app(flask_app)
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        from infrastructure.repositories import UserRepository
+        return UserRepository.get_by_id(int(user_id))
+
     from interfaces.web.tournament_routes import tournament_bp
     from interfaces.web.player_routes import player_bp
     from interfaces.web.round_routes import round_bp
     from interfaces.web.print_routes import print_bp
     from interfaces.web.admin_auth import admin_auth_bp
     from interfaces.web.backup_routes import backup_bp
+    from interfaces.web.auth_routes import auth_bp
+    from interfaces.web.admin_routes import admin_bp
+    from interfaces.web.dashboard_routes import dashboard_bp
 
     flask_app.register_blueprint(tournament_bp)
     flask_app.register_blueprint(player_bp)
@@ -39,6 +48,12 @@ def create_app(config_class=None) -> Flask:
     flask_app.register_blueprint(print_bp)
     flask_app.register_blueprint(admin_auth_bp)
     flask_app.register_blueprint(backup_bp)
+    flask_app.register_blueprint(auth_bp)
+    flask_app.register_blueprint(admin_bp)
+    flask_app.register_blueprint(dashboard_bp)
+
+    from app.cli import register_cli
+    register_cli(flask_app)
 
     @flask_app.errorhandler(404)
     def not_found(e):

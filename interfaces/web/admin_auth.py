@@ -4,6 +4,7 @@ Admin authentication via session.
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
 from infrastructure.repositories import TournamentRepository
 from domain.tiebreak.calculators import ALL_TIEBREAKS_DISPLAY
+from flask_login import current_user
 
 admin_auth_bp = Blueprint("admin_auth", __name__)
 
@@ -27,13 +28,27 @@ def require_admin(public_id):
     """
     Helper for other routes to ensure admin access.
     Returns the tournament object or None.
+    1. If user is logged in, check if they are organizer, arbiter, or global admin.
+    2. Fallback to legacy admin_code session for non-user access.
     """
     tournament = TournamentRepository.get_by_public_id(public_id)
-    if not tournament: return None
+    if not tournament: 
+        return None
     
+    # ── بررسی دسترسی بر اساس اکانت کاربری (RBAC) ──
+    if current_user.is_authenticated:
+        # اگر ادمین سیستمی است یا برگزارکننده این تورنمنت است یا داور است
+        if current_user.is_admin or tournament.organizer_id == current_user.id or current_user.has_role('arbiter'):
+            return tournament
+        # اگر کاربر لاگین شده اما دسترسی ندارد، نباید اجازه ورود با admin_code را بدهد
+        return None
+    # ───────────────────────────────────────────────
+
+    # ── سیستم قدیمی: بررسی کد ۱۶ رقمی در Session ──
     session_key = f"admin_{public_id}"
     if session.get(session_key) == tournament.admin_code:
         return tournament
+        
     return None
 
 
