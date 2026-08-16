@@ -191,8 +191,8 @@ class RegistrationService:
         registration = RegistrationRepository.get_by_id(registration_id)
         if not registration:
             raise ValueError("درخواست ثبت‌نام یافت نشد.")
-        if registration.status != "pending":
-            raise ValueError("این درخواست قبلاً پردازش شده است.")
+        if registration.status not in ["pending", "paid"]:
+            raise ValueError("این درخواست قبلاً پردازش شده است یا در حال پرداخت است.")
 
         registration.status = "rejected"
         db.session.commit()
