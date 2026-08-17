@@ -11,8 +11,9 @@ class Config:
     DB_HOST = os.environ.get('DB_HOST', 'localhost')
     DB_NAME = os.environ.get('DB_NAME', '')
 
-    # Fail-fast in production if DB_NAME is missing
     ENV = os.environ.get('FLASK_ENV', 'development')
+    
+    # Fail-fast in production if DB_NAME is missing
     if ENV == 'production' and not DB_NAME:
         raise RuntimeError("Database configuration (DB_NAME) is required in production.")
         
@@ -33,10 +34,9 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Critical Security Fix: Do not use hardcoded fallback for production
+    # Security Fix: Prevent hardcoded fallback in production
     SECRET_KEY = os.environ.get('SECRET_KEY')
     if not SECRET_KEY:
         if ENV == 'production':
             raise RuntimeError("SECRET_KEY environment variable must be set in production.")
-        # Generate a random key for local development if not provided
         SECRET_KEY = secrets.token_hex(32)
