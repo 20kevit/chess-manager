@@ -23,9 +23,9 @@
                 <h4 style="margin-top:0; color: #065f46;">وضعیت ثبت‌نام شما</h4>
                 <p style="margin-bottom: 0;">
                 {% if existing_reg.status == 'pending' %}
-                    در انتظار پرداخت و تأیید برگزارکننده
+                    در انتظار پرداخت
                 {% elif existing_reg.status == 'payment_pending' %}
-                    در حال فرآیند پرداخت (اگر پرداخت را لغو کردید، می‌توانید دوباره تلاش کنید)
+                    در حال فرآیند پرداخت
                 {% elif existing_reg.status == 'paid' %}
                     پرداخت موفق بود (منتظر تأیید نهایی برگزارکننده)
                 {% elif existing_reg.status == 'approved' %}
@@ -36,11 +36,38 @@
                 </p>
                 
                 {% if existing_reg.final_price > 0 and existing_reg.status in ['pending', 'payment_pending'] %}
-                    <div style="margin-top: 15px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
-                        <p style="margin-bottom: 10px; font-weight: 600;">مبلغ قابل پرداخت: <span class="text-primary">{{ existing_reg.final_price }} تومان</span></p>
+                    <div style="margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
+                        
+                        <!-- Option 1: Online Payment -->
+                        <h5 style="margin-top:0;">روش ۱: پرداخت آنلاین</h5>
+                        <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 10px;">مبلغ: <strong>{{ existing_reg.final_price }} تومان</strong></p>
                         <form action="{{ url_for('payment.initiate_payment', reg_id=existing_reg.id) }}" method="POST">
-                            <button type="submit" class="btn btn-success" style="width: 100%;">پرداخت آنلاین</button>
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">پرداخت آنلاین (زرین‌پال)</button>
                         </form>
+
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #ccc;">
+
+                        <!-- Option 2: Bank Transfer -->
+                        {% if tournament.bank_card_number %}
+                        <h5 style="margin-top:0;">روش ۲: کارت به کارت</h5>
+                        <p style="font-size: 0.9rem; color: #6b7280;">مبلغ را به کارت زیر واریز کرده و تصویر رسید را آپلود کنید:</p>
+                        <div style="background: #f3f4f6; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
+                            <strong style="font-size: 1.1rem; letter-spacing: 1px;">{{ tournament.bank_card_number }}</strong>
+                            <p style="font-size: 0.8rem; margin-top: 5px;">به نام: {{ tournament.name }}</p>
+                        </div>
+                        
+                        <form action="{{ url_for('registration.upload_receipt', reg_id=existing_reg.id) }}" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="form-group">
+                                <label>انتخاب تصویر رسید (JPG, PNG, PDF)</label>
+                                <input type="file" name="receipt" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-success" style="width: 100%;">آپلود رسید و ثبت</button>
+                        </form>
+                        {% else %}
+                            <p style="color: #6b7280; font-size: 0.9rem;">گزینه پرداخت کارت به کارت توسط برگزارکننده غیرفعال شده است.</p>
+                        {% endif %}
+                        
                     </div>
                 {% endif %}
             </div>

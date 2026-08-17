@@ -149,7 +149,11 @@ class TournamentModel(db.Model):
     base_price = db.Column(db.Integer, default=0)
     registration_deadline = db.Column(db.DateTime, nullable=True)
     max_players = db.Column(db.Integer, nullable=True) # null = unlimited
-    
+
+    # Phase 5: Bank Transfer and Rulebook
+    bank_card_number = db.Column(db.String(20), nullable=True)
+    rulebook_text = db.Column(db.Text, nullable=True)
+
     # JSON fields for flexible discount rules
     early_bird_config = db.Column(db.Text, default='{"deadline": null, "percent": 0}')
     veteran_config = db.Column(db.Text, default='{"min_age": 0, "percent": 0}')
@@ -308,6 +312,10 @@ class RegistrationModel(db.Model):
     status = db.Column(db.String(20), default="pending") # pending, approved, rejected, withdrawn, payment_pending
     final_price = db.Column(db.Integer, default=0)
     pricing_breakdown = db.Column(db.Text, default="{}") # JSON string of pricing details
+    
+    # Phase 5: Payment Method and Receipt
+    payment_method = db.Column(db.String(20), default="online") # online, transfer
+    receipt_path = db.Column(db.String(255), nullable=True)
     
     promo_code_id = db.Column(db.Integer, db.ForeignKey("promo_codes.id"), nullable=True)
     

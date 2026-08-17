@@ -124,8 +124,8 @@ def register(public_id):
             form_data["fide_id"] = form_data.get("fide_id", "").strip()
             
             RegistrationService.create_registration(tournament, current_user, form_data)
-            flash("درخواست ثبت‌نام شما با موفقیت ارسال شد و در انتظار تأیید برگزارکننده است.", "success")
-            return redirect(url_for("tournament.view", public_id=public_id))
+            flash("درخواست ثبت‌نام شما با موفقیت ایجاد شد. لطفاً جهت نهایی کردن ثبت‌نام، مبلغ را پرداخت کنید.", "success")
+            return redirect(url_for("registration.register", public_id=public_id))
         except ValueError as e:
             flash(str(e), "error")
 
