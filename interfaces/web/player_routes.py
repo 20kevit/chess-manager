@@ -2,6 +2,8 @@
 Player HTTP handlers.
 All routes use session-based auth via admin_auth.require_admin().
 """
+import uuid
+import json
 from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, jsonify, abort, session, Response
@@ -9,7 +11,8 @@ from flask import (
 from interfaces.web.admin_auth import require_admin
 from infrastructure.repositories import TournamentRepository, ParticipantRepository
 from application.player_service import PlayerService
-from app.extensions import csrf
+from app.extensions import db
+from infrastructure.db_models import TempImportDataModel
 
 player_bp = Blueprint("player", __name__)
 
@@ -204,8 +207,14 @@ def _handle_csv_preview(tournament, public_id):
         flash("فایل خالی است یا فرمت آن اشتباه است", "error")
         return redirect(request.url)
 
-    import json
-    session["csv_import_data"] = json.dumps(players_data, ensure_ascii=False)
+
+    temp_record = TempImportDataModel(
+        session_key=str(uuid.uuid4()),
+        data_json=json.dumps(players_data, ensure_ascii=False)
+    )
+    db.session.add(temp_record)
+    db.session.commit()
+    session["csv_import_key"] = temp_record.session_key
 
     return render_template(
         "tournament/player_import.html",
@@ -218,15 +227,21 @@ def _handle_csv_preview(tournament, public_id):
 
 
 def _handle_csv_confirm(tournament, public_id):
-    import json
-
-    data_str = session.get("csv_import_data", "[]")
-    players_data = json.loads(data_str)
-
-    if not players_data:
-        flash("داده‌ای برای ذخیره وجود ندارد", "error")
+    import_key = session.get("csv_import_key")
+    if not import_key:
+        flash("داده‌های Import یافت نشد یا منقضی شده است.", "error")
         return redirect(url_for("player.player_import", public_id=public_id))
 
+    temp_record = TempImportDataModel.query.filter_by(session_key=import_key).first()
+    if not temp_record:
+        flash("داده‌های Import منقضی شده است.", "error")
+        return redirect(url_for("player.player_import", public_id=public_id))
+
+    players_data = json.loads(temp_record.data_json)
+
+    # After successful import:
+    db.session.delete(temp_record)
+    db.session.commit()    
     added = 0
     errors = []
 

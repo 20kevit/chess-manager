@@ -371,3 +371,11 @@ class TournamentStaffModel(db.Model):
     tournament = db.relationship("TournamentModel", backref="staff_members")
     user = db.relationship("UserModel", foreign_keys=[user_id], backref="staff_assignments")
     inviter = db.relationship("UserModel", foreign_keys=[invited_by], backref="sent_invitations")
+
+
+class TempImportDataModel(db.Model):
+    __tablename__ = "temp_import_data"
+    id = db.Column(db.Integer, primary_key=True)
+    session_key = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    data_json = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
