@@ -239,9 +239,6 @@ def _handle_csv_confirm(tournament, public_id):
 
     players_data = json.loads(temp_record.data_json)
 
-    # After successful import:
-    db.session.delete(temp_record)
-    db.session.commit()    
     added = 0
     errors = []
 
@@ -266,8 +263,10 @@ def _handle_csv_confirm(tournament, public_id):
 
         except Exception as e:
             errors.append(f"{p['first_name']} {p['last_name']}: {str(e)}")
-
-    session.pop("csv_import_data", None)
+    
+    db.session.delete(temp_record)
+    db.session.commit()
+    session.pop("csv_import_key", None)
 
     if errors:
         for err in errors:
