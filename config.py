@@ -1,9 +1,9 @@
 import os
+import secrets
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
 
 load_dotenv()
-
 
 class Config:
     DB_USER = os.environ.get('DB_USER', '')
@@ -11,8 +11,11 @@ class Config:
     DB_HOST = os.environ.get('DB_HOST', 'localhost')
     DB_NAME = os.environ.get('DB_NAME', '')
 
-    # اگر نام دیتابیس در .env تنظیم شده باشد از MySQL استفاده می‌کند،
-    # در غیر این صورت روی سیستم شخصی از SQLite استفاده خواهد شد.
+    # Fail-fast in production if DB_NAME is missing
+    ENV = os.environ.get('FLASK_ENV', 'development')
+    if ENV == 'production' and not DB_NAME:
+        raise RuntimeError("Database configuration (DB_NAME) is required in production.")
+        
     if DB_NAME:
         SQLALCHEMY_DATABASE_URI = (
             f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}?charset=utf8mb4'
@@ -25,9 +28,15 @@ class Config:
             "max_overflow": 2,
         }
     else:
-        # دیتابیس سبک و بدون نیاز به نصب برای کامپیوتر شخصی
         SQLALCHEMY_DATABASE_URI = 'sqlite:///local.db'
         SQLALCHEMY_ENGINE_OPTIONS = {}
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'in yek kelid amniyati ast hahaha')
+    
+    # Critical Security Fix: Do not use hardcoded fallback for production
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        if ENV == 'production':
+            raise RuntimeError("SECRET_KEY environment variable must be set in production.")
+        # Generate a random key for local development if not provided
+        SECRET_KEY = secrets.token_hex(32)
