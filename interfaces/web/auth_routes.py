@@ -22,10 +22,7 @@ def register():
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
         password_confirm = request.form.get("password_confirm", "")
-        role = request.form.get("role", "player")
-        
-        if role not in ["player", "coach", "arbiter", "organizer"]:
-            role = "player"
+        role = "player"
         
         try:
             user = AuthService.register(email, password, password_confirm, default_role=role)

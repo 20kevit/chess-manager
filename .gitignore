@@ -2,6 +2,7 @@
 venv/
 __pycache__/
 _AI_CONTEXT/
+_AI_AUDIT_CONTEXT/
 *.pyc
 
 # Local Database & Secrets
@@ -11,3 +12,6 @@ _AI_CONTEXT/
 
 # Logs
 *.log
+
+# Other
+generate_ai_context.py
