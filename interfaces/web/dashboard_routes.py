@@ -148,6 +148,11 @@ def update_profile():
     profile.federation = request.form.get("federation", "IRI").strip() or "IRI"
     profile.fide_title = request.form.get("fide_title", "").strip()
     
+    # New Fields: National ID and Bank Info
+    profile.national_id = request.form.get("national_id", "").strip()
+    profile.bank_card_number = request.form.get("bank_card_number", "").strip()
+    profile.bank_account_name = request.form.get("bank_account_name", "").strip()
+    
     birth_str = request.form.get("birth_date", "").strip()
     if birth_str:
         try:

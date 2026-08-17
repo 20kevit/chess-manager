@@ -141,7 +141,7 @@
             {% endif %}
         </div>
         {% endif %}
-        
+
 
         {% if pending_invitations %}
         <div class="dash-card" style="border-left: 4px solid #f59e0b;">
@@ -249,6 +249,18 @@
                     <span class="profile-label">عنوان:</span>
                     <span class="profile-value">{{ profile.fide_title or 'بدون عنوان' }}</span>
                 </div>
+                <div class="profile-row">
+                    <span class="profile-label">کد ملی:</span>
+                    <span class="profile-value">{{ profile.national_id or 'وارد نشده' }}</span>
+                </div>
+                <div class="profile-row">
+                    <span class="profile-label">شماره کارت بانکی:</span>
+                    <span class="profile-value">{{ profile.bank_card_number or 'وارد نشده' }}</span>
+                </div>
+                <div class="profile-row">
+                    <span class="profile-label">نام صاحب حساب:</span>
+                    <span class="profile-value">{{ profile.bank_account_name or 'وارد نشده' }}</span>
+                </div>
             {% else %}
                 <div class="alert alert-warning">
                     شما هنوز پروفایل شطرنج‌بازی ندارید. برای ثبت‌نام در تورنمنت‌ها نیاز به پروفایل دارید.
@@ -296,6 +308,18 @@
             <div class="form-group">
                 <label>تاریخ تولد:</label>
                 <input type="date" name="birth_date" class="form-control" value="{{ profile.birth_date.strftime('%Y-%m-%d') if profile.birth_date else '' }}">
+            </div>
+            <div class="form-group">
+                <label>کد ملی:</label>
+                <input type="text" name="national_id" class="form-control" value="{{ profile.national_id or '' }}" maxlength="10">
+            </div>
+            <div class="form-group">
+                <label>شماره کارت بانکی (۱۶ رقمی):</label>
+                <input type="text" name="bank_card_number" class="form-control" value="{{ profile.bank_card_number or '' }}" maxlength="16">
+            </div>
+            <div class="form-group">
+                <label>نام صاحب حساب:</label>
+                <input type="text" name="bank_account_name" class="form-control" value="{{ profile.bank_account_name or '' }}">
             </div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="submit" class="btn btn-success" style="flex: 1;">ذخیره تغییرات</button>
