@@ -144,9 +144,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (el) data[id] = el.value;
         });
 
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         fetch('{{ url_for("registration.calculate_price_api", public_id=tournament.public_id) }}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
             body: JSON.stringify(data)
         })
         .then(response => response.json())

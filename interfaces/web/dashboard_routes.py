@@ -42,6 +42,17 @@ def index():
             player_profile_id=profile.id
         ).order_by(RegistrationModel.created_at.desc()).all()
 
+    # Fetch available tournaments for registration
+    available_tournaments = []
+    if is_player:
+        available_tournaments = TournamentModel.query.filter(
+            TournamentModel.status != "finished",
+            db.or_(
+                TournamentModel.registration_deadline.is_(None),
+                TournamentModel.registration_deadline >= datetime.utcnow()
+            )
+        ).order_by(TournamentModel.created_at.desc()).limit(10).all()
+
     return render_template(
         "dashboard/index.html", 
         profile=profile,
@@ -51,7 +62,8 @@ def index():
         my_tournaments=my_tournaments,
         pending_invitations=pending_invitations,
         assigned_tournaments=assigned_tournaments,
-        my_registrations=my_registrations
+        my_registrations=my_registrations,
+        available_tournaments=available_tournaments
     )
 
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage")
