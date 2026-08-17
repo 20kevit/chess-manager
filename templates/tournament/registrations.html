@@ -56,8 +56,15 @@
                                 <span class="status-badge" style="background: #fee2e2; color: #991b1b;">رد شده</span>
                             {% endif %}
                         </td>
-                        <td>{{ item.ref_id or '-' }}</td>
                         <td>
+                            {% if reg.payment_method == 'online' %}
+                                {{ item.ref_id or '-' }}
+                            {% elif reg.payment_method == 'transfer' and reg.receipt_path %}
+                                <a href="{{ url_for('static', filename=reg.receipt_path) }}" target="_blank" class="btn btn-info btn-sm">مشاهده رسید</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>                        <td>
                             {% if reg.status in ['pending', 'paid'] %}
                             <div style="display: flex; gap: 5px;">
                                 <form method="POST" action="{{ url_for('registration.approve_registration', public_id=tournament.public_id, reg_id=reg.id) }}">

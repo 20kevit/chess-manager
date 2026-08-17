@@ -9,7 +9,9 @@ from flask_login import current_user, login_required
 from infrastructure.db_models import RegistrationModel, PromoCodeModel
 from domain.pricing import calculate_price, PlayerPricingData, PromoCodeData
 from flask import jsonify
-import json
+import os
+from werkzeug.utils import secure_filename
+from app.extensions import db
 
 registration_bp = Blueprint("registration", __name__)
 
@@ -195,3 +197,46 @@ def calculate_price_api(public_id):
         "discounts": breakdown.applied_discounts,
         "final_price": breakdown.final_price
     })
+
+@registration_bp.route("/registration/<int:reg_id>/upload-receipt", methods=["POST"])
+@login_required
+def upload_receipt(reg_id):
+    reg = RegistrationRepository.get_by_id(reg_id)
+    if not reg or reg.user_id != current_user.id:
+        abort(403)
+        
+    if 'receipt' not in request.files:
+        flash("فایلی انتخاب نشده است.", "error")
+        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+        
+    file = request.files['receipt']
+    if file.filename == '':
+        flash("فایلی انتخاب نشده است.", "error")
+        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+        
+    # Validate extension
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'pdf'}
+    if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        flash("فرمت فایل مجاز نیست (فقط JPG, PNG, PDF).", "error")
+        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+        
+    # Create a safe filename
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = secure_filename(f"receipt_{reg.id}.{ext}")
+    upload_folder = os.path.join('static', 'uploads', 'receipts')
+    
+    # Create folder if it doesn't exist
+    if not os.path.exists(upload_folder):
+        os.makedirs(upload_folder)
+        
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+    
+    # Update Database
+    reg.payment_method = "transfer"
+    # Store relative path for url_for
+    reg.receipt_path = f"uploads/receipts/{filename}"
+    db.session.commit()
+    
+    flash("رسید شما با موفقیت آپلود شد. در انتظار تایید برگزارکننده.", "success")
+    return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
