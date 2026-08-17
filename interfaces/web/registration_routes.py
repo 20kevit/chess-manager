@@ -1,5 +1,6 @@
 # interfaces/web/registration_routes.py
 import json
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from interfaces.web.admin_auth import require_admin
 from infrastructure.repositories import TournamentRepository, RegistrationRepository, PromoCodeRepository
@@ -34,14 +35,73 @@ def pricing_settings(public_id):
     veteran = json.loads(tournament.veteran_config or "{}")
     titles = json.loads(tournament.title_discounts or "{}")
     
+    # Fetch existing promo codes for this tournament
+    promo_codes = PromoCodeModel.query.filter_by(tournament_id=tournament.id).all()
+    
     return render_template(
         "tournament/pricing.html",
         tournament=tournament,
         early_bird=early_bird,
         veteran=veteran,
         titles=titles,
+        promo_codes=promo_codes, # <--- این خط اضافه شود
         is_admin=True
     )
+
+@registration_bp.route("/<public_id>/admin/pricing/promo/add", methods=["POST"])
+def add_promo_code(public_id):
+    tournament = require_admin(public_id)
+    if not tournament:
+        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        
+    code = request.form.get("code", "").strip().upper()
+    discount_percent = int(request.form.get("discount_percent", 0) or 0)
+    valid_until_str = request.form.get("valid_until", "").strip()
+    max_uses_str = request.form.get("max_uses", "").strip()
+    
+    if not code:
+        flash("کد تخفیف الزامی است.", "error")
+        return redirect(url_for("registration.pricing_settings", public_id=public_id))
+        
+    existing = PromoCodeRepository.get_by_code(tournament.id, code)
+    if existing:
+        flash("این کد تخفیف قبلاً ثبت شده است.", "error")
+        return redirect(url_for("registration.pricing_settings", public_id=public_id))
+        
+    valid_date = None
+    if valid_until_str:
+        try: valid_date = datetime.strptime(valid_until_str, "%Y-%m-%d")
+        except ValueError: pass
+        
+    max_uses = int(max_uses_str) if max_uses_str else None
+    
+    new_promo = PromoCodeModel(
+        tournament_id=tournament.id,
+        code=code,
+        discount_percent=discount_percent,
+        valid_until=valid_date,
+        max_uses=max_uses
+    )
+    db.session.add(new_promo)
+    db.session.commit()
+    flash("کد تخفیف با موفقیت اضافه شد.", "success")
+    return redirect(url_for("registration.pricing_settings", public_id=public_id))
+
+@registration_bp.route("/<public_id>/admin/pricing/promo/delete/<int:promo_id>", methods=["POST"])
+def delete_promo_code(public_id, promo_id):
+    tournament = require_admin(public_id)
+    if not tournament:
+        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        
+    promo = PromoCodeModel.query.get(promo_id)
+    if promo and promo.tournament_id == tournament.id:
+        db.session.delete(promo)
+        db.session.commit()
+        flash("کد تخفیف حذف شد.", "success")
+    else:
+        flash("کد تخفیف یافت نشد.", "error")
+        
+    return redirect(url_for("registration.pricing_settings", public_id=public_id))
 
 @registration_bp.route("/<public_id>/admin/registrations")
 def manage_registrations(public_id):
