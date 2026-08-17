@@ -336,6 +336,7 @@ class PaymentModel(db.Model):
     
     gateway = db.Column(db.String(50), default="zarinpal")
     authority = db.Column(db.String(100), nullable=True, index=True)
+    ref_id = db.Column(db.String(100), nullable=True, index=True)
     card_mask = db.Column(db.String(20), nullable=True) 
     
     gateway_metadata = db.Column(db.Text, default="{}")

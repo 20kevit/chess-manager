@@ -91,6 +91,9 @@ class AuthService:
             federation=form_data.get("federation", "IRI").strip() or "IRI",
             fide_id=form_data.get("fide_id", "").strip(),
             fide_title=form_data.get("fide_title", "").strip(),
+            national_id=form_data.get("national_id", "").strip(),
+            bank_card_number=form_data.get("bank_card_number", "").strip(),
+            bank_account_name=form_data.get("bank_account_name", "").strip(),
         )
         db.session.add(new_profile)
         db.session.commit()

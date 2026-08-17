@@ -46,7 +46,7 @@ class ZarinpalGateway(PaymentGatewayInterface):
         url = f"{self.base_api_url}/verify.json"
         payload = {
             "merchant_id": self.merchant_id,
-            "amount": amount,
+            "amount": amount * 10,
             "authority": authority
         }
         
