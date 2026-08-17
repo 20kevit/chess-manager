@@ -124,7 +124,9 @@ def search_profile():
 @login_required
 def link_profile(profile_id):
     try:
-        AuthService.claim_profile(current_user.id, profile_id)
+        # Pass form data as verification dictionary
+        verification_data = request.form.to_dict()
+        AuthService.claim_profile(current_user.id, profile_id, verification_data)
         flash("پروفایل شطرنج با موفقیت به حساب شما متصل شد.", "success")
     except ValueError as e:
         flash(str(e), "error")

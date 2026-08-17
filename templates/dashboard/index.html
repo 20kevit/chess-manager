@@ -383,14 +383,21 @@
             <h5>نتایج جستجو:</h5>
             <div style="max-height: 200px; overflow-y: auto;">
                 {% for p in search_results %}
-                    <div class="list-item">
-                        <div class="list-item-info">
-                            <span class="list-item-title">{{ p.first_name }} {{ p.last_name }}</span>
-                            <span class="list-item-sub">کد فیده: {{ p.fide_id or 'ندارد' }}</span>
+                    <div class="list-item" style="flex-direction: column; align-items: stretch;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div class="list-item-info">
+                                <span class="list-item-title">{{ p.first_name }} {{ p.last_name }}</span>
+                                <span class="list-item-sub">کد فیده: {{ p.fide_id or 'ندارد' }}</span>
+                            </div>
                         </div>
-                        <form action="{{ url_for('dashboard.link_profile', profile_id=p.id) }}" method="POST">
+                        <form action="{{ url_for('dashboard.link_profile', profile_id=p.id) }}" method="POST" style="display: flex; gap: 5px; align-items: center;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-success btn-action">اتصال</button>
+                            {% if p.national_id %}
+                                <input type="text" name="national_id" class="form-control" placeholder="کد ملی" required maxlength="10">
+                            {% elif p.birth_date %}
+                                <input type="date" name="birth_date" class="form-control" required>
+                            {% endif %}
+                            <button type="submit" class="btn btn-success btn-action">تایید و اتصال</button>
                         </form>
                     </div>
                 {% else %}
