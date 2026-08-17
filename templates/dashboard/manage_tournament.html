@@ -93,4 +93,68 @@
         </div>
     </div>
 </div>
+{% block extra_js %}
+<script>
+function searchArbiters() {
+    const query = document.getElementById('arbiter-search').value.trim();
+    const resultsDiv = document.getElementById('search-results');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    if (query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+    
+    fetch(`/dashboard/api/search-users?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            resultsDiv.innerHTML = '';
+            if (data.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding: 10px; color: #6b7280;">کاربری یافت نشد</div>';
+            } else {
+                data.forEach(user => {
+                    const item = document.createElement('div');
+                    item.style.padding = '10px';
+                    item.style.cursor = 'pointer';
+                    item.style.borderBottom = '1px solid #eee';
+                    item.innerHTML = `<strong>${user.name}</strong> <span style="font-size:0.8rem; color:#6b7280;">(${user.email})</span> ${user.is_arbiter ? '<span style="color:#059669; font-size:0.8rem;">[داور]</span>' : ''}`;
+                    
+                    item.onmouseenter = () => item.style.background = '#f3f4f6';
+                    item.onmouseleave = () => item.style.background = '#fff';
+                    
+                    item.onclick = () => {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '{{ url_for("dashboard.add_staff", public_id=tournament.public_id) }}';
+                        
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = 'csrf_token';
+                        csrfInput.value = csrfToken;
+                        
+                        const idInput = document.createElement('input');
+                        idInput.type = 'hidden';
+                        idInput.name = 'user_id';
+                        idInput.value = user.id;
+                        
+                        form.appendChild(csrfInput);
+                        form.appendChild(idInput);
+                        document.body.appendChild(form);
+                        form.submit();
+                    };
+                    resultsDiv.appendChild(item);
+                });
+            }
+            resultsDiv.style.display = 'block';
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#arbiter-search') && !e.target.closest('#search-results')) {
+        document.getElementById('search-results').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}

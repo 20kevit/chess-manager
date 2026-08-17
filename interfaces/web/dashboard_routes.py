@@ -19,7 +19,6 @@ def index():
     is_player = current_user.has_role('player')
     
     my_tournaments = []
-    assigned_tournaments = []
     my_registrations = []
     
     if is_organizer:
@@ -33,7 +32,6 @@ def index():
     ).all()
     
     # Fetch accepted assignments
-    assigned_tournaments = []
     accepted_assignments = TournamentStaffModel.query.filter_by(
         user_id=current_user.id, status="accepted"
     ).all()
@@ -51,10 +49,9 @@ def index():
         is_organizer=is_organizer,
         is_player=is_player,
         my_tournaments=my_tournaments,
-        assigned_tournaments=assigned_tournaments,
-        my_registrations=my_registrations,
         pending_invitations=pending_invitations,
-        assigned_tournaments=assigned_tournaments
+        assigned_tournaments=assigned_tournaments,
+        my_registrations=my_registrations
     )
 
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage")
@@ -74,63 +71,6 @@ def manage_tournament(public_id):
         staff_members=staff_members
     )
 
-@dashboard_bp.route("/dashboard/tournament/<public_id>/manage/staff/add", methods=["POST"])
-@login_required
-def add_staff(public_id):
-    tournament = require_admin(public_id)
-    if not tournament:
-        abort(403)
-        
-    email = request.form.get("email", "").strip().lower()
-    user = UserModel.query.filter_by(email=email).first()
-    
-    if not user:
-        flash("کاربری با این ایمیل در سیستم ثبت‌نام نکرده است.", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-        
-    if tournament.organizer_id == user.id:
-        flash("برگزارکننده نمی‌تواند به عنوان داور اضافه شود.", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-        
-    existing = TournamentStaffModel.query.filter_by(
-        tournament_id=tournament.id, user_id=user.id
-    ).first()
-    
-    if existing:
-        flash("این کاربر قبلاً به عنوان داور اضافه شده است.", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-        
-    new_staff = TournamentStaffModel(
-        tournament_id=tournament.id, 
-        user_id=user.id, 
-        role="arbiter"
-    )
-    db.session.add(new_staff)
-    db.session.commit()
-    flash(f"کاربر {user.email} با موفقیت به عنوان داور اضافه شد.", "success")
-    return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-
-@dashboard_bp.route("/dashboard/tournament/<public_id>/manage/staff/remove/<int:user_id>", methods=["POST"])
-@login_required
-def remove_staff(public_id, user_id):
-    tournament = require_admin(public_id)
-    if not tournament:
-        abort(403)
-        
-    staff = TournamentStaffModel.query.filter_by(
-        tournament_id=tournament.id, user_id=user_id
-    ).first()
-    
-    if staff:
-        db.session.delete(staff)
-        db.session.commit()
-        flash("داوار با موفقیت حذف شد.", "success")
-    else:
-        flash("داور یافت نشد.", "error")
-        
-    return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-
-# ... (بقیه روت‌های پروفایل که قبلاً نوشتیم در اینجا باقی می‌مانند)
 @dashboard_bp.route("/dashboard/profile/search", methods=["POST"])
 @login_required
 def search_profile():
@@ -222,7 +162,7 @@ def update_profile():
     return redirect(url_for("dashboard.index"))
 
 # --- Live Search API for Arbiters ---
-@dashboard_bp.route("/api/search-users")
+@dashboard_bp.route("/dashboard/api/search-users")
 @login_required
 def search_users():
     """AJAX endpoint to search for users by name or email"""
@@ -230,16 +170,14 @@ def search_users():
     if len(query) < 2:
         return jsonify([])
         
-    # Search in UserModel email and PlayerProfileModel name
-    users = UserModel.query.filter(
+    # Use outerjoin to include users who don't have a profile yet
+    users = db.session.query(UserModel).outerjoin(
+        PlayerProfileModel, UserModel.id == PlayerProfileModel.user_id
+    ).filter(
         db.or_(
             UserModel.email.ilike(f"%{query}%"),
-            UserModel.profile.has(
-                db.or_(
-                    PlayerProfileModel.first_name.ilike(f"%{query}%"),
-                    PlayerProfileModel.last_name.ilike(f"%{query}%")
-                )
-            )
+            PlayerProfileModel.first_name.ilike(f"%{query}%"),
+            PlayerProfileModel.last_name.ilike(f"%{query}%")
         )
     ).limit(10).all()
     
@@ -249,7 +187,7 @@ def search_users():
         if u.id == current_user.id:
             continue
             
-        full_name = f"{u.profile.first_name} {u.profile.last_name}" if u.profile else "بدون پروفایل"
+        full_name = f"{u.profile.first_name} {u.profile.last_name}" if u.profile else "بدون پروفایل (فقط ایمیل)"
         results.append({
             "id": u.id,
             "email": u.email,

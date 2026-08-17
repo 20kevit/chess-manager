@@ -1,8 +1,8 @@
-"""Phase 1A
+"""Initial database
 
-Revision ID: be7894fdfe99
+Revision ID: fbbcf1faf888
 Revises: 
-Create Date: 2026-08-16 00:01:32.164641
+Create Date: 2026-08-17 13:17:07.484348
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'be7894fdfe99'
+revision = 'fbbcf1faf888'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -63,6 +63,9 @@ def upgrade():
     sa.Column('federation', sa.String(length=5), nullable=True),
     sa.Column('fide_title', sa.String(length=5), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('national_id', sa.String(length=10), nullable=True),
+    sa.Column('bank_card_number', sa.String(length=20), nullable=True),
+    sa.Column('bank_account_name', sa.String(length=100), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
     mysql_charset='utf8mb4',
@@ -92,6 +95,13 @@ def upgrade():
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('organizer_id', sa.Integer(), nullable=True),
+    sa.Column('base_price', sa.Integer(), nullable=True),
+    sa.Column('registration_deadline', sa.DateTime(), nullable=True),
+    sa.Column('max_players', sa.Integer(), nullable=True),
+    sa.Column('early_bird_config', sa.Text(), nullable=True),
+    sa.Column('veteran_config', sa.Text(), nullable=True),
+    sa.Column('women_discount_percent', sa.Integer(), nullable=True),
+    sa.Column('title_discounts', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['organizer_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('admin_code'),
@@ -111,6 +121,24 @@ def upgrade():
     mysql_charset='utf8mb4',
     mysql_collate='utf8mb4_unicode_ci'
     )
+    op.create_table('promo_codes',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('tournament_id', sa.Integer(), nullable=True),
+    sa.Column('code', sa.String(length=50), nullable=False),
+    sa.Column('discount_percent', sa.Integer(), nullable=False),
+    sa.Column('valid_until', sa.DateTime(), nullable=True),
+    sa.Column('max_uses', sa.Integer(), nullable=True),
+    sa.Column('used_count', sa.Integer(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['tournament_id'], ['tournaments.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    mysql_charset='utf8mb4',
+    mysql_collate='utf8mb4_unicode_ci'
+    )
+    with op.batch_alter_table('promo_codes', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_promo_codes_code'), ['code'], unique=False)
+
     op.create_table('rounds',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('tournament_id', sa.Integer(), nullable=False),
@@ -147,6 +175,21 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('tournament_id', 'player_profile_id', name='uq_participant_tournament_profile'),
     sa.UniqueConstraint('tournament_id', 'start_number', name='uq_participant_tournament_startnum'),
+    mysql_charset='utf8mb4',
+    mysql_collate='utf8mb4_unicode_ci'
+    )
+    op.create_table('tournament_staff',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('tournament_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('role', sa.String(length=20), nullable=True),
+    sa.Column('status', sa.String(length=20), nullable=True),
+    sa.Column('invited_by', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['invited_by'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['tournament_id'], ['tournaments.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('tournament_id', 'user_id', name='uq_tournament_staff'),
     mysql_charset='utf8mb4',
     mysql_collate='utf8mb4_unicode_ci'
     )
@@ -201,16 +244,68 @@ def upgrade():
     mysql_charset='utf8mb4',
     mysql_collate='utf8mb4_unicode_ci'
     )
+    op.create_table('registrations',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('tournament_id', sa.Integer(), nullable=False),
+    sa.Column('player_profile_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('status', sa.String(length=20), nullable=True),
+    sa.Column('final_price', sa.Integer(), nullable=True),
+    sa.Column('pricing_breakdown', sa.Text(), nullable=True),
+    sa.Column('promo_code_id', sa.Integer(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['player_profile_id'], ['player_profiles.id'], ),
+    sa.ForeignKeyConstraint(['promo_code_id'], ['promo_codes.id'], ),
+    sa.ForeignKeyConstraint(['tournament_id'], ['tournaments.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('tournament_id', 'player_profile_id', name='uq_registration_tournament_profile'),
+    mysql_charset='utf8mb4',
+    mysql_collate='utf8mb4_unicode_ci'
+    )
+    op.create_table('payments',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('registration_id', sa.Integer(), nullable=False),
+    sa.Column('amount', sa.Integer(), nullable=False),
+    sa.Column('status', sa.String(length=20), nullable=True),
+    sa.Column('gateway', sa.String(length=50), nullable=True),
+    sa.Column('authority', sa.String(length=100), nullable=True),
+    sa.Column('card_mask', sa.String(length=20), nullable=True),
+    sa.Column('gateway_metadata', sa.Text(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('paid_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['registration_id'], ['registrations.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('authority', name='uq_payment_authority'),
+    mysql_charset='utf8mb4',
+    mysql_collate='utf8mb4_unicode_ci'
+    )
+    with op.batch_alter_table('payments', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_payments_authority'), ['authority'], unique=False)
+        batch_op.create_index(batch_op.f('ix_payments_registration_id'), ['registration_id'], unique=False)
+
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
+    with op.batch_alter_table('payments', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_payments_registration_id'))
+        batch_op.drop_index(batch_op.f('ix_payments_authority'))
+
+    op.drop_table('payments')
+    op.drop_table('registrations')
     op.drop_table('pairings')
     op.drop_table('manual_pairings')
     op.drop_table('bye_requests')
+    op.drop_table('tournament_staff')
     op.drop_table('tournament_participants')
     op.drop_table('rounds')
+    with op.batch_alter_table('promo_codes', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_promo_codes_code'))
+
+    op.drop_table('promo_codes')
     op.drop_table('user_roles')
     with op.batch_alter_table('tournaments', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_tournaments_public_id'))
