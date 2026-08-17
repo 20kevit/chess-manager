@@ -60,6 +60,38 @@
         </div>
     </div>
 
+    <!-- Registration & Pricing Section -->
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+        <h2 class="section-title">💰 ثبت‌نام و قیمت‌گذاری</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>هزینه ثبت‌نام پایه (تومان)</label>
+                <input type="number" name="base_price" value="{{ tournament.base_price or 0 }}" min="0">
+            </div>
+            <div class="form-group">
+                <label>ظرفیت مسابقه (خالی = نامحدود)</label>
+                <input type="number" name="max_players" value="{{ tournament.max_players or '' }}" min="2">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>مهلت پایان ثبت‌نام (تاریخ و ساعت)</label>
+            <input type="datetime-local" name="registration_deadline" value="{{ tournament.registration_deadline.strftime('%Y-%m-%dT%H:%M') if tournament.registration_deadline else '' }}">
+        </div>
+        <div class="form-group">
+            <label>شماره کارت برای واریز (کارت به کارت)</label>
+            <input type="text" name="bank_card_number" value="{{ tournament.bank_card_number or '' }}" maxlength="16" dir="ltr" placeholder="1234123412341234">
+        </div>
+    </div>
+
+    <!-- Rulebook Section -->
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+        <h2 class="section-title">📄 آیین‌نامه مسابقه</h2>
+        <div class="form-group">
+            <label>متن آیین‌نامه (قوانین مسابقه)</label>
+            <textarea name="rulebook_text" rows="10" class="form-control" placeholder="قوانین مسابقه را اینجا بنویسید...">{{ tournament.rulebook_text or '' }}</textarea>
+        </div>
+    </div>
+
     <!-- 3️⃣ Tiebreak Configuration (Drag & Drop) -->
     <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
         <h2 class="section-title">📊 اولویت تای‌بریک‌ها (شکست امتیاز)</h2>

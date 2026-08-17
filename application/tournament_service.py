@@ -184,6 +184,10 @@ class TournamentService:
                 except ValueError: pass
         tournament.title_discounts = json.dumps(title_discounts, ensure_ascii=False)
         
+        # ── Phase 5: Bank Card and Rulebook ──
+        tournament.bank_card_number = form_data.get("bank_card_number", "").strip()
+        tournament.rulebook_text = form_data.get("rulebook_text", "").strip()
+
         from app.extensions import db
         db.session.commit()
 
