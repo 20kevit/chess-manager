@@ -188,7 +188,7 @@ class RegistrationService:
         return participant
 
     @staticmethod
-    def reject_registration(registration_id: int) -> None:
+    def reject_registration(registration_id: int, reason: str = "") -> None:
         registration = RegistrationRepository.get_by_id(registration_id)
         if not registration:
             raise ValueError("درخواست ثبت‌نام یافت نشد.")
@@ -196,4 +196,5 @@ class RegistrationService:
             raise ValueError("این درخواست قبلاً پردازش شده است یا در حال پرداخت است.")
 
         registration.status = "rejected"
+        registration.rejection_reason = reason # Save the reason
         db.session.commit()

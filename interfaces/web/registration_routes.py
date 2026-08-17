@@ -157,7 +157,8 @@ def reject_registration(public_id, reg_id):
         return redirect(url_for("admin_auth.admin_login", public_id=public_id))
         
     try:
-        RegistrationService.reject_registration(reg_id)
+        reason = request.form.get("rejection_reason", "").strip()
+        RegistrationService.reject_registration(reg_id, reason)
         flash("درخواست رد شد.", "info")
     except ValueError as e:
         flash(str(e), "error")

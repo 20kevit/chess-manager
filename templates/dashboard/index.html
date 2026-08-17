@@ -221,14 +221,14 @@
                 <div class="list-item">
                     <div class="list-item-info">
                         <span class="list-item-title">{{ reg.tournament.name }}</span>
-                        <span class="list-item-sub">
-                            مبلغ: {{ reg.final_price }} تومان | 
-                            وضعیت: 
-                            {% if reg.status == 'pending' %}<span style="color: #d97706;">در انتظار پرداخت</span>
-                            {% elif reg.status == 'paid' %}<span style="color: #2563eb;">پرداخت شده</span>
-                            {% elif reg.status == 'approved' %}<span style="color: #059669;">تایید شده</span>
-                            {% elif reg.status == 'rejected' %}<span style="color: #dc2626;">رد شده</span>{% endif %}
-                        </span>
+                            <span class="list-item-sub">
+                                مبلغ: {{ reg.final_price }} تومان | 
+                                وضعیت: 
+                                {% if reg.status == 'pending' %}<span style="color: #d97706;">در انتظار پرداخت</span>
+                                {% elif reg.status == 'paid' %}<span style="color: #2563eb;">پرداخت شده</span>
+                                {% elif reg.status == 'approved' %}<span style="color: #059669;">تایید شده</span>
+                                {% elif reg.status == 'rejected' %}<span style="color: #dc2626;">رد شده</span>{% endif %}
+                            </span>
                     </div>
                     <div style="display: flex; gap: 5px;">
                         <a href="{{ url_for('tournament.view', public_id=reg.tournament.public_id) }}" class="btn btn-light btn-action">مشاهده</a>

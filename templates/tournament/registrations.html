@@ -70,7 +70,8 @@
                                 <form method="POST" action="{{ url_for('registration.approve_registration', public_id=tournament.public_id, reg_id=reg.id) }}">
                                     <button type="submit" class="btn btn-success btn-sm">تأیید</button>
                                 </form>
-                                <form method="POST" action="{{ url_for('registration.reject_registration', public_id=tournament.public_id, reg_id=reg.id) }}">
+                                <form method="POST" action="{{ url_for('registration.reject_registration', public_id=tournament.public_id, reg_id=reg.id) }}" style="display:flex; gap:5px;">
+                                    <input type="text" name="rejection_reason" class="form-control" placeholder="دلیل رد..." style="font-size: 0.8rem; padding: 4px;">
                                     <button type="submit" class="btn btn-danger btn-sm">رد</button>
                                 </form>
                             </div>
