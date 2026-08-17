@@ -21,8 +21,7 @@ class ZarinpalGateway(PaymentGatewayInterface):
         url = f"{self.base_api_url}/request.json"
         payload = {
             "merchant_id": self.merchant_id,
-            "amount": amount,
-            "currency": "T",  # واحد تومان
+            "amount": amount * 10,  # Convert Toman to Rial for Zarinpal API
             "description": description,
             "callback_url": callback_url
         }

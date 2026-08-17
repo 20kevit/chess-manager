@@ -22,12 +22,16 @@ def register():
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
         password_confirm = request.form.get("password_confirm", "")
+        role = request.form.get("role", "player")
+        
+        if role not in ["player", "coach", "arbiter", "organizer"]:
+            role = "player"
         
         try:
-            user = AuthService.register(email, password, password_confirm)
+            user = AuthService.register(email, password, password_confirm, default_role=role)
             login_user(user)
             flash("ثبت‌نام موفقیت‌آمیز بود و شما وارد شدید.", "success")
-            return redirect(url_for("tournament.index"))
+            return redirect(url_for("dashboard.index"))
         except ValueError as e:
             flash(str(e), "error")
             
@@ -46,16 +50,17 @@ def login():
         if user:
             login_user(user)
             flash("ورود موفقیت‌آمیز بود.", "success")
+            
+            # Redirect to dashboard by default, or to 'next' page if safe
             next_page = request.args.get("next")
-            # جلوگیری از Open Redirect
             if next_page:
                 parsed = urlparse(next_page)
                 if parsed.netloc or not next_page.startswith('/'):
                     next_page = None
-            return redirect(next_page or url_for("tournament.index"))
+                    
+            return redirect(next_page or url_for("dashboard.index"))
         else:
             flash("ایمیل یا رمز عبور اشتباه است.", "error")
-            
     return render_template("auth/login.html")
 
 @auth_bp.route("/logout")

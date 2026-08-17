@@ -1,111 +1,140 @@
 {% extends "base.html" %}
 {% block title %}ثبت‌نام در {{ tournament.name }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .reg-container { max-width: 800px; margin: 20px auto; }
+    .reg-card { background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .reg-card h2 { margin-top: 0; border-bottom: 2px solid #f3f4f6; padding-bottom: 15px; }
+    .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+    .price-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin-top: 20px; }
+    .price-row { display: flex; justify-content: space-between; margin-bottom: 8px; color: #1e40af; }
+    .price-total { font-size: 1.2rem; font-weight: 700; border-top: 2px dashed #bfdbfe; margin-top: 10px; padding-top: 10px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card" style="max-width: 800px; margin: 20px auto;">
-    <h2>فرم ثبت‌نام: {{ tournament.name }}</h2>
+<div class="reg-container">
+    <div class="reg-card">
+        <h2>فرم ثبت‌نام: {{ tournament.name }}</h2>
 
-    {% if existing_reg %}
-        <div class="alert alert-info" style="text-align: right;">
-            <h4 style="margin-top:0;">وضعیت ثبت‌نام شما</h4>
-            <p>
-            {% if existing_reg.status == 'pending' %}
-                در انتظار پرداخت و تأیید برگزارکننده
-            {% elif existing_reg.status == 'payment_pending' %}
-                در حال فرآیند پرداخت (اگر پرداخت را لغو کردید، می‌توانید دوباره تلاش کنید)
-            {% elif existing_reg.status == 'paid' %}
-                پرداخت موفق بود (منتظر تأیید نهایی برگزارکننده)
-            {% elif existing_reg.status == 'approved' %}
-                تأیید شده
-            {% elif existing_reg.status == 'rejected' %}
-                رد شده
-            {% endif %}
-            </p>
-            
-            {% if existing_reg.final_price > 0 and existing_reg.status in ['pending', 'payment_pending'] %}
-                <div style="margin-top: 15px; padding: 10px; background: #fff; border-radius: 5px; border: 1px solid #ccc;">
-                    <p style="margin-bottom: 10px;">مبلغ قابل پرداخت: <strong>{{ existing_reg.final_price }} تومان</strong></p>
-                    <form action="{{ url_for('payment.initiate_payment', reg_id=existing_reg.id) }}" method="POST">
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">پرداخت آنلاین</button>
-                    </form>
-                </div>
-            {% endif %}
-        </div>
-    {% else %}
-    
-    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-        <h3>قوانین قیمت‌گذاری</h3>
-        <p>قیمت پایه: <strong>{{ tournament.base_price or 0 }} تومان</strong></p>
-        <ul>
-            {% if tournament.women_discount_percent %}
-            <li>تخفیف بانوان: {{ tournament.women_discount_percent }}٪</li>
-            {% endif %}
-            {% if tournament.early_bird_config %}
-            <li>تخفیف زودهنگام: تا تاریخ {{ early_bird.deadline }} - {{ early_bird.percent }}٪</li>
-            {% endif %}
-        </ul>
-    </div>
-
-    <form method="POST" action="{{ url_for('registration.register', public_id=tournament.public_id) }}" id="reg-form">
-        <h3>اطلاعات بازیکن</h3>
-        <p style="font-size: 0.9em; color: #666;">اگر پروفایل شطرنجی شما در سیستم باشد، اطلاعات زیر پیش‌فرض است.</p>
-        
-        <div class="form-group">
-            <label>نام</label>
-            <input type="text" name="first_name" id="first_name" value="{{ profile.first_name if profile else '' }}" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label>نام خانوادگی</label>
-            <input type="text" name="last_name" id="last_name" value="{{ profile.last_name if profile else '' }}" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label>کد فیده (FIDE ID) - اختیاری</label>
-            <input type="text" name="fide_id" id="fide_id" value="{{ profile.fide_id if profile else '' }}" class="form-control">
-        </div>
-        <div class="form-group">
-            <label>تاریخ تولد</label>
-            <input type="date" name="birth_date" id="birth_date" value="{{ profile.birth_date.strftime('%Y-%m-%d') if profile and profile.birth_date else '' }}" class="form-control">
-        </div>
-        <div class="form-group">
-            <label>جنسیت</label>
-            <select name="gender" id="gender" class="form-control">
-                <option value="M" {% if profile and profile.gender == 'M' %}selected{% endif %}>آقا</option>
-                <option value="F" {% if profile and profile.gender == 'F' %}selected{% endif %}>خانم</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>عنوان فیده</label>
-            <select name="fide_title" id="fide_title" class="form-control">
-                <option value="">ندارم</option>
-                {% for t in ['', 'GM', 'IM', 'FM', 'CM', 'WGM', 'WIM', 'WFM', 'WCM'] %}
-                    <option value="{{ t }}" {% if profile and profile.fide_title == t %}selected{% endif %}>{{ t }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>کد تخفیف (Promo Code)</label>
-            <input type="text" name="promo_code" id="promo_code" class="form-control" style="text-transform: uppercase;">
-        </div>
-
-        <div style="margin-top: 20px; background: #e0f2fe; padding: 15px; border-radius: 8px; border: 1px solid #0284c7;">
-            <h4 style="margin-top: 0;">محاسبه قیمت</h4>
-            <div id="price-breakdown">
-                <p>قیمت پایه: <span id="base-price">{{ tournament.base_price or 0 }}</span> تومان</p>
-                <ul id="discount-list" style="margin: 0; padding-right: 20px;"></ul>
-                <hr style="border-color: #0284c7;">
-                <p style="font-size: 1.2em;">مبلغ نهایی: <strong id="final-price">{{ tournament.base_price or 0 }}</strong> تومان</p>
+        {% if existing_reg %}
+            <div class="info-box" style="background: #ecfdf5; border-color: #a7f3d0;">
+                <h4 style="margin-top:0; color: #065f46;">وضعیت ثبت‌نام شما</h4>
+                <p style="margin-bottom: 0;">
+                {% if existing_reg.status == 'pending' %}
+                    در انتظار پرداخت و تأیید برگزارکننده
+                {% elif existing_reg.status == 'payment_pending' %}
+                    در حال فرآیند پرداخت (اگر پرداخت را لغو کردید، می‌توانید دوباره تلاش کنید)
+                {% elif existing_reg.status == 'paid' %}
+                    پرداخت موفق بود (منتظر تأیید نهایی برگزارکننده)
+                {% elif existing_reg.status == 'approved' %}
+                    تأیید شده
+                {% elif existing_reg.status == 'rejected' %}
+                    رد شده
+                {% endif %}
+                </p>
+                
+                {% if existing_reg.final_price > 0 and existing_reg.status in ['pending', 'payment_pending'] %}
+                    <div style="margin-top: 15px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
+                        <p style="margin-bottom: 10px; font-weight: 600;">مبلغ قابل پرداخت: <span class="text-primary">{{ existing_reg.final_price }} تومان</span></p>
+                        <form action="{{ url_for('payment.initiate_payment', reg_id=existing_reg.id) }}" method="POST">
+                            <button type="submit" class="btn btn-success" style="width: 100%;">پرداخت آنلاین</button>
+                        </form>
+                    </div>
+                {% endif %}
             </div>
+        {% else %}
+        
+        <div class="info-box">
+            <h4 style="margin-top:0;">قوانین قیمت‌گذاری</h4>
+            <p style="margin-bottom: 5px;">قیمت پایه: <strong>{{ tournament.base_price or 0 }} تومان</strong></p>
+            <ul style="margin: 0; padding-right: 20px; color: #64748b;">
+                {% if tournament.women_discount_percent %}
+                <li>تخفیف بانوان: {{ tournament.women_discount_percent }}٪</li>
+                {% endif %}
+                {% if early_bird and early_bird.percent %}
+                <li>تخفیف زودهنگام: تا تاریخ {{ early_bird.deadline or 'نامشخص' }} - {{ early_bird.percent }}٪</li>
+                {% endif %}
+            </ul>
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">ثبت درخواست</button>
-    </form>
-    {% endif %}
+        <form method="POST" action="{{ url_for('registration.register', public_id=tournament.public_id) }}" id="reg-form">
+            <h4 style="margin-top: 20px; color: #1f2937;">اطلاعات بازیکن</h4>
+            <p style="font-size: 0.85em; color: #6b7280; margin-bottom: 15px;">اگر پروفایل شطرنجی شما در سیستم باشد، اطلاعات زیر پیش‌فرض است.</p>
+            
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>نام</label>
+                    <input type="text" name="first_name" id="first_name" value="{{ profile.first_name if profile else '' }}" class="form-control" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label>نام خانوادگی</label>
+                    <input type="text" name="last_name" id="last_name" value="{{ profile.last_name if profile else '' }}" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>کد فیده (FIDE ID) - اختیاری</label>
+                    <input type="text" name="fide_id" id="fide_id" value="{{ profile.fide_id if profile else '' }}" class="form-control">
+                </div>
+                <div class="form-group col-md-6">
+                    <label>تاریخ تولد</label>
+                    <input type="date" name="birth_date" id="birth_date" value="{{ profile.birth_date.strftime('%Y-%m-%d') if profile and profile.birth_date else '' }}" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>جنسیت</label>
+                    <select name="gender" id="gender" class="form-control">
+                        <option value="M" {% if profile and profile.gender == 'M' %}selected{% endif %}>آقا</option>
+                        <option value="F" {% if profile and profile.gender == 'F' %}selected{% endif %}>خانم</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-6">
+                    <label>عنوان فیده</label>
+                    <select name="fide_title" id="fide_title" class="form-control">
+                        <option value="">ندارم</option>
+                        {% for t in ['GM', 'IM', 'FM', 'CM', 'WGM', 'WIM', 'WFM', 'WCM'] %}
+                            <option value="{{ t }}" {% if profile and profile.fide_title == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>کد تخفیف (Promo Code)</label>
+                <input type="text" name="promo_code" id="promo_code" class="form-control" style="text-transform: uppercase;">
+            </div>
+
+            <div class="price-box">
+                <h4 style="margin-top: 0; color: #1e40af;">محاسبه قیمت</h4>
+                <div id="price-breakdown">
+                    <div class="price-row">
+                        <span>قیمت پایه:</span>
+                        <span><span id="base-price">{{ tournament.base_price or 0 }}</span> تومان</span>
+                    </div>
+                    <div id="discount-list" style="margin: 5px 0;"></div>
+                    <div class="price-row price-total">
+                        <span>مبلغ نهایی:</span>
+                        <span><span id="final-price">{{ tournament.base_price or 0 }}</span> تومان</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 20px;">ثبت درخواست</button>
+        </form>
+        {% endif %}
+    </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('reg-form');
+    if(!form) return;
+
     const inputs = ['first_name', 'last_name', 'fide_id', 'birth_date', 'gender', 'fide_title', 'promo_code'];
     
     function recalculatePrice() {
@@ -117,15 +146,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch('{{ url_for("registration.calculate_price_api", public_id=tournament.public_id) }}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         })
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                alert(data.error);
+                console.error(data.error);
                 return;
             }
             document.getElementById('base-price').innerText = data.base_price;
@@ -134,15 +161,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const discountList = document.getElementById('discount-list');
             discountList.innerHTML = '';
             data.discounts.forEach(d => {
-                const li = document.createElement('li');
-                li.innerText = `${d.reason}: -${d.amount} تومان`;
-                discountList.appendChild(li);
+                discountList.innerHTML += `<div class="price-row" style="font-size: 0.9rem; color: #059669;"><span>${d.reason}:</span><span>- ${d.amount} تومان</span></div>`;
             });
         })
         .catch(error => console.error('Error:', error));
     }
 
-    // محاسبه قیمت هنگام تغییر هر فیلد
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -151,7 +175,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // محاسبه اولیه
     recalculatePrice();
 });
 </script>

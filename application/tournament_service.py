@@ -46,7 +46,22 @@ class TournamentService:
         organizer_id = None
         if current_user.is_authenticated and current_user.has_role('organizer'):
             organizer_id = current_user.id
+            
+        # ── Phase 3: Pricing & Registration Settings ──
+        base_price = int(form_data.get("base_price", 0) or 0)
         
+        max_p = form_data.get("max_players", "").strip()
+        max_players = int(max_p) if max_p else None
+        
+        reg_deadline_str = form_data.get("registration_deadline", "").strip()
+        registration_deadline = None
+        if reg_deadline_str:
+            try:
+                fmt = "%Y-%m-%dT%H:%M" if "T" in reg_deadline_str else "%Y-%m-%d"
+                registration_deadline = datetime.strptime(reg_deadline_str, fmt)
+            except ValueError:
+                pass
+
         tournament = TournamentModel(
             public_id=TournamentRepository.generate_public_id(),
             admin_code=TournamentRepository.generate_admin_code(),
@@ -57,7 +72,7 @@ class TournamentService:
             time_control_description=form_data.get(
                 "time_control_description", ""
             ).strip(),
-            total_rounds=int(form_data.get("total_rounds", 5)),
+            total_rounds=int(form_data.get("total_rounds", 5)), # Fixed field name
             chief_arbiter=form_data.get("chief_arbiter", "").strip(),
             arbiter=form_data.get("arbiter", "").strip(),
             start_date=start_date,
@@ -67,6 +82,10 @@ class TournamentService:
                 form_data.get("cumulative_age_category") == "1"
             ),
             organizer_id=organizer_id,
+            # New Fields:
+            base_price=base_price,
+            max_players=max_players,
+            registration_deadline=registration_deadline,
         )
         return TournamentRepository.save(tournament)
 

@@ -87,8 +87,8 @@
             <h3 class="section-title">تنظیمات دورها</h3>
             
             <div class="form-group">
-                <label for="number_of_rounds">تعداد دورها *</label>
-                <input type="number" id="number_of_rounds" name="number_of_rounds" min="1" required>
+                <label for="total_rounds">تعداد دورها *</label>
+                <input type="number" id="total_rounds" name="total_rounds" min="1" required value="5">
             </div>
         </div>
         
@@ -108,19 +108,26 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Arbiters section -->
+
+        <!-- Registration & Pricing section -->
         <div class="form-section">
-            <h3 class="section-title">داوران</h3>
+            <h3 class="section-title">ثبت‌نام و قیمت‌گذاری</h3>
             
-            <div class="form-group">
-                <label for="chief_arbiter">سرداور</label>
-                <input type="text" id="chief_arbiter" name="chief_arbiter">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="base_price">هزینه ثبت‌نام (تومان)</label>
+                    <input type="number" id="base_price" name="base_price" min="0" value="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="max_players">ظرفیت مسابقه (اختیاری)</label>
+                    <input type="number" id="max_players" name="max_players" min="2">
+                </div>
             </div>
             
             <div class="form-group">
-                <label for="arbiter">داور</label>
-                <input type="text" id="arbiter" name="arbiter">
+                <label for="registration_deadline">مهلت پایان ثبت‌نام</label>
+                <input type="datetime-local" id="registration_deadline" name="registration_deadline">
             </div>
         </div>
         

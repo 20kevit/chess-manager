@@ -2,73 +2,324 @@
 
 {% block title %}داشبورد کاربری{% endblock %}
 
-{% block content %}
-<div class="container">
-    <h2>داشبورد کاربری</h2>
+{% block extra_css %}
+<style>
+    /* Modern Dashboard Styles */
+    .dash-header {
+        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .dash-header h2 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+    .dash-header .role-badge {
+        background: rgba(255,255,255,0.15);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
     
-    {% if profile %}
-        <div class="card">
-            <div class="card-header">پروفایل شطرنج من</div>
-            <div class="card-body">
-                <p><strong>نام:</strong> {{ profile.first_name }} {{ profile.last_name }}</p>
-                <p><strong>کد فیده:</strong> {{ profile.fide_id or 'ندارد' }}</p>
-                <p><strong>فدراسیون:</strong> {{ profile.federation }}</p>
-                <p><strong>عنوان:</strong> {{ profile.fide_title or 'ندارد' }}</p>
-            </div>
-        </div>
-    {% else %}
-        <div class="alert alert-warning">
-            شما هنوز پروفایل شطرنج‌بازی ندارید. می‌توانید یک پروفایل موجود را به حساب خود متصل کنید (در صورتی که قبلاً در مسابقات ثبت‌نام کرده‌اید) یا یک پروفایل جدید بسازید.
-        </div>
-        
-        <!-- فرم جستجوی پروفایل موجود -->
-        <div class="card mt-4">
-            <div class="card-header">جستجوی پروفایل موجود (Claim)</div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('dashboard.search_profile') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="form-group">
-                        <label>کد فیده (اختیاری):</label>
-                        <input type="text" name="fide_id" class="form-control">
-                    </div>
-                    <p class="text-center">یا</p>
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label>نام:</label>
-                            <input type="text" name="first_name" class="form-control">
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label>نام خانوادگی:</label>
-                            <input type="text" name="last_name" class="form-control">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">جستجو</button>
-                </form>
+    .dash-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 25px;
+    }
+    @media (max-width: 768px) {
+        .dash-grid { grid-template-columns: 1fr; }
+    }
+    
+    .dash-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+    }
+    .dash-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f3f4f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        border-radius: 8px;
+        background: #f9fafb;
+        margin-bottom: 10px;
+        transition: all 0.2s;
+    }
+    .list-item:hover { background: #f3f4f6; }
+    .list-item-info { display: flex; flex-direction: column; }
+    .list-item-title { font-weight: 600; color: #1f2937; }
+    .list-item-sub { font-size: 0.85rem; color: #6b7280; margin-top: 3px; }
+    
+    .btn-action {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+    
+    .profile-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    .profile-row:last-child { border: none; }
+    .profile-label { color: #6b7280; }
+    .profile-value { font-weight: 600; color: #1f2937; }
+    
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 450px;
+    }
+</style>
+{% endblock %}
 
-                {% if search_results %}
-                    <hr>
-                    <h5>نتایج جستجو:</h5>
-                    <ul class="list-group">
-                        {% for p in search_results %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                {{ p.first_name }} {{ p.last_name }} ({{ p.fide_id or 'بدون کد فیده' }})
-                                <form action="{{ url_for('dashboard.link_profile', profile_id=p.id) }}" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-success">اتصال به حساب من</button>
-                                </form>
-                            </li>
-                        {% else %}
-                            <li class="list-group-item text-muted">پروفایلی یافت نشد.</li>
-                        {% endfor %}
-                    </ul>
+{% block content %}
+<div class="dash-header">
+    <div>
+        <h2>داشبورد کاربری</h2>
+        <div style="margin-top: 10px; opacity: 0.9;">{{ user.email }}</div>
+    </div>
+    <div>
+        {% if is_organizer %}<span class="role-badge">🏆 برگزارکننده</span>{% endif %}
+        {% if is_player %}<span class="role-badge">♟️ بازیکن</span>{% endif %}
+    </div>
+</div>
+
+<div class="dash-grid">
+    <!-- Right Column (Main Content) -->
+    <div>
+        {% if is_organizer %}
+        <div class="dash-card">
+            <div class="dash-card-title">
+                مدیریت تورنمنت‌ها
+                <a href="{{ url_for('tournament.create') }}" class="btn btn-primary btn-action">+ تورنمنت جدید</a>
+            </div>
+            {% if my_tournaments %}
+                {% for t in my_tournaments %}
+                <div class="list-item">
+                    <div class="list-item-info">
+                        <span class="list-item-title">{{ t.name }}</span>
+                        <span class="list-item-sub">دور {{ t.current_round }} از {{ t.total_rounds }} | وضعیت: {{ t.status }}</span>
+                    </div>
+                    <a href="{{ url_for('tournament.view', public_id=t.public_id) }}" class="btn btn-info btn-action">مدیریت</a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted" style="text-align: center; padding: 20px;">شما هنوز تورنمنتی ایجاد نکرده‌اید.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if assigned_tournaments %}
+        <div class="dash-card">
+            <div class="dash-card-title">
+                تورنمنت‌های واگذار شده (داوری)
+            </div>
+            {% for t in assigned_tournaments %}
+            <div class="list-item">
+                <div class="list-item-info">
+                    <span class="list-item-title">{{ t.name }}</span>
+                    <span class="list-item-sub">دور {{ t.current_round }} از {{ t.total_rounds }} | وضعیت: {{ t.status }}</span>
+                </div>
+                <a href="{{ url_for('dashboard.manage_tournament', public_id=t.public_id) }}" class="btn btn-info btn-action">مدیریت</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if is_player %}
+        <div class="dash-card">
+            <div class="dash-card-title">تورنمنت‌های من</div>
+            {% if my_registrations %}
+                {% for reg in my_registrations %}
+                <div class="list-item">
+                    <div class="list-item-info">
+                        <span class="list-item-title">{{ reg.tournament.name }}</span>
+                        <span class="list-item-sub">
+                            مبلغ: {{ reg.final_price }} تومان | 
+                            وضعیت: 
+                            {% if reg.status == 'pending' %}<span style="color: #d97706;">در انتظار پرداخت</span>
+                            {% elif reg.status == 'paid' %}<span style="color: #2563eb;">پرداخت شده</span>
+                            {% elif reg.status == 'approved' %}<span style="color: #059669;">تایید شده</span>
+                            {% elif reg.status == 'rejected' %}<span style="color: #dc2626;">رد شده</span>{% endif %}
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <a href="{{ url_for('tournament.view', public_id=reg.tournament.public_id) }}" class="btn btn-light btn-action">مشاهده</a>
+                        {% if reg.status == 'pending' %}
+                        <!-- Fixed Payment Bug: Changed to POST form -->
+                        <form action="{{ url_for('payment.initiate_payment', reg_id=reg.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success btn-action">پرداخت</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted" style="text-align: center; padding: 20px;">شما در هیچ تورنمنتی ثبت‌نام نکرده‌اید.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Left Column (Profile) -->
+    <div>
+        <div class="dash-card">
+            <div class="dash-card-title">
+                پروفایل شطرنج
+                {% if profile %}
+                <button onclick="document.getElementById('editModal').classList.add('active')" class="btn btn-light btn-action">ویرایش</button>
                 {% endif %}
             </div>
+            
+            {% if profile %}
+                <div class="profile-row">
+                    <span class="profile-label">نام:</span>
+                    <span class="profile-value">{{ profile.first_name }} {{ profile.last_name }}</span>
+                </div>
+                <div class="profile-row">
+                    <span class="profile-label">کد فیده:</span>
+                    <span class="profile-value">{{ profile.fide_id or 'ندارد' }}</span>
+                </div>
+                <div class="profile-row">
+                    <span class="profile-label">فدراسیون:</span>
+                    <span class="profile-value">{{ profile.federation }}</span>
+                </div>
+                <div class="profile-row">
+                    <span class="profile-label">عنوان:</span>
+                    <span class="profile-value">{{ profile.fide_title or 'بدون عنوان' }}</span>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    شما هنوز پروفایل شطرنج‌بازی ندارید. برای ثبت‌نام در تورنمنت‌ها نیاز به پروفایل دارید.
+                </div>
+                
+                <button onclick="document.getElementById('claimModal').classList.add('active')" class="btn btn-primary btn-block mt-3">اتصال پروفایل موجود</button>
+                <a href="{{ url_for('dashboard.create_profile') }}" class="btn btn-light btn-block mt-2">ساخت پروفایل جدید</a>
+            {% endif %}
         </div>
+    </div>
+</div>
 
-        <!-- لینک ساخت پروفایل جدید -->
-        <div class="text-center mt-4">
-            <a href="{{ url_for('dashboard.create_profile') }}" class="btn btn-info">ساخت پروفایل جدید</a>
-        </div>
-    {% endif %}
+<!-- Edit Profile Modal -->
+<div id="editModal" class="modal-overlay" onclick="if(event.target === this) this.classList.remove('active')">
+    <div class="modal-box">
+        <h4 style="margin-bottom: 20px;">ویرایش پروفایل</h4>
+        <form method="POST" action="{{ url_for('dashboard.update_profile') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label>نام:</label>
+                <input type="text" name="first_name" class="form-control" value="{{ profile.first_name }}" required>
+            </div>
+            <div class="form-group">
+                <label>نام خانوادگی:</label>
+                <input type="text" name="last_name" class="form-control" value="{{ profile.last_name }}" required>
+            </div>
+            <div class="form-group">
+                <label>کد فیده (اختیاری):</label>
+                <input type="text" name="fide_id" class="form-control" value="{{ profile.fide_id }}" disabled>
+                <small style="color: #6b7280;">تغییر کد فیده توسط ادمین سیستم انجام می‌شود.</small>
+            </div>
+            <div class="form-group">
+                <label>فدراسیون:</label>
+                <input type="text" name="federation" class="form-control" value="{{ profile.federation }}">
+            </div>
+            <div class="form-group">
+                <label>عنوان (Title):</label>
+                <select name="fide_title" class="form-control">
+                    <option value="">هیچ</option>
+                    {% for t in ['GM', 'IM', 'FM', 'CM', 'WGM', 'WIM', 'WFM', 'WCM'] %}
+                        <option value="{{ t }}" {% if profile.fide_title == t %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>تاریخ تولد:</label>
+                <input type="date" name="birth_date" class="form-control" value="{{ profile.birth_date.strftime('%Y-%m-%d') if profile.birth_date else '' }}">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-success" style="flex: 1;">ذخیره تغییرات</button>
+                <button type="button" onclick="document.getElementById('editModal').classList.remove('active')" class="btn btn-light">انصراف</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Claim Profile Modal -->
+<div id="claimModal" class="modal-overlay" onclick="if(event.target === this) this.classList.remove('active')">
+    <div class="modal-box">
+        <h4 style="margin-bottom: 20px;">جستجوی پروفایل موجود</h4>
+        <form method="POST" action="{{ url_for('dashboard.search_profile') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label>کد فیده:</label>
+                <input type="text" name="fide_id" class="form-control" placeholder="مثال: 12345678">
+            </div>
+            <p class="text-center" style="margin: 15px 0;">یا</p>
+            <div class="form-group">
+                <label>نام:</label>
+                <input type="text" name="first_name" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>نام خانوادگی:</label>
+                <input type="text" name="last_name" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">جستجو</button>
+        </form>
+        
+        {% if search_results %}
+        <hr style="margin: 20px 0;">
+            <h5>نتایج جستجو:</h5>
+            <div style="max-height: 200px; overflow-y: auto;">
+                {% for p in search_results %}
+                    <div class="list-item">
+                        <div class="list-item-info">
+                            <span class="list-item-title">{{ p.first_name }} {{ p.last_name }}</span>
+                            <span class="list-item-sub">کد فیده: {{ p.fide_id or 'ندارد' }}</span>
+                        </div>
+                        <form action="{{ url_for('dashboard.link_profile', profile_id=p.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success btn-action">اتصال</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <p class="text-muted" style="text-align: center;">پروفایلی با این مشخصات یافت نشد.</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

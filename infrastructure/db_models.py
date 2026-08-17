@@ -91,6 +91,10 @@ class PlayerProfileModel(db.Model):
     fide_title = db.Column(db.String(5), default="")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    national_id = db.Column(db.String(10), nullable=True)
+    bank_card_number = db.Column(db.String(20), nullable=True)
+    bank_account_name = db.Column(db.String(100), nullable=True)
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -337,3 +341,19 @@ class PaymentModel(db.Model):
     gateway_metadata = db.Column(db.Text, default="{}")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     paid_at = db.Column(db.DateTime, nullable=True)
+
+
+class TournamentStaffModel(db.Model):
+    __tablename__ = "tournament_staff"
+    __table_args__ = (
+        db.UniqueConstraint("tournament_id", "user_id", name="uq_tournament_staff"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    role = db.Column(db.String(20), default="arbiter") # فعلا فقط arbiter
+
+    tournament = db.relationship("TournamentModel", backref="staff_members")
+    user = db.relationship("UserModel", backref="staff_assignments")

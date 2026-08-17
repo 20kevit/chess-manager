@@ -1,72 +1,84 @@
 {% extends "base.html" %}
 {% block title %}درخواست‌های ثبت‌نام - {{ tournament.name }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .reg-manage-container { max-width: 1000px; margin: 20px auto; }
+    .reg-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .reg-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #f3f4f6; }
+    .reg-item:last-child { border: none; }
+    .reg-info { flex: 1; }
+    .reg-name { font-weight: 700; color: #1f2937; font-size: 1.1rem; }
+    .reg-meta { font-size: 0.85rem; color: #6b7280; margin-top: 5px; display: flex; gap: 15px; }
+    .reg-price { font-weight: 600; color: #059669; }
+    .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card" style="max-width: 1000px; margin: 20px auto;">
-    <h2>مدیریت درخواست‌های ثبت‌نام</h2>
-    
-    <table class="standings-table" style="width: 100%; margin-top: 20px;">
-        <thead>
-            <tr>
-                <th>نام بازیکن</th>
-                <th>کد فیده</th>
-                <th>تاریخ درخواست</th>
-                <th>قیمت پایه</th>
-                <th>تخفیفات</th>
-                <th>مبلغ نهایی</th>
-                <th>وضعیت</th>
-                <th>کد پیگیری</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in parsed_regs %}
-            {% set reg = item.reg %}
-            {% set bd = item.breakdown %}
-            <tr>
-                <td>{{ reg.profile.full_name }}</td>
-                <td>{{ reg.profile.fide_id or '-' }}</td>
-                <td>{{ reg.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td>{{ bd.base_price | toman_formatter }}</td>
-                <td>
-                    <ul style="margin: 0; padding-right: 15px; font-size: 0.85em;">
-                        {% for d in bd.discounts %}
-                        <li>{{ d.reason }}: -{{ d.amount | toman_formatter }}</li>
-                        {% endfor %}
-                    </ul>
-                </td>
-                <td><strong>{{ bd.final_price | toman_formatter }}</strong></td>
-                <td>
-                    {% if reg.status == 'pending' %}
-                        <span class="badge" style="background: #fef3c7; color: #92400e;">در انتظار تأیید/پرداخت</span>
-                    {% elif reg.status == 'payment_pending' %}
-                        <span class="badge" style="background: #e0e7ff; color: #3730a3;">در حال پرداخت</span>
-                    {% elif reg.status == 'paid' %}
-                        <span class="badge" style="background: #dbeafe; color: #1e40af;">پرداخت شده (منتظر تأیید)</span>
-                    {% elif reg.status == 'approved' %}
-                        <span class="badge" style="background: #d1fae5; color: #065f46;">تأیید شده</span>
-                    {% elif reg.status == 'rejected' %}
-                        <span class="badge" style="background: #fee2e2; color: #991b1b;">رد شده</span>
-                    {% endif %}
-                </td>
-                <td>{{ item.ref_id or '-' }}</td>
-                <td>
-                    {% if reg.status in ['pending', 'paid'] %}
-                    <div style="display: flex; gap: 5px;">
-                        <form method="POST" action="{{ url_for('registration.approve_registration', public_id=tournament.public_id, reg_id=reg.id) }}">
-                            <button type="submit" class="btn btn-success" style="padding: 5px 10px;">تأیید</button>
-                        </form>
-                        <form method="POST" action="{{ url_for('registration.reject_registration', public_id=tournament.public_id, reg_id=reg.id) }}">
-                            <button type="submit" class="btn btn-danger" style="padding: 5px 10px;">رد</button>
-                        </form>
-                    </div>
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="reg-manage-container">
+    <div class="reg-card">
+        <h2 style="margin-top: 0; margin-bottom: 20px;">مدیریت درخواست‌های ثبت‌نام</h2>
+        
+        {% if parsed_regs %}
+        <div class="table-responsive">
+            <table class="standings-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>نام بازیکن</th>
+                        <th>کد فیده</th>
+                        <th>تاریخ درخواست</th>
+                        <th>مبلغ نهایی</th>
+                        <th>وضعیت</th>
+                        <th>کد پیگیری</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in parsed_regs %}
+                    {% set reg = item.reg %}
+                    {% set bd = item.breakdown %}
+                    <tr>
+                        <td>{{ reg.profile.full_name }}</td>
+                        <td>{{ reg.profile.fide_id or '-' }}</td>
+                        <td>{{ reg.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td><strong>{{ bd.final_price | toman_formatter }}</strong></td>
+                        <td>
+                            {% if reg.status == 'pending' %}
+                                <span class="status-badge" style="background: #fef3c7; color: #92400e;">در انتظار</span>
+                            {% elif reg.status == 'payment_pending' %}
+                                <span class="status-badge" style="background: #e0e7ff; color: #3730a3;">در حال پرداخت</span>
+                            {% elif reg.status == 'paid' %}
+                                <span class="status-badge" style="background: #dbeafe; color: #1e40af;">پرداخت شده</span>
+                            {% elif reg.status == 'approved' %}
+                                <span class="status-badge" style="background: #d1fae5; color: #065f46;">تأیید شده</span>
+                            {% elif reg.status == 'rejected' %}
+                                <span class="status-badge" style="background: #fee2e2; color: #991b1b;">رد شده</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.ref_id or '-' }}</td>
+                        <td>
+                            {% if reg.status in ['pending', 'paid'] %}
+                            <div style="display: flex; gap: 5px;">
+                                <form method="POST" action="{{ url_for('registration.approve_registration', public_id=tournament.public_id, reg_id=reg.id) }}">
+                                    <button type="submit" class="btn btn-success btn-sm">تأیید</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('registration.reject_registration', public_id=tournament.public_id, reg_id=reg.id) }}">
+                                    <button type="submit" class="btn btn-danger btn-sm">رد</button>
+                                </form>
+                            </div>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p style="text-align: center; color: #6b7280; padding: 40px;">هیچ درخواست ثبت‌نامی وجود ندارد.</p>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

@@ -1,8 +1,13 @@
-# interfaces/web/dashboard_routes.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import current_user, login_required
 from application.auth_service import AuthService
-from infrastructure.db_models import PlayerProfileModel
+from infrastructure.db_models import (
+    PlayerProfileModel, TournamentModel, RegistrationModel, 
+    TournamentStaffModel, UserModel
+)
+from datetime import datetime
+from app.extensions import db
+from interfaces.web.admin_auth import require_admin
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -10,8 +15,112 @@ dashboard_bp = Blueprint("dashboard", __name__)
 @login_required
 def index():
     profile = current_user.profile
-    return render_template("dashboard/index.html", profile=profile)
+    is_organizer = current_user.has_role('organizer')
+    is_player = current_user.has_role('player')
+    
+    my_tournaments = []
+    assigned_tournaments = []
+    my_registrations = []
+    
+    if is_organizer:
+        my_tournaments = TournamentModel.query.filter_by(
+            organizer_id=current_user.id
+        ).order_by(TournamentModel.created_at.desc()).all()
 
+    # تورنمنت‌هایی که کاربر به عنوان داور به آن‌ها اختصاص داده شده
+    assignments = TournamentStaffModel.query.filter_by(user_id=current_user.id).all()
+    assigned_tournaments = [a.tournament for a in assignments]
+        
+    if is_player and profile:
+        my_registrations = RegistrationModel.query.filter_by(
+            player_profile_id=profile.id
+        ).order_by(RegistrationModel.created_at.desc()).all()
+
+    return render_template(
+        "dashboard/index.html", 
+        profile=profile,
+        user=current_user,
+        is_organizer=is_organizer,
+        is_player=is_player,
+        my_tournaments=my_tournaments,
+        assigned_tournaments=assigned_tournaments,
+        my_registrations=my_registrations
+    )
+
+@dashboard_bp.route("/dashboard/tournament/<public_id>/manage")
+@login_required
+def manage_tournament(public_id):
+    """صفحه hub مدیریت تورنمنت در داشبورد"""
+    tournament = require_admin(public_id)
+    if not tournament:
+        flash("دسترسی غیرمجاز است.", "error")
+        return redirect(url_for("dashboard.index"))
+    
+    staff_members = TournamentStaffModel.query.filter_by(tournament_id=tournament.id).all()
+    
+    return render_template(
+        "dashboard/manage_tournament.html", 
+        tournament=tournament,
+        staff_members=staff_members
+    )
+
+@dashboard_bp.route("/dashboard/tournament/<public_id>/manage/staff/add", methods=["POST"])
+@login_required
+def add_staff(public_id):
+    tournament = require_admin(public_id)
+    if not tournament:
+        abort(403)
+        
+    email = request.form.get("email", "").strip().lower()
+    user = UserModel.query.filter_by(email=email).first()
+    
+    if not user:
+        flash("کاربری با این ایمیل در سیستم ثبت‌نام نکرده است.", "error")
+        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        
+    if tournament.organizer_id == user.id:
+        flash("برگزارکننده نمی‌تواند به عنوان داور اضافه شود.", "error")
+        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        
+    existing = TournamentStaffModel.query.filter_by(
+        tournament_id=tournament.id, user_id=user.id
+    ).first()
+    
+    if existing:
+        flash("این کاربر قبلاً به عنوان داور اضافه شده است.", "error")
+        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        
+    new_staff = TournamentStaffModel(
+        tournament_id=tournament.id, 
+        user_id=user.id, 
+        role="arbiter"
+    )
+    db.session.add(new_staff)
+    db.session.commit()
+    flash(f"کاربر {user.email} با موفقیت به عنوان داور اضافه شد.", "success")
+    return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+
+@dashboard_bp.route("/dashboard/tournament/<public_id>/manage/staff/remove/<int:user_id>", methods=["POST"])
+@login_required
+def remove_staff(public_id, user_id):
+    tournament = require_admin(public_id)
+    if not tournament:
+        abort(403)
+        
+    staff = TournamentStaffModel.query.filter_by(
+        tournament_id=tournament.id, user_id=user_id
+    ).first()
+    
+    if staff:
+        db.session.delete(staff)
+        db.session.commit()
+        flash("داوار با موفقیت حذف شد.", "success")
+    else:
+        flash("داور یافت نشد.", "error")
+        
+    return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+
+# ... (بقیه روت‌های پروفایل که قبلاً نوشتیم در اینجا باقی می‌مانند)
 @dashboard_bp.route("/dashboard/profile/search", methods=["POST"])
 @login_required
 def search_profile():
@@ -19,7 +128,7 @@ def search_profile():
     first_name = request.form.get("first_name", "").strip()
     last_name = request.form.get("last_name", "").strip()
     
-    query = PlayerProfileModel.query.filter_by(user_id=None) # فقط پروفایل‌های بدون مالک
+    query = PlayerProfileModel.query.filter_by(user_id=None)
     
     if fide_id:
         query = query.filter_by(fide_id=fide_id)
@@ -33,7 +142,21 @@ def search_profile():
         return redirect(url_for("dashboard.index"))
         
     search_results = query.all()
-    return render_template("dashboard/index.html", profile=current_user.profile, search_results=search_results)
+    
+    assignments = TournamentStaffModel.query.filter_by(user_id=current_user.id).all()
+    assigned_tournaments = [a.tournament for a in assignments]
+    
+    return render_template(
+        "dashboard/index.html", 
+        profile=current_user.profile, 
+        user=current_user,
+        search_results=search_results,
+        is_organizer=current_user.has_role('organizer'),
+        is_player=current_user.has_role('player'),
+        my_tournaments=TournamentModel.query.filter_by(organizer_id=current_user.id).all(),
+        assigned_tournaments=assigned_tournaments,
+        my_registrations=RegistrationModel.query.filter_by(user_id=current_user.id).all()
+    )
 
 @dashboard_bp.route("/dashboard/profile/link/<int:profile_id>", methods=["POST"])
 @login_required
@@ -61,3 +184,29 @@ def create_profile():
             flash(str(e), "error")
             
     return render_template("dashboard/create_profile.html")
+
+@dashboard_bp.route("/dashboard/profile/update", methods=["POST"])
+@login_required
+def update_profile():
+    if not current_user.profile:
+        flash("شما پروفایلی برای ویرایش ندارید.", "error")
+        return redirect(url_for("dashboard.index"))
+        
+    profile = current_user.profile
+    profile.first_name = request.form.get("first_name", "").strip()
+    profile.last_name = request.form.get("last_name", "").strip()
+    profile.federation = request.form.get("federation", "IRI").strip() or "IRI"
+    profile.fide_title = request.form.get("fide_title", "").strip()
+    
+    birth_str = request.form.get("birth_date", "").strip()
+    if birth_str:
+        try:
+            profile.birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
+        except ValueError:
+            flash("فرمت تاریخ تولد اشتباه است.", "error")
+    else:
+        profile.birth_date = None
+        
+    db.session.commit()
+    flash("پروفایل با موفقیت بروزرسانی شد.", "success")
+    return redirect(url_for("dashboard.index"))

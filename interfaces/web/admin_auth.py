@@ -29,21 +29,31 @@ def require_admin(public_id):
     """
     Helper for other routes to ensure admin access.
     Returns the tournament object or None.
-    1. If user is logged in, check if they are organizer, arbiter, or global admin.
+    1. If user is logged in, check if they are organizer, assigned arbiter, or global admin.
     2. Fallback to legacy admin_code session for non-user access.
     """
+    from infrastructure.db_models import TournamentStaffModel
+    
     tournament = TournamentRepository.get_by_public_id(public_id)
     if not tournament: 
         return None
     
-    # ── بررسی دسترسی بر اساس اکانت کاربری (RBAC) ──
+    # ── بررسی دسترسی بر اساس اکانت کاربری ──
     if current_user.is_authenticated:
-        # اگر ادمین سیستمی است یا برگزارکننده این تورنمنت است یا داور است
-        if current_user.is_admin or tournament.organizer_id == current_user.id or current_user.has_role('arbiter'):
+        # ادمین سیستمی
+        if current_user.is_admin:
             return tournament
-        # اگر کاربر لاگین شده اما دسترسی ندارد، نباید اجازه ورود با admin_code را بدهد
+        # برگزارکننده تورنمنت
+        if tournament.organizer_id == current_user.id:
+            return tournament
+        # داور اختصاصی این تورنمنت
+        is_assigned = TournamentStaffModel.query.filter_by(
+            tournament_id=tournament.id, user_id=current_user.id
+        ).first()
+        if is_assigned:
+            return tournament
+            
         return None
-    # ───────────────────────────────────────────────
 
     # ── سیستم قدیمی: بررسی کد ۱۶ رقمی در Session ──
     session_key = f"admin_{public_id}"

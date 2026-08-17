@@ -3,6 +3,7 @@ Tournament HTTP handlers.
 No business logic here.
 """
 from flask import Blueprint, render_template, request, session, abort, url_for, flash, redirect
+from flask_login import current_user
 from infrastructure.repositories import TournamentRepository, ParticipantRepository, PairingRepository
 from application.tournament_service import TournamentService
 from interfaces.web.helpers import build_cell as _build_cell
@@ -84,8 +85,11 @@ def view(public_id):
     tournament = TournamentRepository.get_by_public_id(public_id)
     if not tournament: abort(404)
 
-    # Automatically enable admin features if session matches
-    is_admin = is_current_admin(tournament)
+    # Detect if current user has management access (organizer, staff, admin)
+    is_admin = False
+    if current_user.is_authenticated:
+        if require_admin(public_id) is not None:
+            is_admin = True
     
     standings = TournamentService.get_standings(tournament)
     return render_template(

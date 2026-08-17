@@ -158,8 +158,9 @@ class RegistrationService:
         registration = RegistrationRepository.get_by_id(registration_id)
         if not registration:
             raise ValueError("درخواست ثبت‌نام یافت نشد.")
-        if registration.status != "pending":
-            raise ValueError("این درخواست قبلاً پردازش شده است.")
+        # FIX: Allow approval for both 'pending' and 'paid' statuses
+        if registration.status not in ["pending", "paid"]:
+            raise ValueError("این درخواست قبلاً پردازش شده است یا در حال پرداخت است.")
 
         tournament = registration.tournament
         profile = registration.profile

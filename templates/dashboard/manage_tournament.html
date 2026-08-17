@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت {{ tournament.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .manage-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 25px;
+    }
+    @media (max-width: 768px) { .manage-grid { grid-template-columns: 1fr; } }
+    .manage-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; }
+    .manage-card-title { font-size: 1.1rem; font-weight: 700; color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f3f4f6; }
+    .action-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+    .action-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: #f9fafb; border-radius: 8px; text-decoration: none; color: #1f2937; transition: all 0.2s; text-align: center; font-weight: 600; font-size: 0.9rem; }
+    .action-btn:hover { background: #eff6ff; color: #2563eb; transform: translateY(-2px); }
+    .action-btn svg { width: 24px; height: 24px; margin-bottom: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <div>
+        <h2 style="margin: 0; font-weight: 700;">مدیریت تورنمنت</h2>
+        <h3 style="margin: 5px 0 0 0; color: #6b7280;">{{ tournament.name }}</h3>
+    </div>
+    <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-light">مشاهده صفحه عمومی</a>
+</div>
+
+<div class="manage-grid">
+    <!-- Right Column (Actions) -->
+    <div>
+        <div class="manage-card">
+            <div class="manage-card-title">امکانات مدیریت</div>
+            <div class="action-grid">
+                <a href="{{ url_for('tournament.settings', public_id=tournament.public_id) }}" class="action-btn">
+                    ⚙️ تنظیمات تورنمنت
+                </a>
+                <a href="{{ url_for('player.player_list', public_id=tournament.public_id) }}" class="action-btn">
+                    👥 مدیریت بازیکنان
+                </a>
+                <a href="{{ url_for('registration.manage_registrations', public_id=tournament.public_id) }}" class="action-btn">
+                    📝 ثبت‌نام‌ها
+                </a>
+                <a href="#" class="action-btn">
+                    🔄 دورها و جفت‌سازی
+                </a>
+                <a href="{{ url_for('backup.export_json', public_id=tournament.public_id) }}" class="action-btn">
+                    💾 خروجی پشتیبان
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Column (Staff) -->
+    <div>
+        <div class="manage-card">
+            <div class="manage-card-title">مدیریت داوران</div>
+            
+            <form method="POST" action="{{ url_for('dashboard.add_staff', public_id=tournament.public_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label>ایمیل داور جدید:</label>
+                    <input type="email" name="email" class="form-control" placeholder="example@mail.com" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">افزودن داور</button>
+            </form>
+
+            <hr style="margin: 20px 0;">
+
+            <h5>داوران فعلی:</h5>
+            {% if staff_members %}
+                {% for staff in staff_members %}
+                    <div class="list-item" style="background: #f9fafb; padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+                        <span>{{ staff.user.email }}</span>
+                        <form action="{{ url_for('dashboard.remove_staff', public_id=tournament.public_id, user_id=staff.user_id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger btn-sm">حذف</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted" style="text-align: center;">هیچ داوری اضافه نشده است.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

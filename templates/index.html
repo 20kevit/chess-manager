@@ -8,7 +8,13 @@
     <p class="hero-description">
         ایجاد و مدیریت تورنومنت‌های شطرنج با سیستم سوییس
     </p>
-    <a href="/create" class="btn btn-primary btn-large">ایجاد تورنومنت جدید</a>
+    {% if current_user.is_authenticated and current_user.has_role('organizer') %}
+        <a href="{{ url_for('tournament.create') }}" class="btn btn-primary btn-large">ایجاد تورنومنت جدید</a>
+    {% elif current_user.is_authenticated %}
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary btn-large">ورود به داشبورد</a>
+    {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-large">ورود / ثبت‌نام</a>
+    {% endif %}
 </div>
 
 <!-- آمار کلان سایت -->
