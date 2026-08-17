@@ -40,9 +40,8 @@
         <button class="tab" onclick="showTab('round-{{ r.round_number }}', this)">دور {{ r.round_number }}</button>
     {% endfor %}
     <button class="tab" onclick="showTab('crosstable', this)">جدول برخورد</button>
-    <button class="tab" onclick="showTab('summary', this)">خلاصه و آمار</button>
-</div>
-
+    <button class="tab" onclick="showTab('summary', this)">خلاصه و آمار</button> 
+    <button class="tab" onclick="showTab('rulebook', this)">آیین‌نامه مسابقه</button></div>
 <div id="tab-standings" class="tab-content active" style="box-shadow:none; padding: 20px 0;">
     
     {% set unique_ages = [] %}
@@ -172,6 +171,16 @@
     <div style="text-align:center; padding:40px;">
         <a href="/{{ tournament.public_id }}/summary" class="btn btn-secondary">مشاهده آمار و گزارشات</a>
     </div>
+</div>
+
+<div id="tab-rulebook" class="tab-content" style="box-shadow:none; padding: 20px 0;">
+    {% if tournament.rulebook_text %}
+        <div class="card" style="padding: 20px; white-space: pre-wrap; line-height: 1.8; font-family: Vazirmatn, sans-serif;">
+            {{ tournament.rulebook_text }}
+        </div>
+    {% else %}
+        <p style="text-align: center; color: #6b7280; padding: 40px;">آیین‌نامه‌ای برای این مسابقه ثبت نشده است.</p>
+    {% endif %}
 </div>
 
 <script>
