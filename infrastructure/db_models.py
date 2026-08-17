@@ -353,7 +353,12 @@ class TournamentStaffModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    role = db.Column(db.String(20), default="arbiter") # فعلا فقط arbiter
+    role = db.Column(db.String(20), default="arbiter")
+    
+    # New Fields for Invitation System
+    status = db.Column(db.String(20), default="pending") # pending, accepted, rejected
+    invited_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     tournament = db.relationship("TournamentModel", backref="staff_members")
-    user = db.relationship("UserModel", backref="staff_assignments")
+    user = db.relationship("UserModel", foreign_keys=[user_id], backref="staff_assignments")
+    inviter = db.relationship("UserModel", foreign_keys=[invited_by], backref="sent_invitations")

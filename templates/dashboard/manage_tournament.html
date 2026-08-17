@@ -55,30 +55,37 @@
 
     <!-- Left Column (Staff) -->
     <div>
-        <div class="manage-card">
+                <div class="manage-card">
             <div class="manage-card-title">مدیریت داوران</div>
             
-            <form method="POST" action="{{ url_for('dashboard.add_staff', public_id=tournament.public_id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="form-group">
-                    <label>ایمیل داور جدید:</label>
-                    <input type="email" name="email" class="form-control" placeholder="example@mail.com" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">افزودن داور</button>
-            </form>
+            <!-- Live Search Input -->
+            <div class="form-group" style="position: relative;">
+                <label>جستجوی کاربر (ایمیل یا نام):</label>
+                <input type="text" id="arbiter-search" class="form-control" placeholder="حداقل ۲ حرف وارد کنید..." onkeyup="searchArbiters()">
+                <div id="search-results" style="position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ddd; border-radius: 0 0 8px 8px; z-index: 10; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto;"></div>
+            </div>
 
             <hr style="margin: 20px 0;">
 
             <h5>داوران فعلی:</h5>
             {% if staff_members %}
                 {% for staff in staff_members %}
-                    <div class="list-item" style="background: #f9fafb; padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+                <div class="list-item" style="background: #f9fafb; padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display:flex; flex-direction:column;">
                         <span>{{ staff.user.email }}</span>
-                        <form action="{{ url_for('dashboard.remove_staff', public_id=tournament.public_id, user_id=staff.user_id) }}" method="POST">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-danger btn-sm">حذف</button>
-                        </form>
+                        {% if staff.status == 'pending' %}
+                        <span style="font-size:0.8rem; color: #d97706;">در انتظار پاسخ</span>
+                        {% elif staff.status == 'accepted' %}
+                        <span style="font-size:0.8rem; color: #059669;">تایید شده</span>
+                        {% elif staff.status == 'rejected' %}
+                        <span style="font-size:0.8rem; color: #dc2626;">رد شده</span>
+                        {% endif %}
                     </div>
+                    <form action="{{ url_for('dashboard.remove_staff', public_id=tournament.public_id, user_id=staff.user_id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm">حذف</button>
+                    </form>
+                </div>
                 {% endfor %}
             {% else %}
                 <p class="text-muted" style="text-align: center;">هیچ داوری اضافه نشده است.</p>

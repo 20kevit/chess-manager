@@ -142,6 +142,33 @@
         </div>
         {% endif %}
         
+
+        {% if pending_invitations %}
+        <div class="dash-card" style="border-left: 4px solid #f59e0b;">
+            <div class="dash-card-title">
+                دعوت‌نامه‌های داوری (جدید)
+            </div>
+            {% for inv in pending_invitations %}
+            <div class="list-item" style="background: #fffbeb;">
+                <div class="list-item-info">
+                    <span class="list-item-title">{{ inv.tournament.name }}</span>
+                    <span class="list-item-sub">دعوت شده توسط: {{ inv.inviter.email }}</span>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <form action="{{ url_for('dashboard.accept_invitation', staff_id=inv.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success btn-action">قبول</button>
+                    </form>
+                    <form action="{{ url_for('dashboard.reject_invitation', staff_id=inv.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-action">رد</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
         {% if assigned_tournaments %}
         <div class="dash-card">
             <div class="dash-card-title">
