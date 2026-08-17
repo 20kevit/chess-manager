@@ -50,18 +50,38 @@ class AuthService:
                 db.session.commit()
 
     @staticmethod
-    def claim_profile(user_id: int, profile_id: int) -> PlayerProfileModel:
-        """اتصال یک پروفایل موجود به اکانت کاربری"""
+    def claim_profile(user_id: int, profile_id: int, verification_data: dict) -> PlayerProfileModel:
+        """Attach an existing profile to a user account with verification."""
         profile = PlayerProfileModel.query.get(profile_id)
         if not profile:
             raise ValueError("پروفایل یافت نشد.")
         if profile.user_id is not None:
             raise ValueError("این پروفایل قبلاً به حساب کاربری دیگری متصل شده است.")
         
+        # Security Check: Verify ownership
+        # We require national_id or birth_date to match if they are set in the profile
+        if profile.national_id:
+            provided_national_id = verification_data.get("national_id", "").strip()
+            if provided_national_id != profile.national_id:
+                raise ValueError("اطلاعات وارد شده برای ادعای پروفایل صحیح نیست.")
+        elif profile.birth_date:
+            provided_birth_str = verification_data.get("birth_date", "").strip()
+            if provided_birth_str:
+                try:
+                    provided_birth = datetime.strptime(provided_birth_str, "%Y-%m-%d").date()
+                    if provided_birth != profile.birth_date:
+                        raise ValueError("اطلاعات وارد شده برای ادعای پروفایل صحیح نیست.")
+                except ValueError:
+                    raise ValueError("فرمت تاریخ تولد نامعتبر است.")
+        else:
+            # If no verification fields exist on profile, we cannot securely verify.
+            # For safety, reject claiming profiles without verification fields,
+            # OR require admin approval. Here we reject for security.
+            raise ValueError("این پروفایل قابل ادعا نیست (فاقد اطلاعات راستی‌آزمایی است). لطفاً با مدیر سایت تماس بگیرید.")
+        
         profile.user_id = user_id
         db.session.commit()
         return profile
-
     @staticmethod
     def create_profile_for_user(user_id: int, form_data: dict) -> PlayerProfileModel:
         """ساخت پروفایل شطرنج جدید برای کاربر"""
