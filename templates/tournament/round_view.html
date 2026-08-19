@@ -71,6 +71,7 @@
             {% endif %}
             
             <a href="{{ url_for('round.manual_pairing', public_id=tournament.public_id, round_number=round.round_number) }}" class="btn btn-secondary">⚙️ جابجایی دستی بازیکنان</a>
+            <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به لیست دورها</a>
         </div>
     </div>
 </form>

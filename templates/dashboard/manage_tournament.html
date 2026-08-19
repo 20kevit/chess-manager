@@ -43,7 +43,7 @@
                 <a href="{{ url_for('registration.manage_registrations', public_id=tournament.public_id) }}" class="action-btn">
                     📝 ثبت‌نام‌ها
                 </a>
-                <a href="#" class="action-btn">
+                <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="action-btn">
                     🔄 دورها و جفت‌سازی
                 </a>
                 <a href="{{ url_for('backup.export_json', public_id=tournament.public_id) }}" class="action-btn">

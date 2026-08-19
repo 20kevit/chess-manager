@@ -26,7 +26,21 @@ def _require_admin_or_redirect(public_id):
 
 @player_bp.route("/<public_id>/players")
 def player_list(public_id):
-    return redirect(url_for("tournament.view", public_id=public_id))
+    # Check admin access or redirect
+    tournament, redir = _require_admin_or_redirect(public_id)
+    if redir:
+        return redir
+
+    # Fetch all participants for the tournament
+    players = ParticipantRepository.get_all(tournament.id)
+    
+    # Render the players list template
+    return render_template(
+        "tournament/players.html",
+        tournament=tournament,
+        players=players,
+        is_admin=True
+    )
 
 
 @player_bp.route("/<public_id>/players/add", methods=["GET", "POST"])

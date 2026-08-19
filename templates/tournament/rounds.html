@@ -20,6 +20,7 @@
     {% endif %}
 
     <a href="{{ url_for('round.request_bye', public_id=tournament.public_id) }}" class="btn btn-secondary">⏸️ مدیریت Bye</a>
+    <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
 </div>
 
 
@@ -44,7 +45,7 @@
 
             {% if loop.first %}
             <form method="POST"
-                  action="{{ url_for('round.delete_round', public_id=tournament.public_id, admin_code=tournament.admin_code, round_number=round.round_number) }}"
+                action="{{ url_for('round.delete_round', public_id=tournament.public_id, round_number=round.round_number) }}"
                   onsubmit="return confirm('⚠️ حذف دور {{ round.round_number }}؟')"
                   style="display:inline;">
                 <button type="submit" class="btn-small btn-danger" title="حذف دور">🗑️</button>

@@ -17,6 +17,32 @@
                     <label>حداکثر ظرفیت</label>
                     <input type="number" name="max_players" value="{{ tournament.max_players or '' }}" class="form-control">
                 </div>
+                <!-- امکانات جدید: کارت به کارت و آیین‌نامه -->
+                <div class="form-row" style="margin-top: 15px;">
+                    <div class="form-group col-md-6">
+                        <label>شماره کارت بانکی (برای کارت به کارت)</label>
+                        <input type="text" name="bank_card_number" value="{{ tournament.bank_card_number or '' }}" class="form-control" maxlength="16" placeholder="بدون فاصله">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>نام صاحب حساب</label>
+                        <input type="text" name="bank_account_name" value="{{ tournament.bank_account_name or '' }}" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>آیین‌نامه مسابقه (قوانین طولانی)</label>
+                    <textarea name="rulebook_text" class="form-control" rows="5" placeholder="قوانین کامل مسابقه...">{{ tournament.rulebook_text or '' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>توضیحات کارت به کارت (کوتاه)</label>
+                    <textarea name="bank_transfer_notes" class="form-control" rows="2" placeholder="مثال: لطفا پس از واریز، رسید را تا ۲۴ ساعت آینده آپلود کنید.">{{ tournament.bank_transfer_notes or '' }}</textarea>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" name="enable_online_payment" value="1" {% if tournament.enable_online_payment %}checked{% endif %} style="width: 20px; height: 20px;">
+                        <span>فعال بودن درگاه پرداخت آنلاین (زرین‌پال)</span>
+                    </label>
+                </div>
                 <div class="form-group col-md-4">
                     <label>مهلت ثبت‌نام</label>
                     <input type="date" name="registration_deadline" value="{{ tournament.registration_deadline.strftime('%Y-%m-%d') if tournament.registration_deadline else '' }}" class="form-control">
