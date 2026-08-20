@@ -13,9 +13,27 @@
 <div class="form-container" style="max-width: 900px; border:none; background:#f8fafc; padding:25px; border-radius:15px;">
 
     <form method="POST" id="playerAddForm">
+        
+        <!-- 1️⃣ FIDE Search Card (Phase 8 Fix) -->
+        <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-bottom:20px;">
+            <h3 class="section-title">🔍 جستجوی سریع در دیتابیس فیده</h3>
+            <div class="form-group">
+                <label>نام یا کد فیده بازیکن را تایپ کنید...</label>
+                <input type="text" id="fide_search_input" placeholder="مثال: 12345678 یا علی رضا" class="form-control">
+                <div id="fide_search_results" style="margin-top: 10px; max-height: 250px; overflow-y: auto; border-radius: 8px;"></div>
+            </div>
+        </div>
+
         <!-- 2️⃣ Personal Info Card -->
         <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
             <h3 class="section-title">📝 اطلاعات شناسنامه‌ای</h3>
+            
+            <!-- Added fide_id field as hidden/text -->
+            <div class="form-group" style="display:none;">
+                <label>کد فیده (FIDE ID)</label>
+                <input type="text" name="fide_id" id="fide_id" value="">
+            </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label>نام</label>
@@ -57,6 +75,7 @@
                 <div class="form-group">
                     <label>ریتینگ ({{ tournament.time_control_type }})</label>
                     <input type="number" name="rating" id="rating" value="0">
+                    <small class="text-muted">اگر بازیکن تأیید هویت شده باشد و 0 بگذارید، سیستم خودکار ریتینگ را از فیده می‌گیرد.</small>
                 </div>
                 <div class="form-group">
                     <label>عنوان فیده</label>
@@ -90,4 +109,81 @@
     </form>
 </div>
 
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const searchInput = document.getElementById('fide_search_input');
+    const resultsDiv = document.getElementById('fide_search_results');
+    let timeout = null;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timeout);
+        const query = this.value.trim();
+        
+        if (query.length < 3) {
+            resultsDiv.innerHTML = '';
+            return;
+        }
+        
+        timeout = setTimeout(() => {
+            fetch(`/dashboard/api/fide-search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    resultsDiv.innerHTML = '';
+                    if (data.length === 0) {
+                        resultsDiv.innerHTML = '<small class="text-muted" style="padding:10px; display:block;">نتیجه‌ای یافت نشد.</small>';
+                        return;
+                    }
+                    
+                    data.forEach(player => {
+                        const item = document.createElement('div');
+                        item.style.padding = '10px';
+                        item.style.borderBottom = '1px solid #eee';
+                        item.style.cursor = 'pointer';
+                        item.style.transition = 'background 0.2s';
+                        item.innerHTML = `
+                            <strong>${player.name}</strong> 
+                            <small style="color:#666;">(کد: ${player.fide_id}) - استاندارد: ${player.standard} | رپید: ${player.rapid}</small>
+                        `;
+                        
+                        item.addEventListener('mouseenter', function() {
+                            item.style.background = '#f8fafc';
+                        });
+                        item.addEventListener('mouseleave', function() {
+                            item.style.background = 'white';
+                        });
+                        
+                        item.addEventListener('click', function() {
+                            // Split "LASTNAME, FIRSTNAME" format
+                            const nameParts = player.name.split(',');
+                            if (nameParts.length > 1) {
+                                document.getElementById('last_name').value = nameParts[0].trim();
+                                document.getElementById('first_name').value = nameParts[1].trim();
+                            } else {
+                                document.getElementById('first_name').value = player.name;
+                            }
+                            
+                            document.getElementById('fide_id').value = player.fide_id;
+                            if (player.title) {
+                                const titleSelect = document.getElementById('fide_title');
+                                for(let i=0; i<titleSelect.options.length; i++) {
+                                    if(titleSelect.options[i].value === player.title) {
+                                        titleSelect.selectedIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Clear search
+                            searchInput.value = '';
+                            resultsDiv.innerHTML = '';
+                        });
+                        
+                        resultsDiv.appendChild(item);
+                    });
+                })
+                .catch(error => console.error('Error fetching FIDE data:', error));
+        }, 300);
+    });
+});
+</script>
 {% endblock %}
