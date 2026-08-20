@@ -407,6 +407,10 @@ class FideImportRepository:
         db.session.flush()
         return import_record
 
+    @staticmethod
+    def get_all() -> List["FideImportModel"]:
+        """Returns all import records, newest first."""
+        return FideImportModel.query.order_by(FideImportModel.downloaded_at.desc()).all()
 
 class PlayerVerificationRepository:
     @staticmethod

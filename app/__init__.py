@@ -43,6 +43,7 @@ def create_app(config_class=None) -> Flask:
     from interfaces.web.dashboard_routes import dashboard_bp
     from interfaces.web.registration_routes import registration_bp
     from interfaces.web.payment_routes import payment_bp
+    from interfaces.web.fide_routes import fide_bp
 
     flask_app.register_blueprint(tournament_bp)
     flask_app.register_blueprint(player_bp)
@@ -55,6 +56,7 @@ def create_app(config_class=None) -> Flask:
     flask_app.register_blueprint(dashboard_bp)
     flask_app.register_blueprint(registration_bp)
     flask_app.register_blueprint(payment_bp)
+    flask_app.register_blueprint(fide_bp)
 
     from app.cli import register_cli
     register_cli(flask_app)

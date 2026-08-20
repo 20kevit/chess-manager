@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت داده‌های فیده{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1>مدیریت داده‌های فیده (FIDE)</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>ایمپورت لیست ماهانه</h2>
+        </div>
+        <div class="card-body">
+            <p>با کلیک روی دکمه زیر، آخرین لیست فیده دانلود و در دیتابیس محلی ذخیره می‌شود.</p>
+            <form action="{{ url_for('fide.trigger_import') }}" method="POST">
+                <button type="submit" class="btn btn-primary">شروع ایمپورت</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>تاریخچه ایمپورت</h2>
+        </div>
+        <div class="card-body">
+            {% if imports %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>دوره (ماه)</th>
+                        <th>تاریخ دانلود</th>
+                        <th>تاریخ ایمپورت</th>
+                        <th>وضعیت</th>
+                        <th>تعداد پردازش شده</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for imp in imports %}
+                    <tr>
+                        <td>{{ imp.period }}</td>
+                        <td>{{ imp.downloaded_at.strftime('%Y-%m-%d %H:%M') if imp.downloaded_at else '-' }}</td>
+                        <td>{{ imp.imported_at.strftime('%Y-%m-%d %H:%M') if imp.imported_at else '-' }}</td>
+                        <td>{{ imp.status }}</td>
+                        <td>{{ imp.records_processed }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">هنوز ایمپورتی انجام نشده است.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>درخواست‌های تأیید هویت معلق ({{ pending_verifications|length }})</h2>
+        </div>
+        <div class="card-body">
+            {% if pending_verifications %}
+            <a href="{{ url_for('fide.verifications_list') }}" class="btn btn-info">مشاهده و بررسی درخواست‌ها</a>
+            {% else %}
+            <p class="text-muted">درخواست معلقی وجود ندارد.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

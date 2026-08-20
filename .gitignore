@@ -3,6 +3,7 @@ venv/
 __pycache__/
 _AI_CONTEXT/
 _AI_AUDIT_CONTEXT/
+data/
 *.pyc
 
 # Local Database & Secrets
