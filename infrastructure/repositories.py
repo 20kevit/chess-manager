@@ -231,16 +231,22 @@ class PairingRepository:
     def get_all_games_for_participants(participant_ids: List[int]) -> List[PairingModel]:
         """
         Fetches all pairings for a list of participant IDs across all tournaments.
-        Uses the indexes on white/black participant IDs for performance.
+        Eager loads opponent participant, their profile, and tournament info.
         """
         if not participant_ids:
             return []
             
-        return PairingModel.query.filter(
+        return PairingModel.query.options(
+            db.joinedload(PairingModel.white_participant).joinedload(TournamentParticipantModel.profile),
+            db.joinedload(PairingModel.black_participant).joinedload(TournamentParticipantModel.profile),
+            db.joinedload(PairingModel.round)
+        ).filter(
             db.or_(
                 PairingModel.white_participant_id.in_(participant_ids),
                 PairingModel.black_participant_id.in_(participant_ids)
             )
+        ).order_by(
+            PairingModel.id.desc()
         ).all()
 
 

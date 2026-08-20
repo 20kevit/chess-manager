@@ -1,6 +1,14 @@
 # application/player_profile_service.py
 from typing import Optional, Dict, List
-from infrastructure.repositories import PlayerProfileRepository, FidePlayerRepository, FideRatingRepository, ParticipantRepository, PairingRepository
+from infrastructure.repositories import (
+    PlayerProfileRepository, 
+    FidePlayerRepository, 
+    FideRatingRepository, 
+    ParticipantRepository, 
+    PairingRepository, 
+    PairingRepository, 
+    ParticipantRepository,
+)
 
 class PlayerProfileService:
     """
@@ -150,3 +158,55 @@ class PlayerProfileService:
             stats["score_percentage"] = round((total_score / stats["game_count"]) * 100, 1)
             
         return stats
+
+    @staticmethod
+    def get_game_history(profile_id: int) -> List[Dict]:
+        """
+        Fetches and formats the complete game history for a player profile.
+        """
+        participants = ParticipantRepository.get_all_by_profile_id(profile_id)
+        participant_ids = [p.id for p in participants]
+        
+        # Create a map to quickly find tournament info for each pairing
+        tournament_map = {p.tournament_id: p.tournament for p in participants}
+        
+        pairings = PairingRepository.get_all_games_for_participants(participant_ids)
+        
+        games = []
+        for p in pairings:
+            is_white = p.white_participant_id in participant_ids
+            is_black = p.black_participant_id in participant_ids
+            
+            if not is_white and not is_black:
+                continue
+                
+            opponent = None
+            player_color = ""
+            score = None
+            
+            if is_white:
+                player_color = "white"
+                opponent = p.black_participant
+                if p.result == "1-0" or p.result == "+/-": score = 1.0
+                elif p.result == "1/2": score = 0.5
+                elif p.result == "0-1" or p.result == "-/+" or p.result == "+/+": score = 0.0
+            elif is_black:
+                player_color = "black"
+                opponent = p.white_participant
+                if p.result == "0-1" or p.result == "-/+": score = 1.0
+                elif p.result == "1/2": score = 0.5
+                elif p.result == "1-0" or p.result == "+/-" or p.result == "+/+": score = 0.0
+                
+            games.append({
+                "tournament_name": tournament_map.get(p.tournament_id).name if tournament_map.get(p.tournament_id) else "Unknown",
+                "round_number": p.round.round_number if p.round else 0,
+                "board_number": p.board_number,
+                "color": player_color,
+                "result": p.result,
+                "score": score,
+                "opponent_name": opponent.full_name if opponent else "Bye/Forfeit",
+                "opponent_rating": opponent.rating_snapshot if opponent else 0,
+                "opponent_id": opponent.player_profile_id if opponent else None
+            })
+            
+        return games
