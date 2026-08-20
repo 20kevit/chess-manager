@@ -124,8 +124,6 @@
             <span>♟️ {% if tournament.time_control_type == 'standard' %}استاندارد{% elif tournament.time_control_type == 'rapid' %}سریع{% elif tournament.time_control_type == 'blitz' %}برق‌آسا{% endif %}</span>
             {% if tournament.time_control_description %}<span>({{ tournament.time_control_description }})</span>{% endif %}
             <span>🔄 {{ tournament.current_round }} دور</span>
-            {% if tournament.chief_arbiter %}<span>سرداور: {{ tournament.chief_arbiter }}</span>{% endif %}
-            {% if tournament.arbiter %}<span>داور: {{ tournament.arbiter }}</span>{% endif %}
         </div>
     </div>
 
