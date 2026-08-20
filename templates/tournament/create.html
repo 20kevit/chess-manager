@@ -4,216 +4,216 @@
 
 {% block extra_css %}
 <style>
-    /* Styles for backup import section */
-    .backup-section {
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 2px dashed #ddd;
-    }
-    .tournament-preview-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 15px;
-        margin-bottom: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        background-color: #f9f9f9;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    .tournament-name {
-        font-size: 1.1em;
-        font-weight: bold;
-        color: #333;
-    }
-    .file-hint {
-        font-size: 0.9em;
-        color: #666;
-        margin-top: 5px;
-    }
-    .loading-spinner {
-        display: inline-block;
-        margin-right: 10px;
-    }
+    .create-container { max-width: 900px; margin: 0 auto; padding: 20px; }
+    .toggle-buttons { display: flex; gap: 15px; margin-bottom: 30px; background: #f1f5f9; padding: 5px; border-radius: 12px; }
+    .toggle-btn { padding: 12px 20px; border-radius: 8px; border: none; background: transparent; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.3s; flex: 1; text-align: center; font-size: 1rem; }
+    .toggle-btn.active { background: #fff; color: #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    
+    .section-card { background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid #f3f4f6; }
+    .section-title { font-size: 1.1rem; font-weight: 700; color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f3f4f6; }
+    
+    .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+    .full-width { grid-column: 1 / -1; }
+    
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 0.9rem; }
+    .form-control { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; transition: all 0.2s; background: #fff; }
+    .form-control:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    
+    .checkbox-group { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 15px; border-radius: 8px; }
+    .checkbox-group input { width: 18px; height: 18px; accent-color: #2563eb; }
+    
+    .actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 10px; }
+    .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .btn-secondary:hover { background: #d1d5db; }
+    
+    .mode-section { display: none; }
+    .mode-section.active { display: block; }
+    
+    .alert { padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .alert-error { background: #fee2e2; color: #991b1b; }
+    .tournament-preview-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc; }
+    .loading-spinner { display: inline-block; margin-right: 10px; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="form-container">
-    <h2 class="section-title">ایجاد تورنومنت جدید</h2>
-    
-    <!-- Main tournament creation form -->
-    <form method="POST" action="/create">
-        <!-- CSRF token for form submission -->
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        
-        <!-- Main information section -->
-        <div class="form-section">
-            <h3 class="section-title">اطلاعات اصلی</h3>
-            
-            <div class="form-group">
-                <label for="name">نام تورنومنت *</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="city_federation">شهرفدراسیون</label>
-                <input type="text" id="city_federation" name="city_federation">
-            </div>
-        </div>
-        
-        <!-- Tournament type section -->
-        <div class="form-section">
-            <h3 class="section-title">نوع مسابقه</h3>
-            
-            <div class="form-group">
-                <label for="time_control_type">نوع کنترل زمان</label>
-                <select id="time_control_type" name="time_control_type">
-                    <option value="standard">استاندارد</option>
-                    <option value="rapid">سریع (رپید)</option>
-                    <option value="blitz">برق‌آسا (بلیتس)</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="time_control_description">توضیح زمان بازی</label>
-                <textarea id="time_control_description" name="time_control_description" rows="3"></textarea>
-            </div>
-        </div>
-        
-        <!-- Rounds settings section -->
-        <div class="form-section">
-            <h3 class="section-title">تنظیمات دورها</h3>
-            
-            <div class="form-group">
-                <label for="total_rounds">تعداد دورها *</label>
-                <input type="number" id="total_rounds" name="total_rounds" min="1" required value="5">
-            </div>
-        </div>
-        
-        <!-- Dates section -->
-        <div class="form-section">
-            <h3 class="section-title">تاریخ‌ها</h3>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="start_date">تاریخ شروع</label>
-                    <input type="date" id="start_date" name="start_date">
-                </div>
-                
-                <div class="form-group">
-                    <label for="end_date">تاریخ پایان</label>
-                    <input type="date" id="end_date" name="end_date">
-                </div>
-            </div>
-        </div>
+<div class="create-container">
+    <div class="toggle-buttons">
+        <button type="button" class="toggle-btn active" onclick="switchMode('manual')">✍️ ایجاد دستی تورنومنت</button>
+        <button type="button" class="toggle-btn" onclick="switchMode('coronate')">📥 ایمپورت از Coronate</button>
+    </div>
 
-        <!-- Registration & Pricing section -->
-        <div class="form-section">
-            <h3 class="section-title">ثبت‌نام و قیمت‌گذاری</h3>
+    <!-- Manual Creation Section -->
+    <div id="manual-section" class="mode-section active">
+        <form method="POST" action="/create">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="base_price">هزینه ثبت‌نام (تومان)</label>
-                    <input type="number" id="base_price" name="base_price" min="0" value="0">
+            <div class="section-card">
+                <h3 class="section-title">اطلاعات اصلی</h3>
+                <div class="grid-form">
+                    <div class="form-group full-width">
+                        <label for="name">نام تورنومنت *</label>
+                        <input type="text" id="name" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="city">شهر</label>
+                        <input type="text" id="city" name="city" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="federation">فدراسیون</label>
+                        <input type="text" id="federation" name="federation" class="form-control" value="IRI">
+                    </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="max_players">ظرفیت مسابقه (اختیاری)</label>
-                    <input type="number" id="max_players" name="max_players" min="2">
+            </div>
+
+            <div class="section-card">
+                <h3 class="section-title">تنظیمات مسابقه و دورها</h3>
+                <div class="grid-form">
+                    <div class="form-group">
+                        <label for="time_control_type">نوع کنترل زمان</label>
+                        <select id="time_control_type" name="time_control_type" class="form-control">
+                            <option value="standard">استاندارد</option>
+                            <option value="rapid">سریع (رپید)</option>
+                            <option value="blitz">برق‌آسا (بلیتس)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="total_rounds">تعداد دورها *</label>
+                        <input type="number" id="total_rounds" name="total_rounds" min="1" required value="5" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="time_control_description">توضیح زمان بازی</label>
+                        <textarea id="time_control_description" name="time_control_description" rows="2" class="form-control"></textarea>
+                    </div>
                 </div>
             </div>
+
+            <div class="section-card">
+                <h3 class="section-title">تاریخ‌ها</h3>
+                <div class="grid-form">
+                    <div class="form-group">
+                        <label for="start_date">تاریخ شروع</label>
+                        <input type="date" id="start_date" name="start_date" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">تاریخ پایان</label>
+                        <input type="date" id="end_date" name="end_date" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="registration_deadline">مهلت پایان ثبت‌نام</label>
+                        <input type="datetime-local" id="registration_deadline" name="registration_deadline" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3 class="section-title">ثبت‌نام، قیمت‌گذاری و آیین‌نامه</h3>
+                <div class="grid-form">
+                    <div class="form-group">
+                        <label for="base_price">هزینه پایه ثبت‌نام (تومان)</label>
+                        <input type="number" id="base_price" name="base_price" min="0" value="0" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="max_players">ظرفیت مسابقه</label>
+                        <input type="number" id="max_players" name="max_players" min="2" placeholder="اختیاری" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="bank_card_number">شماره کارت بانکی (برای واریز)</label>
+                        <input type="text" id="bank_card_number" name="bank_card_number" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="rulebook_text">متن آیین‌نامه مسابقه</label>
+                        <textarea id="rulebook_text" name="rulebook_text" rows="5" class="form-control"></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <div class="checkbox-group">
+                            <input type="checkbox" name="cumulative_age_group" value="1" id="cumulative_age_group">
+                            <label for="cumulative_age_group" style="margin:0; cursor:pointer;">رده‌سنی تجمعی (مثلاً بازیکن U14 در جدول U16 هم نمایش داده شود)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="/" class="btn btn-secondary">انصراف</a>
+                <button type="submit" class="btn btn-primary">ایجاد تورنومنت</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Coronate Import Section -->
+    <div id="coronate-section" class="mode-section">
+        <div class="section-card">
+            <h3 class="section-title">وارد کردن از فایل پشتیبان Coronate</h3>
+            <p style="margin-bottom: 15px; color: #555;">
+                اگر فایل پشتیبان Coronate دارید، می‌توانید تورنمنت را از آن وارد کنید:
+            </p>
             
-            <div class="form-group">
-                <label for="registration_deadline">مهلت پایان ثبت‌نام</label>
-                <input type="datetime-local" id="registration_deadline" name="registration_deadline">
-            </div>
-        </div>
-        
-        <!-- Age group settings section -->
-        <div class="form-section">
-            <h3 class="section-title">تنظیمات رده سنی</h3>
+            <input type="hidden" id="csrf-token" value="{{ csrf_token() }}">
+            <div id="alert-container"></div>
             
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="cumulative_age_group" value="1">
-                    رده‌سنی تجمعی (مثلاً بازیکن U14 در جدول U16 هم نمایش داده شود)
-                </label>
+            <div class="grid-form">
+                <div class="form-group full-width">
+                    <label for="backup-file">فایل پشتیبان (JSON)</label>
+                    <input type="file" id="backup-file" class="form-control" accept=".json">
+                    <p style="font-size: 0.9em; color: #666; margin-top: 5px;">لطفاً فایل JSON خروجی گرفته شده از Coronate را انتخاب کنید.</p>
+                </div>
+                <div class="actions full-width">
+                    <button type="button" class="btn btn-primary" onclick="previewTournaments()">
+                        <span id="btn-text">پیش‌نمایش تورنمنت‌ها</span>
+                        <span id="btn-spinner" class="loading-spinner" style="display: none;">در حال بارگذاری...</span>
+                    </button>
+                </div>
             </div>
         </div>
         
-        <!-- Form actions -->
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary btn-large">ایجاد تورنومنت</button>
-            <a href="/" class="btn btn-secondary">انصراف</a>
-        </div>
-    </form>
-    
-    <!-- Backup import section -->
-    <div class="backup-section">
-        <h3 class="section-title">وارد کردن از فایل پشتیبان Coronate</h3>
-        <p style="margin-bottom: 15px; color: #555;">
-            اگر فایل پشتیبان Coronate دارید، می‌توانید تورنمنت را از آن وارد کنید:
-        </p>
-        
-        <!-- Hidden input to store CSRF token for JavaScript access -->
-        <input type="hidden" id="csrf-token" value="{{ csrf_token() }}">
-        
-        <!-- Container for dynamic alerts -->
-        <div id="alert-container"></div>
-        
-        <!-- File upload form -->
-        <div class="form-section">
-            <div class="form-group">
-                <label for="backup-file">فایل پشتیبان (JSON)</label>
-                <input type="file" id="backup-file" class="file-input" accept=".json">
-                <p class="file-hint">لطفاً فایل JSON خروجی گرفته شده از Coronate را انتخاب کنید.</p>
-            </div>
-            <div class="form-actions">
-                <button type="button" id="preview-btn" class="btn btn-primary btn-large" onclick="previewTournaments()">
-                    <span id="btn-text">پیش‌نمایش تورنمنت‌ها</span>
-                    <span id="btn-spinner" class="loading-spinner" style="display: none;">در حال بارگذاری...</span>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Tournament preview results section -->
-        <div id="preview-results" class="form-section" style="display: none;">
+        <div id="preview-results" class="section-card" style="display: none;">
             <h3 class="section-title">تورنمنت‌های موجود در فایل</h3>
-            <p class="file-hint">تورنمنت مورد نظر خود را برای وارد کردن به سیستم انتخاب کنید:</p>
-            <!-- Tournament forms will be injected here by JavaScript -->
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">تورنمنت مورد نظر خود را برای وارد کردن به سیستم انتخاب کنید:</p>
         </div>
     </div>
 </div>
 
-<!-- Hidden form for final import submission -->
 <form id="import-form" action="/create/execute/coronate" method="POST" enctype="multipart/form-data" style="display: none;">
     <input type="hidden" name="csrf_token" id="import-csrf-token">
     <input type="hidden" name="target_tournament_id" id="target-tournament-id">
     <input type="file" name="json_file" id="hidden-file-input">
 </form>
 
-<!-- JavaScript for backup import -->
 <script>
-/**
- * Previews tournaments from the uploaded backup file
- * This function is called when the user clicks the preview button
- */
+function switchMode(mode) {
+    const manual = document.getElementById('manual-section');
+    const coronate = document.getElementById('coronate-section');
+    const btns = document.querySelectorAll('.toggle-btn');
+    
+    if (mode === 'manual') {
+        manual.classList.add('active');
+        coronate.classList.remove('active');
+        btns[0].classList.add('active');
+        btns[1].classList.remove('active');
+    } else {
+        manual.classList.remove('active');
+        coronate.classList.add('active');
+        btns[0].classList.remove('active');
+        btns[1].classList.add('active');
+    }
+}
+
 function previewTournaments() {
-    // Get DOM elements
     const fileInput = document.getElementById('backup-file');
-    const previewBtn = document.getElementById('preview-btn');
+    const previewBtn = document.querySelector('#coronate-section .btn-primary');
     const btnText = document.getElementById('btn-text');
     const btnSpinner = document.getElementById('btn-spinner');
     const alertContainer = document.getElementById('alert-container');
     const previewResults = document.getElementById('preview-results');
     const csrfTokenInput = document.getElementById('csrf-token');
     
-    // Clear previous alerts
     alertContainer.innerHTML = '';
     
-    // Validate file selection
     if (!fileInput.files || fileInput.files.length === 0) {
         showAlert('لطفاً یک فایل را انتخاب کنید.', 'error');
         return;
@@ -221,166 +221,96 @@ function previewTournaments() {
     
     const file = fileInput.files[0];
     
-    // Validate file extension
     if (!file.name.toLowerCase().endsWith('.json')) {
         showAlert('لطفاً یک فایل با پسوند .json انتخاب کنید.', 'error');
         return;
     }
     
-    // Show loading state
     previewBtn.disabled = true;
     btnText.style.display = 'none';
     btnSpinner.style.display = 'inline';
     
-    // Prepare FormData with the file
     const formData = new FormData();
     formData.append('json_file', file);
     
-    // Get CSRF token
-    const csrfToken = csrfTokenInput.value;
-    
-    // Send AJAX request to preview endpoint
     fetch('/create/from-backup/coronate', {
         method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken
-        },
+        headers: { 'X-CSRFToken': csrfTokenInput.value },
         body: formData
     })
     .then(response => {
-        // Check if response is OK
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
     })
     .then(data => {
-        // Handle backend errors
-        if (data.error) {
-            throw new Error(data.error);
-        }
+        if (data.error) throw new Error(data.error);
+        if (!data.tournaments || data.tournaments.length === 0) throw new Error('هیچ تورنمنتی در فایل یافت نشد.');
         
-        // Handle empty tournament list
-        if (!data.tournaments || data.tournaments.length === 0) {
-            throw new Error('هیچ تورنمنتی در فایل یافت نشد.');
-        }
-        
-        // Render tournament list
-        renderTournamentList(data.tournaments, csrfToken, file);
+        renderTournamentList(data.tournaments, csrfTokenInput.value, file);
         previewResults.style.display = 'block';
     })
     .catch(error => {
-        console.error('Error:', error);
-        showAlert(error.message || 'خطا در پردازش فایل. لطفاً دوباره تلاش کنید.', 'error');
+        showAlert(error.message || 'خطا در پردازش فایل.', 'error');
     })
     .finally(() => {
-        // Reset button state
         previewBtn.disabled = false;
         btnText.style.display = 'inline';
         btnSpinner.style.display = 'none';
     });
 }
 
-/**
- * Renders the list of tournaments with import buttons
- * @param {Array} tournaments - Array of tournament objects
- * @param {string} csrfToken - CSRF token for form submission
- * @param {File} file - The selected file to be submitted
- */
 function renderTournamentList(tournaments, csrfToken, file) {
     const previewResults = document.getElementById('preview-results');
+    previewResults.innerHTML = '<h3 class="section-title">تورنمنت‌های موجود در فایل</h3><p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">تورنمنت مورد نظر خود را برای وارد کردن به سیستم انتخاب کنید:</p>';
     
-    // Clear previous results
-    previewResults.innerHTML = '<h3 class="section-title">تورنمنت‌های موجود در فایل</h3>' +
-        '<p class="file-hint">تورنمنت مورد نظر خود را برای وارد کردن به سیستم انتخاب کنید:</p>';
-    
-    // Create a button for each tournament
     tournaments.forEach(tournament => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'tournament-preview-item';
-        
-        // Create button HTML
         itemDiv.innerHTML = `
-            <span class="tournament-name">${escapeHtml(tournament.name)}</span>
+            <span style="font-weight: bold;">${escapeHtml(tournament.name)}</span>
             <button type="button" class="btn btn-primary import-btn" 
                     data-id="${escapeHtml(tournament.internal_id)}" 
                     data-name="${escapeHtml(tournament.name)}">
                 وارد کردن این تورنمنت
             </button>
         `;
-        
         previewResults.appendChild(itemDiv);
     });
     
-    // Attach event listeners to all import buttons
     document.querySelectorAll('.import-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const tournamentId = this.getAttribute('data-id');
-            const tournamentName = this.getAttribute('data-name');
-            handleImport(tournamentId, tournamentName, csrfToken, file);
+            handleImport(this.getAttribute('data-id'), this.getAttribute('data-name'), csrfToken, file);
         });
     });
 }
 
-/**
- * Handles the final import submission by populating and submitting the hidden form
- * @param {string} tournamentId - The internal ID of the selected tournament
- * @param {string} tournamentName - The name of the selected tournament
- * @param {string} csrfToken - CSRF token for form submission
- * @param {File} file - The selected file to be submitted
- */
 function handleImport(tournamentId, tournamentName, csrfToken, file) {
-    // Confirm with user
-    if (!confirm(`آیا مطمئن هستید که می‌خواهید تورنمنت "${tournamentName}" را وارد کنید؟`)) {
-        return;
-    }
+    if (!confirm(`آیا مطمئن هستید که می‌خواهید تورنمنت "${tournamentName}" را وارد کنید؟`)) return;
     
-    // Get hidden form elements
     const importForm = document.getElementById('import-form');
-    const csrfTokenInput = document.getElementById('import-csrf-token');
-    const targetTournamentIdInput = document.getElementById('target-tournament-id');
-    const hiddenFileInput = document.getElementById('hidden-file-input');
+    document.getElementById('import-csrf-token').value = csrfToken;
+    document.getElementById('target-tournament-id').value = tournamentId;
     
-    // Populate the hidden form
-    csrfTokenInput.value = csrfToken;
-    targetTournamentIdInput.value = tournamentId;
-    
-    // Copy the file to the hidden file input using DataTransfer API
     const dataTransfer = new DataTransfer();
     dataTransfer.items.add(file);
-    hiddenFileInput.files = dataTransfer.files;
+    document.getElementById('hidden-file-input').files = dataTransfer.files;
     
-    // Disable all import buttons to prevent double submission
     document.querySelectorAll('.import-btn').forEach(btn => {
         btn.disabled = true;
         btn.textContent = 'در حال انتقال...';
     });
     
-    // Submit the form (browser will handle the redirect and flash messages)
     importForm.submit();
 }
 
-/**
- * Displays an alert message
- * @param {string} message - The message to display
- * @param {string} type - The alert type (error, success)
- */
 function showAlert(message, type) {
     const alertContainer = document.getElementById('alert-container');
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type}`;
-    alertDiv.innerHTML = `
-        ${message}
-        <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
-    `;
+    alertDiv.innerHTML = `${message} <button class="btn btn-secondary" style="padding: 2px 8px;" onclick="this.parentElement.remove()">✕</button>`;
     alertContainer.appendChild(alertDiv);
 }
 
-/**
- * Escapes HTML characters to prevent XSS
- * @param {string} text - The text to escape
- * @returns {string} - The escaped HTML string
- */
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;

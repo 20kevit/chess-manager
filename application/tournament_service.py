@@ -72,9 +72,7 @@ class TournamentService:
             time_control_description=form_data.get(
                 "time_control_description", ""
             ).strip(),
-            total_rounds=int(form_data.get("total_rounds", 5)), # Fixed field name
-            chief_arbiter=form_data.get("chief_arbiter", "").strip(),
-            arbiter=form_data.get("arbiter", "").strip(),
+            total_rounds=int(form_data.get("total_rounds", 5)),
             start_date=start_date,
             end_date=end_date,
             tiebreak_rules=default_tiebreaks,
@@ -82,10 +80,13 @@ class TournamentService:
                 form_data.get("cumulative_age_category") == "1"
             ),
             organizer_id=organizer_id,
-            # New Fields:
+            # Phase 3 Fields:
             base_price=base_price,
             max_players=max_players,
             registration_deadline=registration_deadline,
+            # Phase 5 Fields:
+            bank_card_number=form_data.get("bank_card_number", "").strip(),
+            rulebook_text=form_data.get("rulebook_text", "").strip(),
         )
         return TournamentRepository.save(tournament)
 
