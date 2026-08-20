@@ -430,6 +430,35 @@ class FideRatingRepository:
         db.session.flush()
         return rating
 
+    @staticmethod
+    def get_rating_history(fide_id: str) -> Dict[str, List[Dict]]:
+        """
+        Fetches full rating history for a player, grouped by rating type.
+        Ordered by period ascending (oldest first) for charting purposes.
+        """
+        history = {
+            "standard": [],
+            "rapid": [],
+            "blitz": []
+        }
+        
+        if not fide_id:
+            return history
+            
+        records = FideRatingModel.query.filter_by(
+            fide_id=fide_id
+        ).order_by(FideRatingModel.period.asc()).all()
+        
+        for rec in records:
+            if rec.rating_type in history:
+                history[rec.rating_type].append({
+                    "period": rec.period,
+                    "rating": rec.rating,
+                    "games": rec.games
+                })
+                
+        return history
+
 
 class FideImportRepository:
     @staticmethod

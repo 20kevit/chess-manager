@@ -1,6 +1,6 @@
 # application/player_profile_service.py
 from typing import Optional, Dict
-from infrastructure.repositories import PlayerProfileRepository, FidePlayerRepository
+from infrastructure.repositories import PlayerProfileRepository, FidePlayerRepository, FideRatingRepository
 
 class PlayerProfileService:
     """
@@ -34,3 +34,14 @@ class PlayerProfileService:
                 data["ratings"] = FidePlayerRepository.get_all_latest_ratings(profile.fide_id)
                 
         return data
+
+    @staticmethod
+    def get_rating_history(profile_id: int) -> Dict[str, List[Dict]]:
+        """
+        Fetches rating history for a player profile.
+        """
+        profile = PlayerProfileRepository.get_by_id(profile_id)
+        if not profile or not profile.fide_id:
+            return {"standard": [], "rapid": [], "blitz": []}
+            
+        return FideRatingRepository.get_rating_history(profile.fide_id)
