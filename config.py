@@ -40,3 +40,9 @@ class Config:
         if ENV == 'production':
             raise RuntimeError("SECRET_KEY environment variable must be set in production.")
         SECRET_KEY = secrets.token_hex(32)
+    
+    # ── Phase 7: FIDE Data Integration ──
+    FIDE_DATA_DIR = os.path.join(os.getcwd(), 'data', 'fide')
+    FIDE_RAW_RETENTION_DAYS = 90
+    FIDE_ALLOWED_FEDERATIONS = ["IRI"]  # Set to None or [] to import all federations
+    FIDE_XML_URL = "http://ratings.fide.com/download/players_list_xml.zip"
