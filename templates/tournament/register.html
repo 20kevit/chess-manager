@@ -42,6 +42,7 @@
                         <h5 style="margin-top:0;">روش ۱: پرداخت آنلاین</h5>
                         <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 10px;">مبلغ: <strong>{{ existing_reg.final_price }} تومان</strong></p>
                         <form action="{{ url_for('payment.initiate_payment', reg_id=existing_reg.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-primary" style="width: 100%;">پرداخت آنلاین (زرین‌پال)</button>
                         </form>
 
@@ -53,7 +54,7 @@
                         <p style="font-size: 0.9rem; color: #6b7280;">مبلغ را به کارت زیر واریز کرده و تصویر رسید را آپلود کنید:</p>
                         <div style="background: #f3f4f6; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
                             <strong style="font-size: 1.1rem; letter-spacing: 1px;">{{ tournament.bank_card_number }}</strong>
-                            <p style="font-size: 0.8rem; margin-top: 5px;">به نام: {{ tournament.name }}</p>
+                            <p style="font-size: 0.8rem; margin-top: 5px;">به نام: {{ tournament.bank_account_name or tournament.name }}</p>
                         </div>
                         
                         <form action="{{ url_for('registration.upload_receipt', reg_id=existing_reg.id) }}" method="POST" enctype="multipart/form-data">

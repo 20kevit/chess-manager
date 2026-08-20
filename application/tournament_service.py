@@ -187,6 +187,9 @@ class TournamentService:
         
         # ── Phase 5: Bank Card and Rulebook ──
         tournament.bank_card_number = form_data.get("bank_card_number", "").strip()
+        tournament.bank_account_name = form_data.get("bank_account_name", "").strip()
+        tournament.bank_transfer_notes = form_data.get("bank_transfer_notes", "").strip()
+        tournament.enable_online_payment = form_data.get("enable_online_payment") == "1"
         tournament.rulebook_text = form_data.get("rulebook_text", "").strip()
 
         from app.extensions import db

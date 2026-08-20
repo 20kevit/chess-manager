@@ -152,6 +152,9 @@ class TournamentModel(db.Model):
 
     # Phase 5: Bank Transfer and Rulebook
     bank_card_number = db.Column(db.String(20), nullable=True)
+    bank_account_name = db.Column(db.String(100), nullable=True)
+    bank_transfer_notes = db.Column(db.Text, nullable=True)
+    enable_online_payment = db.Column(db.Boolean, default=True)
     rulebook_text = db.Column(db.Text, nullable=True)
 
     # JSON fields for flexible discount rules

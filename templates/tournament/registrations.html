@@ -42,8 +42,7 @@
                         <td>{{ reg.profile.full_name }}</td>
                         <td>{{ reg.profile.fide_id or '-' }}</td>
                         <td>{{ reg.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td><strong>{{ bd.final_price | toman_formatter }}</strong></td>
-                        <td>
+                        <td><strong>{{ bd.final_price or 0 }} تومان</strong></td>                        <td>
                             {% if reg.status == 'pending' %}
                                 <span class="status-badge" style="background: #fef3c7; color: #92400e;">در انتظار</span>
                             {% elif reg.status == 'payment_pending' %}
