@@ -8,7 +8,9 @@ from app.extensions import db
 from infrastructure.db_models import (
     TournamentModel, PlayerProfileModel, TournamentParticipantModel,
     RoundModel, PairingModel, ManualPairingModel, UserModel, UserRoleModel,
-    PromoCodeModel, RegistrationModel, PaymentModel
+    PromoCodeModel, RegistrationModel, PaymentModel,
+    # Phase 7 Models:
+    FidePlayerModel, FideRatingModel, FideImportModel, PlayerVerificationModel
 )
 import random
 import string
@@ -338,3 +340,40 @@ class PaymentRepository:
         db.session.add(payment)
         db.session.flush()
         return payment
+
+class FidePlayerRepository:
+    @staticmethod
+    def get_by_fide_id(fide_id: str) -> Optional[FidePlayerModel]:
+        return FidePlayerModel.query.get(fide_id)
+
+    @staticmethod
+    def save(player: FidePlayerModel) -> FidePlayerModel:
+        db.session.add(player)
+        db.session.flush()
+        return player
+
+
+class FideRatingRepository:
+    @staticmethod
+    def get(fide_id: str, period: str, rating_type: str) -> Optional[FideRatingModel]:
+        return FideRatingModel.query.filter_by(
+            fide_id=fide_id, period=period, rating_type=rating_type
+        ).first()
+
+    @staticmethod
+    def save(rating: FideRatingModel) -> FideRatingModel:
+        db.session.add(rating)
+        db.session.flush()
+        return rating
+
+
+class FideImportRepository:
+    @staticmethod
+    def get_by_period(period: str) -> Optional[FideImportModel]:
+        return FideImportModel.query.filter_by(period=period).first()
+
+    @staticmethod
+    def save(import_record: FideImportModel) -> FideImportModel:
+        db.session.add(import_record)
+        db.session.flush()
+        return import_record
