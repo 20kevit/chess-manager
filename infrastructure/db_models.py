@@ -221,6 +221,9 @@ class PairingModel(db.Model):
     __tablename__ = "pairings"
     __table_args__ = (
         db.UniqueConstraint("round_id", "board_number", name="uq_pairing_round_board"),
+        # Phase 8E: Add indexes for faster cross-tournament game history queries
+        db.Index("ix_pairing_white_participant_id", "white_participant_id"),
+        db.Index("ix_pairing_black_participant_id", "black_participant_id"),
         {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
 

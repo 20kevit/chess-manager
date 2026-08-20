@@ -227,6 +227,22 @@ class PairingRepository:
     def commit() -> None:
         db.session.commit()
 
+    @staticmethod
+    def get_all_games_for_participants(participant_ids: List[int]) -> List[PairingModel]:
+        """
+        Fetches all pairings for a list of participant IDs across all tournaments.
+        Uses the indexes on white/black participant IDs for performance.
+        """
+        if not participant_ids:
+            return []
+            
+        return PairingModel.query.filter(
+            db.or_(
+                PairingModel.white_participant_id.in_(participant_ids),
+                PairingModel.black_participant_id.in_(participant_ids)
+            )
+        ).all()
+
 
 class ManualPairingRepository:
     @staticmethod
