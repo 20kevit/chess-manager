@@ -13,18 +13,18 @@ def public_profile(identifier):
     """
     profile = None
     
-    # 1. اگر شناسه عددی باشد، بر اساس ID جستجو می‌کنیم
-    if identifier.isdigit():
+    # 1. اول بگردیم ببینیم آیا این شناسه، کد فیده یک بازیکن است یا خیر
+    # (برای پشتیبانی از کدهای فیده که کاملا عددی هستند)
+    profile = PlayerProfileRepository.get_by_fide_id(identifier)
+    
+    # 2. اگر پیدا نشد و شناسه عددی بود، بگردیم در آیدی‌های دیتابیس
+    if not profile and identifier.isdigit():
         profile = PlayerProfileRepository.get_by_id(int(identifier))
-    else:
-        # 2. اگر رشته‌ای باشد، بر اساس FIDE ID جستجو می‌کنیم
-        profile = PlayerProfileRepository.get_by_fide_id(identifier)
 
     if not profile:
         abort(404)
         
     # اگر بازیکن FIDE ID دارد اما تأیید نشده است، اجازه نمایش عمومی با fide_id را نمی‌دهیم
-    # برای امنیت بیشتر، فقط بازیکنان verified می‌توانند با fide_id پیدا شوند
     if not identifier.isdigit() and profile.fide_verification_status != "verified":
         abort(404)
 
@@ -33,13 +33,13 @@ def public_profile(identifier):
     if not profile_data:
         abort(404)
 
-    # داده‌های تاریخچه و آمار (در فازهای 8C, 8D, 8F, 8E ساخته شدند)
+    # داده‌های تاریخچه و آمار
     rating_history = PlayerProfileService.get_rating_history(profile.id)
     tournament_history = PlayerProfileService.get_tournament_history(profile.id)
     statistics = PlayerProfileService.get_statistics(profile.id)
     game_history = PlayerProfileService.get_game_history(profile.id)
 
-    # حذف اطلاعات حساس قبل از ارسال به Template
+    # حذف اطلاعات حساس
     profile_data['profile'].national_id = None
     profile_data['profile'].bank_card_number = None
     profile_data['profile'].bank_account_name = None

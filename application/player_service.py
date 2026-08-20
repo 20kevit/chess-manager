@@ -45,9 +45,7 @@ class PlayerService:
             )
             profile = PlayerProfileRepository.save(profile)
         else:
-            # Update profile if needed
-            profile.first_name = first_name
-            profile.last_name = last_name
+            profile.fide_title = form_data.get("fide_title", "").strip() or profile.fide_title
 
         # 2. Create Participant with Snapshot
         age_category = form_data.get("age_category", "").strip()
