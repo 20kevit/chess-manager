@@ -352,6 +352,35 @@ class FidePlayerRepository:
         db.session.flush()
         return player
 
+    @staticmethod
+    def search_players(query: str, federation: Optional[str] = None, limit: int = 20) -> List[FidePlayerModel]:
+        """
+        Search players by FIDE ID or Name.
+        If the query is numeric, it searches exact FIDE ID.
+        Otherwise, it performs a case-insensitive LIKE search on the name.
+        """
+        q = FidePlayerModel.query
+        
+        if query:
+            if query.isdigit():
+                q = q.filter(FidePlayerModel.fide_id == query)
+            else:
+                search_pattern = f"%{query}%"
+                q = q.filter(FidePlayerModel.name.ilike(search_pattern))
+        
+        if federation:
+            q = q.filter(FidePlayerModel.federation == federation)
+        
+        return q.limit(limit).all()
+
+    @staticmethod
+    def get_latest_rating(fide_id: str, rating_type: str = "standard") -> Optional[FideRatingModel]:
+        """Fetches the most recent rating record for a player."""
+        return FideRatingModel.query.filter_by(
+            fide_id=fide_id, 
+            rating_type=rating_type
+        ).order_by(FideRatingModel.period.desc()).first()
+
 
 class FideRatingRepository:
     @staticmethod
