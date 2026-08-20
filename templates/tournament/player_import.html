@@ -128,8 +128,7 @@
     {% else %}
     <div class="empty-state">
         <p>بازیکن معتبری در فایل یافت نشد.</p>
-        <a href="{{ url_for('player.player_import', public_id=tournament.public_id, admin_code=tournament.admin_code) }}"
-           class="btn btn-secondary">بازگشت</a>
+        <a href="{{ url_for('player.player_import', public_id=tournament.public_id) }}" class="btn btn-secondary">بازگشت</a>
     </div>
     {% endif %}
 </div>
