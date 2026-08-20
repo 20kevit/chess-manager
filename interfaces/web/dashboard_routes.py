@@ -8,6 +8,9 @@ from infrastructure.db_models import (
 from datetime import datetime
 from app.extensions import db
 from interfaces.web.admin_auth import require_admin
+from application.verification_service import VerificationService
+from application.fide_search_service import FideSearchService
+from infrastructure.repositories import PlayerVerificationRepository
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -333,3 +336,51 @@ def reject_invitation(staff_id):
     db.session.commit()
     flash("دعوت‌نامه رد شد.", "info")
     return redirect(url_for("dashboard.index"))
+
+# ── Player FIDE Verification ──
+
+@dashboard_bp.route("/dashboard/verification/request", methods=["GET", "POST"])
+@login_required
+def request_verification():
+    """Player requests FIDE verification."""
+    profile = current_user.profile
+    if not profile:
+        flash("ابتدا پروفایل خود را تکمیل کنید.", "error")
+        return redirect(url_for("dashboard.create_profile"))
+
+    if request.method == "POST":
+        fide_id = request.form.get("fide_id", "").strip()
+        if not fide_id:
+            flash("کد فیده الزامی است.", "error")
+            return redirect(request.url)
+            
+        try:
+            VerificationService.submit_request(profile.id, fide_id)
+            flash("درخواست شما با موفقیت ثبت شد و در انتظار بررسی مدیر است.", "success")
+            return redirect(url_for("dashboard.index"))
+        except ValueError as e:
+            flash(str(e), "error")
+            return redirect(request.url)
+
+    # GET request: show form and current status
+    # If they have a pending request, pass it to template
+    pending_req = PlayerVerificationRepository.get_pending_for_profile(profile.id) if hasattr(PlayerVerificationRepository, 'get_pending_for_profile') else None
+    
+    return render_template(
+        "dashboard/verification_request.html",
+        profile=profile,
+        pending_req=pending_req
+    )
+
+@dashboard_bp.route("/dashboard/api/fide-search")
+@login_required
+def dashboard_fide_search():
+    """AJAX endpoint for players to search their FIDE ID."""
+    query = request.args.get("q", "")
+    if len(query) < 3:
+        return jsonify([])
+    
+    # Players can only search within their own federation by default, 
+    # but let's allow searching all for now, or restrict to IRI if needed.
+    results = FideSearchService.search(query, federation=None, limit=10)
+    return jsonify(results)

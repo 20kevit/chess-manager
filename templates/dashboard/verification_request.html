@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}تأیید هویت فیده{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1>تأیید هویت فیده (FIDE)</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <h4>وضعیت فعلی: 
+                {% if profile.fide_verification_status == 'verified' %}
+                    <span class="badge bg-success">تأیید شده</span>
+                {% elif profile.fide_verification_status == 'pending' %}
+                    <span class="badge bg-warning">در انتظار بررسی</span>
+                {% elif profile.fide_verification_status == 'rejected' %}
+                    <span class="badge bg-danger">رد شده</span>
+                {% else %}
+                    <span class="badge bg-secondary">بررسی نشده</span>
+                {% endif %}
+            </h4>
+
+            {% if profile.fide_verification_status == 'verified' %}
+                <div class="alert alert-success mt-3">
+                    هویت شطرنجی شما با کد فیده <strong>{{ profile.fide_id }}</strong> تأیید شده است.
+                </div>
+            {% elif profile.fide_verification_status == 'pending' %}
+                <div class="alert alert-info mt-3">
+                    درخواست شما برای کد فیده <strong>{{ profile.fide_id }}</strong> در حال بررسی توسط مدیر سیستم است.
+                </div>
+            {% else %}
+                <hr>
+                <form action="{{ url_for('dashboard.request_verification') }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">جستجوی کد فیده (نام یا ID)</label>
+                        <input type="text" id="fideSearch" class="form-control" placeholder="نام خود را به انگلیسی یا کد فیده را وارد کنید...">
+                        <div id="searchResults" class="list-group mt-2" style="max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">کد فیده تأیید شده</label>
+                        <input type="text" name="fide_id" id="fideIdInput" class="form-control" required readonly>
+                    </div>
+                    <button type="submit" class="btn btn-primary">ثبت درخواست تأیید</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('fideSearch').addEventListener('input', function() {
+    const query = this.value.trim();
+    const resultsDiv = document.getElementById('searchResults');
+    
+    if (query.length < 3) {
+        resultsDiv.innerHTML = '';
+        return;
+    }
+    
+    fetch(`/dashboard/api/fide-search?q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+            resultsDiv.innerHTML = '';
+            data.forEach(p => {
+                const item = document.createElement('a');
+                item.href = '#';
+                item.className = 'list-group-item list-group-item-action';
+                item.innerHTML = `<strong>${p.name}</strong> (ID: ${p.fide_id}) - ریتینگ: ${p.standard} - ${p.federation}`;
+                item.onclick = function(e) {
+                    e.preventDefault();
+                    document.getElementById('fideIdInput').value = p.fide_id;
+                    document.getElementById('fideSearch').value = p.name;
+                    resultsDiv.innerHTML = '';
+                };
+                resultsDiv.appendChild(item);
+            });
+        });
+});
+</script>
+{% endblock %}

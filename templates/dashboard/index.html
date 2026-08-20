@@ -266,7 +266,18 @@
                 </div>
                 <div class="profile-row">
                     <span class="profile-label">کد فیده:</span>
-                    <span class="profile-value">{{ profile.fide_id or 'ندارد' }}</span>
+                    <span class="profile-value">
+                        {{ profile.fide_id or 'ندارد' }}
+                        {% if profile.fide_verification_status == 'verified' %}
+                            <span class="badge bg-success" style="font-size: 0.7rem;">تأیید شده</span>
+                        {% elif profile.fide_verification_status == 'pending' %}
+                            <span class="badge bg-warning" style="font-size: 0.7rem;">در انتظار</span>
+                        {% elif profile.fide_verification_status == 'rejected' %}
+                            <span class="badge bg-danger" style="font-size: 0.7rem;">رد شده</span>
+                        {% else %}
+                            <span class="badge bg-secondary" style="font-size: 0.7rem;">تأیید نشده</span>
+                        {% endif %}
+                    </span>
                 </div>
                 <div class="profile-row">
                     <span class="profile-label">فدراسیون:</span>
@@ -288,6 +299,18 @@
                     <span class="profile-label">نام صاحب حساب:</span>
                     <span class="profile-value">{{ profile.bank_account_name or 'وارد نشده' }}</span>
                 </div>
+
+                <!-- Phase 7: FIDE Verification Button -->
+                <div style="margin-top: 20px;">
+                    <a href="{{ url_for('dashboard.request_verification') }}" class="btn btn-outline-primary btn-block">
+                        {% if profile.fide_verification_status == 'verified' %}
+                            مشاهده جزئیات هویت
+                        {% else %}
+                            درخواست تأیید هویت فیده (FIDE)
+                        {% endif %}
+                    </a>
+                </div>
+
             {% else %}
                 <div class="alert alert-warning">
                     شما هنوز پروفایل شطرنج‌بازی ندارید. برای ثبت‌نام در تورنمنت‌ها نیاز به پروفایل دارید.
