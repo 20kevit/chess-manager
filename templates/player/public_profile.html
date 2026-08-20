@@ -1,0 +1,61 @@
+<!-- templates/player/public_profile.html -->
+{% extends "base.html" %}
+
+{% block title %}پروفایل بازیکن - {{ profile_data.profile.full_name }}{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- اطلاعات پایه -->
+    <div class="card profile-header">
+        <h1>{{ profile_data.profile.full_name }}</h1>
+        <p>فدراسیون: {{ profile_data.profile.federation }}</p>
+        {% if profile_data.profile.fide_title %}
+            <p>عنوان: {{ profile_data.profile.fide_title }}</p>
+        {% endif %}
+    </div>
+
+    <!-- ریتینگ‌های فعلی -->
+    <div class="card profile-ratings">
+        <h2>ریتینگ‌های فعلی</h2>
+        <ul>
+            <li>استاندارد: {{ profile_data.ratings.standard.rating if profile_data.ratings.standard else '-' }}</li>
+            <li>رپید: {{ profile_data.ratings.rapid.rating if profile_data.ratings.rapid else '-' }}</li>
+            <li>بلیتز: {{ profile_data.ratings.blitz.rating if profile_data.ratings.blitz else '-' }}</li>
+        </ul>
+    </div>
+
+    <!-- تاریخچه ریتینگ (placeholder for chart) -->
+    <div class="card profile-rating-history">
+        <h2>تاریخچه ریتینگ</h2>
+        <p>نمودار در اینجا نمایش داده خواهد شد.</p>
+    </div>
+
+    <!-- آمار -->
+    <div class="card profile-stats">
+        <h2>آمار</h2>
+        <p>تعداد مسابقات: {{ statistics.tournament_count }}</p>
+        <p>تعداد بازی‌ها: {{ statistics.game_count }}</p>
+        <p>برد: {{ statistics.wins }} | مساوی: {{ statistics.draws }} | باخت: {{ statistics.losses }}</p>
+    </div>
+
+    <!-- تاریخچه تورنمنت‌ها -->
+    <div class="card profile-tournaments">
+        <h2>تاریخچه مسابقات</h2>
+        <ul>
+            {% for t in tournament_history %}
+            <li>{{ t.name }} - امتیاز: {{ t.points }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- تاریخچه بازی‌ها -->
+    <div class="card profile-games">
+        <h2>تاریخچه بازی‌ها</h2>
+        <ul>
+            {% for g in game_history %}
+            <li>دور {{ g.round_number }}: {{ g.opponent_name }} ({{ g.color }}) - نتیجه: {{ g.result }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
