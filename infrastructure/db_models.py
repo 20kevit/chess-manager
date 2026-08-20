@@ -57,25 +57,6 @@ class UserRoleModel(db.Model):
     role = db.Column(db.String(50), nullable=False)
 
 
-class FidePlayerModel(db.Model):
-    __tablename__ = "fide_players"
-    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
-
-    fide_id = db.Column(db.String(20), primary_key=True)
-    first_name = db.Column(db.String(100), default="")
-    last_name = db.Column(db.String(100), nullable=False, index=True)
-    gender = db.Column(db.String(1), default="M")
-    federation = db.Column(db.String(5), default="")
-    fide_title = db.Column(db.String(5), default="")
-    rating_standard = db.Column(db.Integer, default=0)
-    rating_rapid = db.Column(db.Integer, default=0)
-    rating_blitz = db.Column(db.Integer, default=0)
-    birth_year = db.Column(db.String(4), default="")
-    k_factor = db.Column(db.Integer, default=20)
-    # To track which monthly dataset this data belongs to
-    dataset_date = db.Column(db.Date, nullable=True)
-
-
 class PlayerProfileModel(db.Model):
     __tablename__ = "player_profiles"
     __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
@@ -89,6 +70,8 @@ class PlayerProfileModel(db.Model):
     birth_date = db.Column(db.Date, nullable=True)
     federation = db.Column(db.String(5), default="IRI")
     fide_title = db.Column(db.String(5), default="")
+    # Phase 7: FIDE Verification Status
+    fide_verification_status = db.Column(db.String(20), default="unverified") # unverified, pending, verified, rejected
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     national_id = db.Column(db.String(10), nullable=True)
@@ -384,3 +367,69 @@ class TempImportDataModel(db.Model):
     session_key = db.Column(db.String(64), unique=True, nullable=False, index=True)
     data_json = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class FidePlayerModel(db.Model):
+    """FIDE player identity data (global ready, filtered by config during import)."""
+    __tablename__ = "fide_players"
+    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
+
+    fide_id = db.Column(db.String(20), primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    sex = db.Column(db.String(1), default="M")
+    federation = db.Column(db.String(5), default="", index=True)
+    title = db.Column(db.String(10), default="")
+    wtitle = db.Column(db.String(10), default="")
+    otitle = db.Column(db.String(10), default="")
+    foatitle = db.Column(db.String(10), default="")
+    birth_year = db.Column(db.String(4), default="")
+    inactive = db.Column(db.Boolean, default=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class FideRatingModel(db.Model):
+    """Monthly rating history for a FIDE player."""
+    __tablename__ = "fide_ratings"
+    __table_args__ = (
+        db.UniqueConstraint("fide_id", "period", "rating_type", name="uq_fide_rating_period_type"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    fide_id = db.Column(db.String(20), db.ForeignKey("fide_players.fide_id"), nullable=False, index=True)
+    period = db.Column(db.String(7), nullable=False, index=True)  # Format: YYYY-MM
+    rating_type = db.Column(db.String(10), nullable=False)       # standard, rapid, blitz
+    rating = db.Column(db.Integer, default=0)
+    games = db.Column(db.Integer, default=0)
+    k_factor = db.Column(db.Integer, default=20)
+
+
+class FideImportModel(db.Model):
+    """Tracks FIDE rating list downloads and imports."""
+    __tablename__ = "fide_imports"
+    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
+
+    id = db.Column(db.Integer, primary_key=True)
+    period = db.Column(db.String(7), nullable=False, index=True)  # YYYY-MM
+    source_url = db.Column(db.String(255), nullable=True)
+    downloaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    imported_at = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), default="pending")  # pending, success, failed
+    records_processed = db.Column(db.Integer, default=0)
+    records_imported = db.Column(db.Integer, default=0)
+    error_message = db.Column(db.Text, nullable=True)
+
+
+class PlayerVerificationModel(db.Model):
+    """Handles player requests to link their profile to a FIDE ID."""
+    __tablename__ = "player_verifications"
+    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
+
+    id = db.Column(db.Integer, primary_key=True)
+    player_profile_id = db.Column(db.Integer, db.ForeignKey("player_profiles.id"), nullable=False, index=True)
+    requested_fide_id = db.Column(db.String(20), nullable=False)
+    status = db.Column(db.String(20), default="pending")  # pending, approved, rejected
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    reviewer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    rejection_reason = db.Column(db.Text, nullable=True)
