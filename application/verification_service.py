@@ -53,9 +53,22 @@ class VerificationService:
         return existing_req
 
     @staticmethod
-    def get_pending_requests() -> List[PlayerVerificationModel]:
-        """Admin fetches all pending requests."""
-        return PlayerVerificationRepository.get_all_pending()
+    def get_pending_requests() -> List[dict]:
+        """Admin fetches all pending requests with profile and fide data."""
+        requests = PlayerVerificationRepository.get_all_pending()
+        results = []
+        
+        for req in requests:
+            profile = req.player_profile
+            fide_player = FidePlayerRepository.get_by_fide_id(req.requested_fide_id)
+            
+            results.append({
+                "req": req,
+                "profile": profile,
+                "fide_player": fide_player
+            })
+            
+        return results
 
     @staticmethod
     def approve_request(request_id: int, reviewer_id: int) -> PlayerVerificationModel:

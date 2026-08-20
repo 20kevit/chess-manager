@@ -2,53 +2,139 @@
 
 {% block title %}درخواست‌های تأیید هویت{% endblock %}
 
+{% block extra_css %}
+<style>
+    .dash-header {
+        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .dash-header h2 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+    .dash-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+    }
+    .dash-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f3f4f6;
+    }
+    .req-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: #f9fafb;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 450px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="dashboard-container">
-    <h1>درخواست‌های تأیید هویت فیده</h1>
-    
-    <div class="card">
-        <div class="card-body">
-            {% if pending %}
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>نام بازیکن</th>
-                        <th>کد فیده درخواستی</th>
-                        <th>تاریخ درخواست</th>
-                        <th>عملیات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for req in pending %}
-                    <tr>
-                        <td>{{ req.player_profile.full_name if req.player_profile else 'نامشخص' }}</td>
-                        <td>{{ req.requested_fide_id }}</td>
-                        <td>{{ req.submitted_at.strftime('%Y-%m-%d') }}</td>
-                        <td>
-                            <form action="{{ url_for('fide.approve_verification', req_id=req.id) }}" method="POST" style="display:inline;">
-                                <button type="submit" class="btn btn-success btn-sm">تأیید</button>
-                            </form>
-                            <button class="btn btn-danger btn-sm" onclick="rejectRequest({{ req.id }})">رد</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p class="text-muted">هیچ درخواست معلقی وجود ندارد.</p>
-            {% endif %}
-        </div>
+<div class="container mt-4">
+    <div class="dash-header">
+        <h2>درخواست‌های تأیید هویت فیده</h2>
+    </div>
+
+        <div class="dash-card">
+        {% if pending %}
+        {% for item in pending %}
+            {% set req = item.req %}
+            {% set profile = item.profile %}
+            {% set fide = item.fide_player %}
+            
+            <div class="req-item" style="flex-direction: column; align-items: stretch;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                    <div>
+                        <h5 style="margin: 0; font-weight: 700;">
+                            پروفایل سایت: {{ profile.full_name if profile else 'نامشخص' }}
+                        </h5>
+                        <small class="text-muted">درخواست کد فیده: <strong>{{ req.requested_fide_id }}</strong> | تاریخ: {{ req.submitted_at.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                    <div>
+                        <form action="{{ url_for('fide.approve_verification', req_id=req.id) }}" method="POST" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success btn-sm">تأیید درخواست</button>
+                        </form>
+                        <button class="btn btn-danger btn-sm" onclick="rejectRequest({{ req.id }})">رد درخواست</button>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Player's Entered Data -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-2">اطلاعات وارد شده توسط بازیکن:</h6>
+                        <ul class="list-unstyled" style="font-size: 0.9rem;">
+                            <li>نام: {{ profile.first_name if profile else '-' }} {{ profile.last_name if profile else '-' }}</li>
+                            <li>کد ملی: {{ profile.national_id if profile else '-' }}</li>
+                            <li>تاریخ تولد: {{ profile.birth_date.strftime('%Y-%m-%d') if profile and profile.birth_date else '-' }}</li>
+                            <li>فدراسیون وارد شده: {{ profile.federation if profile else '-' }}</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- FIDE Database Data -->
+                    <div class="col-md-6" style="background: #f8fafc; padding: 15px; border-radius: 8px;">
+                        <h6 class="text-primary mb-2">اطلاعات موجود در دیتابیس فیده:</h6>
+                        {% if fide %}
+                        <ul class="list-unstyled" style="font-size: 0.9rem;">
+                            <li>نام در فیده: <strong>{{ fide.name }}</strong></li>
+                            <li>فدراسیون: {{ fide.federation }}</li>
+                            <li>سال تولد: {{ fide.birth_year or '-' }}</li>
+                            <li>جنسیت: {{ fide.sex }}</li>
+                            <li>عنوان: {{ fide.title or 'بدون عنوان' }}</li>
+                        </ul>
+                        {% else %}
+                        <p class="text-danger" style="font-size: 0.9rem;">بازیکنی با این کد فیده در دیتابیس یافت نشد!</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted text-center" style="padding: 30px;">هیچ درخواست معلقی وجود ندارد.</p>
+        {% endif %}
     </div>
 </div>
 
-<!-- Simple modal for rejection reason -->
-<div id="rejectModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:20px; border-radius:8px; width:400px;">
-        <h3>دلیل رد درخواست</h3>
+<div id="rejectModal" class="modal-overlay" onclick="if(event.target === this) this.classList.remove('active')">
+    <div class="modal-box">
+        <h4 style="margin-bottom: 20px;">دلیل رد درخواست</h4>
         <form id="rejectForm" action="" method="POST">
-            <textarea name="reason" class="form-control" rows="3" required></textarea>
-            <button type="submit" class="btn btn-danger mt-2">ثبت رد درخواست</button>
-            <button type="button" class="btn btn-secondary mt-2" onclick="closeModal()">انصراف</button>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <textarea name="reason" class="form-control" rows="3" required placeholder="مثلاً: کد فیده متعلق به شما نیست..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-danger" style="flex: 1;">ثبت رد درخواست</button>
+                <button type="button" onclick="document.getElementById('rejectModal').classList.remove('active')" class="btn btn-light">انصراف</button>
+            </div>
         </form>
     </div>
 </div>
@@ -56,11 +142,7 @@
 <script>
 function rejectRequest(reqId) {
     document.getElementById('rejectForm').action = `/admin/fide/verifications/${reqId}/reject`;
-    document.getElementById('rejectModal').style.display = 'flex';
-}
-
-function closeModal() {
-    document.getElementById('rejectModal').style.display = 'none';
+    document.getElementById('rejectModal').classList.add('active');
 }
 </script>
 {% endblock %}

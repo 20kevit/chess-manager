@@ -356,17 +356,22 @@ class FidePlayerRepository:
     def search_players(query: str, federation: Optional[str] = None, limit: int = 20) -> List[FidePlayerModel]:
         """
         Search players by FIDE ID or Name.
-        If the query is numeric, it searches exact FIDE ID.
-        Otherwise, it performs a case-insensitive LIKE search on the name.
+        - If query is numeric, it searches for FIDE IDs starting with that number.
+        - Otherwise, it splits the query by spaces and matches ALL parts (case-insensitive).
         """
         q = FidePlayerModel.query
         
         if query:
             if query.isdigit():
-                q = q.filter(FidePlayerModel.fide_id == query)
+                # Partial match on FIDE ID
+                q = q.filter(FidePlayerModel.fide_id.like(f"{query}%"))
             else:
-                search_pattern = f"%{query}%"
-                q = q.filter(FidePlayerModel.name.ilike(search_pattern))
+                # Split query by spaces and require all parts to be present in the name
+                search_terms = query.split()
+                for term in search_terms:
+                    if term:
+                        # ilike is case-insensitive in SQLAlchemy
+                        q = q.filter(FidePlayerModel.name.ilike(f"%{term}%"))
         
         if federation:
             q = q.filter(FidePlayerModel.federation == federation)

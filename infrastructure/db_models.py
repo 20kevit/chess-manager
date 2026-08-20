@@ -433,3 +433,5 @@ class PlayerVerificationModel(db.Model):
     reviewed_at = db.Column(db.DateTime, nullable=True)
     reviewer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     rejection_reason = db.Column(db.Text, nullable=True)
+    player_profile = db.relationship("PlayerProfileModel", foreign_keys=[player_profile_id])
+    reviewer = db.relationship("UserModel", foreign_keys=[reviewer_id])
