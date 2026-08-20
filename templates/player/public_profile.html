@@ -4,58 +4,173 @@
 {% block title %}پروفایل بازیکن - {{ profile_data.profile.full_name }}{% endblock %}
 
 {% block content %}
-<div class="profile-container">
+<div class="profile-container" style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+    
     <!-- اطلاعات پایه -->
-    <div class="card profile-header">
-        <h1>{{ profile_data.profile.full_name }}</h1>
-        <p>فدراسیون: {{ profile_data.profile.federation }}</p>
-        {% if profile_data.profile.fide_title %}
-            <p>عنوان: {{ profile_data.profile.fide_title }}</p>
-        {% endif %}
+    <div class="card" style="padding: 20px; margin-bottom: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <h1 style="margin-bottom: 5px;">{{ profile_data.profile.full_name }}</h1>
+        <div style="display: flex; gap: 20px; color: #555;">
+            <span>فدراسیون: {{ profile_data.profile.federation }}</span>
+            {% if profile_data.profile.fide_title %}
+            <span>عنوان: {{ profile_data.profile.fide_title }}</span>
+            {% endif %}
+            {% if profile_data.profile.fide_id %}
+            <span>کد فیده: {{ profile_data.profile.fide_id }}</span>
+            {% endif %}
+        </div>
     </div>
 
-    <!-- ریتینگ‌های فعلی -->
-    <div class="card profile-ratings">
-        <h2>ریتینگ‌های فعلی</h2>
-        <ul>
-            <li>استاندارد: {{ profile_data.ratings.standard.rating if profile_data.ratings.standard else '-' }}</li>
-            <li>رپید: {{ profile_data.ratings.rapid.rating if profile_data.ratings.rapid else '-' }}</li>
-            <li>بلیتز: {{ profile_data.ratings.blitz.rating if profile_data.ratings.blitz else '-' }}</li>
-        </ul>
-    </div>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <!-- ستون چپ: آمار و ریتینگ -->
+        <div style="flex: 1; min-width: 300px;">
+            <!-- ریتینگ‌های فعلی -->
+            <div class="card" style="padding: 20px; margin-bottom: 20px; background: #fff; border-radius: 8px;">
+                <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">ریتینگ‌های فعلی</h3>
+                <div style="display: flex; justify-content: space-between; text-align: center;">
+                    <div style="flex: 1;">
+                        <h4>استاندارد</h4>
+                        <span style="font-size: 24px; font-weight: bold;">{{ profile_data.ratings.standard.rating if profile_data.ratings.standard else '-' }}</span>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4>رپید</h4>
+                        <span style="font-size: 24px; font-weight: bold;">{{ profile_data.ratings.rapid.rating if profile_data.ratings.rapid else '-' }}</span>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4>بلیتز</h4>
+                        <span style="font-size: 24px; font-weight: bold;">{{ profile_data.ratings.blitz.rating if profile_data.ratings.blitz else '-' }}</span>
+                    </div>
+                </div>
+            </div>
 
-    <!-- تاریخچه ریتینگ (placeholder for chart) -->
-    <div class="card profile-rating-history">
-        <h2>تاریخچه ریتینگ</h2>
-        <p>نمودار در اینجا نمایش داده خواهد شد.</p>
-    </div>
+            <!-- آمار -->
+            <div class="card" style="padding: 20px; background: #fff; border-radius: 8px;">
+                <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">آمار کلی</h3>
+                <ul style="list-style: none; padding: 0; line-height: 2;">
+                    <li>تعداد مسابقات: <strong>{{ statistics.tournament_count }}</strong></li>
+                    <li>تعداد بازی‌ها: <strong>{{ statistics.game_count }}</strong></li>
+                    <li>برد / مساوی / باخت: <strong>{{ statistics.wins }} / {{ statistics.draws }} / {{ statistics.losses }}</strong></li>
+                    <li>نرخ برد: <strong>{{ statistics.win_rate }}%</strong></li>
+                </ul>
+            </div>
+        </div>
 
-    <!-- آمار -->
-    <div class="card profile-stats">
-        <h2>آمار</h2>
-        <p>تعداد مسابقات: {{ statistics.tournament_count }}</p>
-        <p>تعداد بازی‌ها: {{ statistics.game_count }}</p>
-        <p>برد: {{ statistics.wins }} | مساوی: {{ statistics.draws }} | باخت: {{ statistics.losses }}</p>
+        <!-- ستون راست: نمودار ریتینگ -->
+        <div style="flex: 2; min-width: 400px;">
+            <div class="card" style="padding: 20px; background: #fff; border-radius: 8px; height: 100%;">
+                <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">تاریخچه تغییرات ریتینگ</h3>
+                <canvas id="ratingChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
     </div>
 
     <!-- تاریخچه تورنمنت‌ها -->
-    <div class="card profile-tournaments">
-        <h2>تاریخچه مسابقات</h2>
-        <ul>
-            {% for t in tournament_history %}
-            <li>{{ t.name }} - امتیاز: {{ t.points }}</li>
-            {% endfor %}
-        </ul>
+    <div class="card" style="padding: 20px; margin-top: 20px; background: #fff; border-radius: 8px;">
+        <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">تاریخچه مسابقات</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="text-align: right; border-bottom: 1px solid #ddd;">
+                    <th style="padding: 10px;">نام مسابقه</th>
+                    <th style="padding: 10px;">تاریخ</th>
+                    <th style="padding: 10px;">امتیاز</th>
+                    <th style="padding: 10px;">ریتینگ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tournament_history %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">
+                        <a href="{{ url_for('tournament.view', public_id=t.public_id) }}">{{ t.name }}</a>
+                    </td>
+                    <td style="padding: 10px;">{{ t.start_date if t.start_date else '-' }}</td>
+                    <td style="padding: 10px;">{{ t.points }}</td>
+                    <td style="padding: 10px;">{{ t.rating_snapshot }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <!-- تاریخچه بازی‌ها -->
-    <div class="card profile-games">
-        <h2>تاریخچه بازی‌ها</h2>
-        <ul>
-            {% for g in game_history %}
-            <li>دور {{ g.round_number }}: {{ g.opponent_name }} ({{ g.color }}) - نتیجه: {{ g.result }}</li>
-            {% endfor %}
-        </ul>
+    <div class="card" style="padding: 20px; margin-top: 20px; background: #fff; border-radius: 8px;">
+        <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">تاریخچه بازی‌ها</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="text-align: right; border-bottom: 1px solid #ddd;">
+                    <th style="padding: 10px;">مسابقه</th>
+                    <th style="padding: 10px;">دور</th>
+                    <th style="padding: 10px;">حریف</th>
+                    <th style="padding: 10px;">رنگ</th>
+                    <th style="padding: 10px;">نتیجه</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for g in game_history %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">{{ g.tournament_name }}</td>
+                    <td style="padding: 10px;">{{ g.round_number }}</td>
+                    <td style="padding: 10px;">{{ g.opponent_name }} ({{ g.opponent_rating }})</td>
+                    <td style="padding: 10px;">{{ 'سفید' if g.color == 'white' else 'سیاه' }}</td>
+                    <td style="padding: 10px;">{{ g.result }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
+
+<!-- Chart.js Integration -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('ratingChart').getContext('2d');
+        const history = {{ rating_history | tojson }};
+        
+        // Extracting data for charts
+        const standardData = history.standard.map(item => item.rating);
+        const standardLabels = history.standard.map(item => item.period);
+        const rapidData = history.rapid.map(item => item.rating);
+        const blitzData = history.blitz.map(item => item.rating);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: standardLabels, // Assuming periods are mostly aligned
+                datasets: [
+                    {
+                        label: 'استاندارد',
+                        data: standardData,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        fill: false,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'رپید',
+                        data: rapidData,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: false,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'بلیتز',
+                        data: blitzData,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: false,
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}

@@ -311,6 +311,15 @@
                     </a>
                 </div>
 
+                <!-- Phase 8H: View Public Profile Link -->
+                <div style="margin-top: 10px;">
+                    {% if profile.fide_verification_status == "verified" and profile.fide_id %}
+                        <a href="{{ url_for('player_profile.public_profile', identifier=profile.fide_id) }}" class="btn btn-info btn-block">مشاهده پروفایل عمومی</a>
+                    {% else %}
+                        <a href="{{ url_for('player_profile.public_profile', identifier=profile.id) }}" class="btn btn-info btn-block">مشاهده پروفایل عمومی</a>
+                    {% endif %}
+                </div>
+
             {% else %}
                 <div class="alert alert-warning">
                     شما هنوز پروفایل شطرنج‌بازی ندارید. برای ثبت‌نام در تورنمنت‌ها نیاز به پروفایل دارید.
