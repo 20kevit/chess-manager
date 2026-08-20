@@ -19,27 +19,25 @@
             <p class="link-note">این لینک را با بازیکنان به اشتراک بگذارید</p>
         </div>
         
-        <!-- کد دسترسی مدیریت -->
+        <!-- دسترسی مدیریت -->
         <div class="link-box link-box-admin">
-            <h3>🔐 کد دسترسی مدیریت (فقط برای شما)</h3>
-            <div class="link-display">
-                <input type="text" value="{{ tournament.admin_code }}" id="admin-code" readonly onclick="this.select()" class="link-input">
-                <button onclick="copyToClipboard('admin-code', this)" class="btn btn-secondary">کپی</button>
-            </div>
-            <p class="link-note warning">
-                ⚠️ <strong>این کد ۱۶ رقمی را در جای امنی ذخیره کنید!</strong><br>
-                برای ورود به پنل مدیریت به این کد نیاز دارید. بدون این کد نمی‌توانید تورنومنت را مدیریت کنید.
+            <h3>🔐 دسترسی مدیریت</h3>
+            <p class="link-note">
+                شما برگزارکننده این تورنمنت هستید. نیازی به کد دسترسی نیست؛ می‌توانید مستقیماً از طریق داشبورد خود این تورنمنت را مدیریت کنید.
             </p>
-            <div style="margin-top: 16px; text-align: center;">
-                <a href="/{{ tournament.public_id }}/admin/login" class="btn btn-primary btn-large">
-                    ورود به پنل مدیریت
+            <div style="margin-top: 16px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-primary btn-large">
+                    ⚙️ ورود به پنل مدیریت
+                </a>
+                <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-secondary btn-large">
+                    👁️ مشاهده صفحه عمومی
                 </a>
             </div>
         </div>
         
         <!-- دکمه بازگشت -->
         <div style="margin-top: 24px; text-align: center;">
-            <a href="/" class="btn btn-secondary">بازگشت به خانه</a>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-light">بازگشت به داشبورد</a>
         </div>
     </div>
 </div>

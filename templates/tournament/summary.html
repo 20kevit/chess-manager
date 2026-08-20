@@ -28,18 +28,6 @@
             <span class="summary-label">تعداد دورها</span>
             <span class="summary-value">{{ tournament.current_round }} از {{ tournament.total_rounds }}</span>
         </div>
-        {% if tournament.chief_arbiter %}
-        <div class="summary-item">
-            <span class="summary-label">سرداور</span>
-            <span class="summary-value">{{ tournament.chief_arbiter }}</span>
-        </div>
-        {% endif %}
-        {% if tournament.arbiter %}
-        <div class="summary-item">
-            <span class="summary-label">داور</span>
-            <span class="summary-value">{{ tournament.arbiter }}</span>
-        </div>
-        {% endif %}
     </div>
 </div>
 

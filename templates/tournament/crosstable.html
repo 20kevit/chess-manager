@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="page-header">
-    <a href="/{{ tournament.public_id }}" class="btn btn-secondary" style="float:left;">🔙 بازگشت</a>
+    <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-secondary" style="float:left;">🔙 بازگشت</a>
     <h1>جدول برخورد (Cross-Table)</h1>
     <p>{{ tournament.name }}</p>
 </div>
@@ -33,7 +33,7 @@
                 <td>{{ player.start_number }}</td>
                 <td>{{ player.fide_title or '' }}</td>
                 <td class="player-cell">
-                    <a href="/{{ tournament.public_id }}/player/{{ player.id }}">
+                    <a href="{{ url_for('tournament.player_detail', public_id=tournament.public_id, participant_id=player.id) }}">
                         {{ player.full_name }}
                     </a>
                 </td>
@@ -43,8 +43,7 @@
                     {% if data.rounds.get(r) %}
                         {% set cell = data.rounds[r] %}
                         {% if cell.get('opponent_id') %}
-                            <a href="/{{ tournament.public_id }}/player/{{ cell.opponent_id }}"
-                               title="حریف: {{ cell.opponent_num }}">
+                            <a href="{{ url_for('tournament.player_detail', public_id=tournament.public_id, participant_id=cell.opponent_id) }}" title="حریف: {{ cell.opponent_num }}">
                                 {{ cell.text }}
                             </a>
                         {% else %}
