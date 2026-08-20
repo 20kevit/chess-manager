@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import Optional
 from app.extensions import db
-from infrastructure.repositories import PlayerProfileRepository, ParticipantRepository
+from infrastructure.repositories import PlayerProfileRepository, ParticipantRepository, FidePlayerRepository
 from infrastructure.db_models import PlayerProfileModel, TournamentParticipantModel
 
 _AGE_CATEGORY_MAP = [(8, "U08"), (10, "U10"), (12, "U12"), (14, "U14"), (16, "U16"), (18, "U18"), (20, "U20")]
@@ -55,6 +55,19 @@ class PlayerService:
             age_category = _detect_age_category(profile.birth_date)
 
         rating = int(form_data.get("rating", 0) or 0)
+        k_factor = int(form_data.get("k_factor", 20) or 20)
+
+        # ── Phase 8A: Auto-fetch FIDE rating if not provided manually ──
+        if rating == 0 and profile.fide_id and profile.fide_verification_status == "verified":
+            rating_type = getattr(tournament, "time_control_type", "standard")
+            if rating_type not in ["standard", "rapid", "blitz"]:
+                rating_type = "standard"
+            
+            fide_rating = FidePlayerRepository.get_latest_rating(profile.fide_id, rating_type)
+            if fide_rating:
+                rating = fide_rating.rating or 0
+                k_factor = fide_rating.k_factor or 20
+        # ──────────────────────────────────────────────────────────────
         
         participant = TournamentParticipantModel(
             tournament_id=tournament.id,
@@ -62,7 +75,7 @@ class PlayerService:
             start_number=ParticipantRepository.next_start_number(tournament.id),
             rating_snapshot=rating, # Snapshot taken here
             fide_title_snapshot=profile.fide_title,
-            k_factor=int(form_data.get("k_factor", 20) or 20),
+            k_factor=k_factor,
             age_category=age_category,
             custom_category=form_data.get("custom_category", "").strip(),
             joined_from_round=max(1, tournament.current_round + 1) if tournament.current_round > 0 else 1,
