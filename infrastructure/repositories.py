@@ -3,7 +3,7 @@ Repository pattern for database access.
 All DB queries live here. No business logic.
 Repositories do NOT commit. Caller (service layer) is responsible for commit.
 """
-from typing import Optional, List
+from typing import Optional, List, Dict
 from app.extensions import db
 from infrastructure.db_models import (
     TournamentModel, PlayerProfileModel, TournamentParticipantModel,
@@ -166,6 +166,18 @@ class ParticipantRepository:
         for participant in participants:
             participant.points = score_map.get(participant.id, 0.0)
         db.session.flush()
+
+    @staticmethod
+    def get_all_by_profile_id(profile_id: int) -> List[TournamentParticipantModel]:
+        """
+        Fetches all tournament participations for a specific player profile.
+        Orders by tournament ID descending (newest first).
+        """
+        return TournamentParticipantModel.query.filter_by(
+            player_profile_id=profile_id
+        ).order_by(
+            TournamentParticipantModel.tournament_id.desc()
+        ).all()
 
 
 class RoundRepository:

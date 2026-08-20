@@ -184,6 +184,9 @@ class TournamentParticipantModel(db.Model):
     
     profile = db.relationship("PlayerProfileModel", lazy="joined")
     
+    # Phase 8D: Eager load tournament data to prevent N+1 queries
+    tournament = db.relationship("TournamentModel", lazy="joined")
+
     @property
     def full_name(self):
         return self.profile.full_name if self.profile else "Unknown"
