@@ -98,8 +98,6 @@ class TournamentService:
         tournament.federation = (
             form_data.get("federation", "IRI").strip() or "IRI"
         )
-        tournament.chief_arbiter = form_data.get("chief_arbiter", "").strip()
-        tournament.arbiter = form_data.get("arbiter", "").strip()
         tournament.time_control_description = form_data.get(
             "time_control_description", ""
         ).strip()

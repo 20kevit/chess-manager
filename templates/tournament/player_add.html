@@ -41,28 +41,12 @@
             </div>
         </div>
 
-        <!-- 3️⃣ Birth Date Card (Miladi/Shamsi) -->
+        <!-- 3️⃣ Birth Date Card -->
         <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-top:20px;">
             <h3 class="section-title">📅 تاریخ تولد</h3>
-            <div class="date-type-selector" style="margin-bottom:15px; display:flex; gap:20px;">
-                <label><input type="radio" name="date_type" value="miladi" checked onchange="toggleDateInput()"> میلادی</label>
-                <label><input type="radio" name="date_type" value="shamsi" onchange="toggleDateInput()"> شمسی</label>
-            </div>
-            
-            <div id="miladi-date-container">
+            <div class="form-group">
+                <label>تاریخ تولد (میلادی)</label>
                 <input type="date" name="birth_date" id="birth_date" class="form-control">
-            </div>
-
-            <div id="shamsi-date-container" style="display:none; gap:10px; align-items:flex-end;">
-                <div class="form-group"><label>سال</label><input type="number" id="sh_year" placeholder="1380" style="width:80px;"></div>
-                <div class="form-group">
-                    <label>ماه</label>
-                    <select id="sh_month">
-                        {% for m in range(1,13) %}<option value="{{m}}">{{m}}</option>{% endfor %}
-                    </select>
-                </div>
-                <div class="form-group"><label>روز</label><input type="number" id="sh_day" placeholder="01" style="width:60px;"></div>
-                <button type="button" class="btn btn-secondary" onclick="convertShamsi()" style="margin-bottom:12px;">تبدیل به میلادی</button>
             </div>
         </div>
 
@@ -106,66 +90,4 @@
     </form>
 </div>
 
-<script>
-/**
- * UI Logic for Date Toggling
- */
-function toggleDateInput() {
-    const isShamsi = document.querySelector('input[name="date_type"]:checked').value === 'shamsi';
-    document.getElementById('miladi-date-container').style.display = isShamsi ? 'none' : 'block';
-    document.getElementById('shamsi-date-container').style.display = isShamsi ? 'flex' : 'none';
-}
-
-/**
- * Simple Shamsi to Miladi Conversion
- */
-function convertShamsi() {
-    const y = parseInt(document.getElementById('sh_year').value);
-    const m = parseInt(document.getElementById('sh_month').value);
-    const d = parseInt(document.getElementById('sh_day').value);
-    if(!y || !m || !d) return alert('تاریخ را کامل وارد کنید');
-    
-    // Using a simplified algorithm for the UI display
-    // Proper conversion happens on the backend or via more robust JS libs
-    // For now, we manually set the birth_date input
-    const dateStr = `${y}-${m}-${d}`; 
-    // In a real app, use a lib like moment-jalaali. 
-    // This is just to fill the field for the user.
-    document.getElementById('birth_date').value = "2000-01-01"; // Placeholder
-    alert('تبدیل انجام شد (نمونه). لطفا تاریخ میلادی را تایید کنید.');
-}
-
-/**
- * FIDE Data Fetcher logic
- */
-function lookupFide() {
-    const fideId = document.getElementById('fide_id_input').value;
-    const status = document.getElementById('fide-status');
-    if(!fideId) return alert('لطفا کد فیده را وارد کنید');
-    
-    status.innerHTML = "⏳ در حال استعلام...";
-    fetch(`/api/fide/${fideId}`)
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                const d = data.data;
-                document.getElementById('first_name').value = d.first_name;
-                document.getElementById('last_name').value = d.last_name;
-                document.getElementById('federation').value = d.federation;
-                document.getElementById('fide_title').value = d.fide_title || "";
-                
-                const tc = "{{ tournament.time_control_type }}";
-                if(tc === 'standard') document.getElementById('rating').value = d.rating_standard || 0;
-                else if(tc === 'rapid') document.getElementById('rating').value = d.rating_rapid || 0;
-                else document.getElementById('rating').value = d.rating_blitz || 0;
-                
-                if(d.birth_year) document.getElementById('birth_date').value = `${d.birth_year}-01-01`;
-                
-                status.innerHTML = `<span style="color:green">✅ اطلاعات ${d.first_name} ${d.last_name} دریافت شد.</span>`;
-            } else {
-                status.innerHTML = `<span style="color:red">❌ خطا: ${data.message}</span>`;
-            }
-        });
-}
-</script>
 {% endblock %}
