@@ -63,7 +63,8 @@ def index():
         pending_invitations=pending_invitations,
         assigned_tournaments=assigned_tournaments,
         my_registrations=my_registrations,
-        available_tournaments=available_tournaments
+        available_tournaments=available_tournaments,
+        search_results=None,
     )
 
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage")
@@ -108,6 +109,29 @@ def search_profile():
     assignments = TournamentStaffModel.query.filter_by(user_id=current_user.id).all()
     assigned_tournaments = [a.tournament for a in assignments]
     
+    # Fix: Fetch pending invitations and available tournaments to prevent template crash
+    pending_invitations = TournamentStaffModel.query.filter_by(
+        user_id=current_user.id, status="pending"
+    ).all()
+    
+    available_tournaments = []
+    if current_user.has_role('player'):
+        available_tournaments = TournamentModel.query.filter(
+            TournamentModel.status != "finished",
+            db.or_(
+                TournamentModel.registration_deadline.is_(None),
+                TournamentModel.registration_deadline >= datetime.utcnow()
+            )
+        ).order_by(TournamentModel.created_at.desc()).limit(10).all()
+    
+    # Fix: Use player_profile_id for correct registration fetching
+    profile_id = current_user.profile.id if current_user.profile else None
+    my_registrations = []
+    if profile_id:
+        my_registrations = RegistrationModel.query.filter_by(
+            player_profile_id=profile_id
+        ).order_by(RegistrationModel.created_at.desc()).all()
+    
     return render_template(
         "dashboard/index.html", 
         profile=current_user.profile, 
@@ -116,8 +140,10 @@ def search_profile():
         is_organizer=current_user.has_role('organizer'),
         is_player=current_user.has_role('player'),
         my_tournaments=TournamentModel.query.filter_by(organizer_id=current_user.id).all(),
+        pending_invitations=pending_invitations,
         assigned_tournaments=assigned_tournaments,
-        my_registrations=RegistrationModel.query.filter_by(user_id=current_user.id).all()
+        my_registrations=my_registrations,
+        available_tournaments=available_tournaments
     )
 
 @dashboard_bp.route("/dashboard/profile/link/<int:profile_id>", methods=["POST"])
