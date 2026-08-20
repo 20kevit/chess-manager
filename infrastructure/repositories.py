@@ -386,6 +386,36 @@ class FidePlayerRepository:
             rating_type=rating_type
         ).order_by(FideRatingModel.period.desc()).first()
 
+    @staticmethod
+    def get_all_latest_ratings(fide_id: str) -> Dict[str, Optional[Dict]]:
+        """
+        Fetches the most recent rating records for all types (standard, rapid, blitz).
+        Returns a dictionary with rating types as keys.
+        """
+        ratings = {
+            "standard": None,
+            "rapid": None,
+            "blitz": None
+        }
+        
+        if not fide_id:
+            return ratings
+            
+        for r_type in ["standard", "rapid", "blitz"]:
+            record = FideRatingModel.query.filter_by(
+                fide_id=fide_id,
+                rating_type=r_type
+            ).order_by(FideRatingModel.period.desc()).first()
+            
+            if record:
+                ratings[r_type] = {
+                    "rating": record.rating,
+                    "games": record.games,
+                    "k_factor": record.k_factor,
+                    "period": record.period
+                }
+                
+        return ratings
 
 class FideRatingRepository:
     @staticmethod
