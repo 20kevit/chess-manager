@@ -2,8 +2,10 @@
 Flask application factory.
 """
 from flask import Flask, render_template
+from flask_login import current_user
 from app.extensions import db, login_manager
 from config import Config
+from application.notification_service import NotificationService
 
 def create_app(config_class=None) -> Flask:
     flask_app = Flask(
@@ -45,6 +47,7 @@ def create_app(config_class=None) -> Flask:
     from interfaces.web.payment_routes import payment_bp
     from interfaces.web.fide_routes import fide_bp
     from interfaces.web.player_profile_routes import player_profile_bp
+    from interfaces.web.notification_routes import notification_bp
 
     flask_app.register_blueprint(tournament_bp)
     flask_app.register_blueprint(player_bp)
@@ -59,6 +62,7 @@ def create_app(config_class=None) -> Flask:
     flask_app.register_blueprint(payment_bp)
     flask_app.register_blueprint(fide_bp)
     flask_app.register_blueprint(player_profile_bp)
+    flask_app.register_blueprint(notification_bp)
 
     from app.cli import register_cli
     register_cli(flask_app)
@@ -81,5 +85,13 @@ def create_app(config_class=None) -> Flask:
             return f"{int(value):,} تومان"
         except (ValueError, TypeError):
             return "0 تومان"
+    
+    @flask_app.context_processor
+    def inject_unread_notifications():
+        if current_user.is_authenticated:
+            unread_count = NotificationService.get_unread_count(current_user.id)
+        else:
+            unread_count = 0
+        return dict(unread_notifications_count=unread_count)
         
     return flask_app

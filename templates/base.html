@@ -35,6 +35,26 @@
                     {% if current_user.has_role('organizer') %}
                         <a href="{{ url_for('tournament.create') }}">ایجاد تورنومنت</a>
                     {% endif %}
+                    
+                    <!-- Notification Bell -->
+                    <div class="notification-bell-container">
+                        <a href="#" id="notifBell" class="nav-link">
+                            🔔
+                            {% if unread_notifications_count > 0 %}
+                            <span class="notif-badge" id="notifCount">{{ unread_notifications_count }}</span>
+                            {% endif %}
+                        </a>
+                        <div class="notification-dropdown" id="notifDropdown" style="display: none;">
+                            <div class="notif-dropdown-header">
+                                <span>اعلان‌های اخیر</span>
+                                <a href="{{ url_for('notification.index') }}" class="notif-see-all">مشاهده همه</a>
+                            </div>
+                            <div class="notif-dropdown-body" id="notifDropdownBody">
+                                <!-- Loaded via AJAX -->
+                            </div>
+                        </div>
+                    </div>
+
                     <a href="{{ url_for('auth.logout') }}">خروج</a>
                 {% else %}
                     <a href="{{ url_for('auth.login') }}">ورود</a>
@@ -89,6 +109,66 @@
                 input.name = 'csrf_token';
                 input.value = csrfValue;
                 form.appendChild(input);
+            }
+        });
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+        const bell = document.getElementById('notifBell');
+        const dropdown = document.getElementById('notifDropdown');
+        const body = document.getElementById('notifDropdownBody');
+        const countBadge = document.getElementById('notifCount');
+        
+        if(!bell) return;
+
+        let isLoaded = false;
+
+        bell.addEventListener('click', function(e) {
+            e.preventDefault();
+            if(dropdown.style.display === 'none') {
+                dropdown.style.display = 'block';
+                if(!isLoaded) {
+                    body.innerHTML = '<p style="text-align:center; padding:10px;">در حال بارگذاری...</p>';
+                    fetch('/api/notifications')
+                        .then(res => res.json())
+                        .then(data => {
+                            isLoaded = true;
+                            if(data.notifications.length === 0) {
+                                body.innerHTML = '<p style="text-align:center; padding:10px; color:var(--gray-500);">اعلان جدیدی وجود ندارد.</p>';
+                                return;
+                            }
+                            body.innerHTML = '';
+                            data.notifications.forEach(n => {
+                                const item = document.createElement('div');
+                                item.className = 'notif-dropdown-item' + (n.is_read ? '' : ' unread');
+                                item.innerHTML = `
+                                    <strong>${n.title}</strong>
+                                    <p>${n.message}</p>
+                                    <small>${n.created_at}</small>
+                                `;
+                                if(n.link_url) {
+                                    item.style.cursor = 'pointer';
+                                    item.onclick = () => { window.location.href = n.link_url; };
+                                }
+                                body.appendChild(item);
+                            });
+                            
+                            // Update badge
+                            if(data.unread_count === 0 && countBadge) {
+                                countBadge.remove();
+                            } else if(countBadge) {
+                                countBadge.textContent = data.unread_count;
+                            }
+                        });
+                }
+            } else {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!bell.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
             }
         });
     });

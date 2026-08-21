@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}اعلان‌ها{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 900px;">
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>اعلان‌های شما</h1>
+        {% if unread_count > 0 %}
+        <form id="readAllForm" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary btn-small">علامت‌گذاری همه به عنوان خوانده‌شده</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div id="notificationsList">
+        {% if notifications %}
+            {% for n in notifications %}
+            <div class="notification-item {{ 'unread' if not n.is_read else '' }}" data-id="{{ n.id }}">
+                <div class="notif-icon">🔔</div>
+                <div class="notif-content">
+                    <strong>{{ n.title }}</strong>
+                    <p>{{ n.message }}</p>
+                    <small>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                </div>
+                {% if n.link_url %}
+                <a href="{{ n.link_url }}" class="btn btn-primary btn-small">مشاهده</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center; color: var(--gray-500); margin-top: 30px;">اعلان جدیدی وجود ندارد.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('readAllForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    fetch('/api/notifications/read-all', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': this.csrf_token.value
+        }
+    }).then(res => res.json()).then(data => {
+        if(data.success) {
+            document.querySelectorAll('.notification-item.unread').forEach(el => el.classList.remove('unread'));
+            document.getElementById('readAllForm').style.display = 'none';
+        }
+    });
+});
+
+document.querySelectorAll('.notification-item.unread').forEach(item => {
+    item.addEventListener('click', function() {
+        const id = this.dataset.id;
+        fetch(`/api/notifications/${id}/read`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        }).then(res => res.json()).then(data => {
+            if(data.success) this.classList.remove('unread');
+        });
+    });
+});
+</script>
+{% endblock %}
