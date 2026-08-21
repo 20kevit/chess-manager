@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 from application.auth_service import AuthService
 from infrastructure.db_models import (
     PlayerProfileModel, TournamentModel, RegistrationModel, 
-    TournamentStaffModel, UserModel
+    TournamentStaffModel, UserModel, TournamentParticipantModel
 )
 from datetime import datetime
 from app.extensions import db
@@ -44,6 +44,13 @@ def index():
         my_registrations = RegistrationModel.query.filter_by(
             player_profile_id=profile.id
         ).order_by(RegistrationModel.created_at.desc()).all()
+        
+        # Phase 8 Fix: Fetch tournaments added directly by arbiter
+        my_participations = TournamentParticipantModel.query.filter_by(
+            player_profile_id=profile.id
+        ).order_by(TournamentParticipantModel.id.desc()).all()
+    else:
+        my_participations = []
 
     # Fetch available tournaments for registration
     available_tournaments = []
@@ -68,6 +75,7 @@ def index():
         my_registrations=my_registrations,
         available_tournaments=available_tournaments,
         search_results=None,
+        my_participations=my_participations,
     )
 
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage")
@@ -384,3 +392,19 @@ def dashboard_fide_search():
     # but let's allow searching all for now, or restrict to IRI if needed.
     results = FideSearchService.search(query, federation=None, limit=10)
     return jsonify(results)
+
+@dashboard_bp.route("/dashboard/participant/<int:participant_id>/withdraw", methods=["POST"])
+@login_required
+def withdraw_from_participation(participant_id):
+    """Allows a player to withdraw from a tournament they were directly added to."""
+    participant = TournamentParticipantModel.query.get_or_404(participant_id)
+    
+    # Security Check: Ensure this participant belongs to the current user
+    if not current_user.profile or participant.player_profile_id != current_user.profile.id:
+        abort(403)
+        
+    from application.player_service import PlayerService
+    PlayerService.toggle_withdraw(participant, participant.tournament.current_round)
+    
+    flash("انصراف شما از مسابقه با موفقیت ثبت شد.", "info")
+    return redirect(url_for("dashboard.index"))

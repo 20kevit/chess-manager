@@ -247,6 +247,38 @@
             {% endif %}
         </div>
         {% endif %}
+
+        <!-- Phase 8 Fix: Direct Tournament Participations -->
+        {% if my_participations %}
+        <div class="dash-card" style="border-left: 4px solid #3b82f6;">
+            <div class="dash-card-title">
+                مسابقات ثبت‌شده توسط داور
+            </div>
+            {% for p in my_participations %}
+            <div class="list-item">
+                <div class="list-item-info">
+                    <span class="list-item-title">{{ p.tournament.name }}</span>
+                    <span class="list-item-sub">
+                        ردیف: {{ p.start_number }} | امتیاز: {{ p.points }} | وضعیت: 
+                        {% if p.status == 'active' %}<span style="color: green;">فعال</span>
+                        {% else %}<span style="color: red;">منصرف شده</span>{% endif %}
+                    </span>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <a href="{{ url_for('tournament.view', public_id=p.tournament.public_id) }}" class="btn btn-light btn-action">مشاهده</a>
+                    
+                    {% if p.status == 'active' and p.tournament.status != 'finished' %}
+                    <form action="{{ url_for('dashboard.withdraw_from_participation', participant_id=p.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-action" onclick="return confirm('آیا از انصراف در این مسابقه مطمئن هستید؟')">انصراف</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
     </div>
 
     <!-- Left Column (Profile) -->
