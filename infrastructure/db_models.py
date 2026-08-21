@@ -441,3 +441,24 @@ class PlayerVerificationModel(db.Model):
     rejection_reason = db.Column(db.Text, nullable=True)
     player_profile = db.relationship("PlayerProfileModel", foreign_keys=[player_profile_id])
     reviewer = db.relationship("UserModel", foreign_keys=[reviewer_id])
+
+
+class NotificationModel(db.Model):
+    """Stores user notifications for in-app display and external delivery tracking."""
+    __tablename__ = "notifications"
+    __table_args__ = (
+        # Composite index for fast unread count queries
+        db.Index("ix_notification_user_is_read", "user_id", "is_read"),
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    type = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    link_url = db.Column(db.String(255), nullable=True)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("UserModel", backref="notifications")

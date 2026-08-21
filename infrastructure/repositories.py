@@ -10,7 +10,8 @@ from infrastructure.db_models import (
     RoundModel, PairingModel, ManualPairingModel, UserModel, UserRoleModel,
     PromoCodeModel, RegistrationModel, PaymentModel,
     # Phase 7 Models:
-    FidePlayerModel, FideRatingModel, FideImportModel, PlayerVerificationModel
+    FidePlayerModel, FideRatingModel, FideImportModel, PlayerVerificationModel,
+    NotificationModel, 
 )
 import random
 import string
@@ -530,3 +531,47 @@ class PlayerVerificationRepository:
         db.session.add(verification)
         db.session.flush()
         return verification
+
+
+class NotificationRepository:
+    @staticmethod
+    def save(notification: NotificationModel) -> NotificationModel:
+        db.session.add(notification)
+        db.session.flush()
+        return notification
+
+    @staticmethod
+    def get_by_id(notification_id: int) -> Optional[NotificationModel]:
+        return NotificationModel.query.get(notification_id)
+
+    @staticmethod
+    def get_unread_count(user_id: int) -> int:
+        return NotificationModel.query.filter_by(user_id=user_id, is_read=False).count()
+
+    @staticmethod
+    def get_user_notifications(user_id: int, limit: int = 10, offset: int = 0) -> List[NotificationModel]:
+        return NotificationModel.query.filter_by(user_id=user_id).order_by(
+            NotificationModel.created_at.desc()
+        ).limit(limit).offset(offset).all()
+
+    @staticmethod
+    def mark_as_read(notification_id: int, user_id: int) -> bool:
+        """Marks a notification as read. Security: Ensures user owns the notification."""
+        notification = NotificationModel.query.filter_by(
+            id=notification_id, user_id=user_id
+        ).first()
+        
+        if notification and not notification.is_read:
+            notification.is_read = True
+            db.session.commit()
+            return True
+        return False
+
+    @staticmethod
+    def mark_all_as_read(user_id: int) -> int:
+        """Marks all unread notifications as read for a specific user."""
+        count = NotificationModel.query.filter_by(
+            user_id=user_id, is_read=False
+        ).update({"is_read": True})
+        db.session.commit()
+        return count
