@@ -67,6 +67,12 @@ def create_app(config_class=None) -> Flask:
     from app.cli import register_cli
     register_cli(flask_app)
 
+    # ── Phase 9E: Register Notification Providers ──
+    from application.providers.web_provider import WebProvider
+    from application.notification_dispatcher import NotificationDispatcher
+    NotificationDispatcher.register_provider(WebProvider())
+    # ────────────────────────────────────────────────
+
     @flask_app.errorhandler(404)
     def not_found(e):
         return render_template("errors/404.html"), 404
