@@ -9,9 +9,9 @@ from infrastructure.db_models import (
     TournamentModel, PlayerProfileModel, TournamentParticipantModel,
     RoundModel, PairingModel, ManualPairingModel, UserModel, UserRoleModel,
     PromoCodeModel, RegistrationModel, PaymentModel,
-    # Phase 7 Models:
     FidePlayerModel, FideRatingModel, FideImportModel, PlayerVerificationModel,
     NotificationModel, 
+    NotificationPreferenceModel
 )
 import random
 import string
@@ -575,3 +575,20 @@ class NotificationRepository:
         ).update({"is_read": True})
         db.session.commit()
         return count
+
+
+class NotificationPreferenceRepository:
+    @staticmethod
+    def get_or_create(user_id: int) -> NotificationPreferenceModel:
+        pref = NotificationPreferenceModel.query.get(user_id)
+        if not pref:
+            pref = NotificationPreferenceModel(user_id=user_id)
+            db.session.add(pref)
+            db.session.flush()
+        return pref
+
+    @staticmethod
+    def save(pref: NotificationPreferenceModel) -> NotificationPreferenceModel:
+        db.session.add(pref)
+        db.session.commit()
+        return pref

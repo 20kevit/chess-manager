@@ -425,3 +425,40 @@ def withdraw_from_participation(participant_id):
     
     flash("انصراف شما از مسابقه با موفقیت ثبت شد.", "info")
     return redirect(url_for("dashboard.index"))
+
+# --- Notification Preferences ---
+@dashboard_bp.route("/dashboard/notifications/settings", methods=["GET", "POST"])
+@login_required
+def notification_settings():
+    from application.notification_service import NotificationService
+    from application.notification_types import NotificationType
+    import json
+
+    if request.method == "POST":
+        prefs = {}
+        for n_type in NotificationType:
+            # Default to False if not checked, True if checked
+            web_enabled = request.form.get(f"web_{n_type.value}") == "on"
+            prefs[n_type.value] = {"web": web_enabled}
+            
+        NotificationService.update_preferences(current_user.id, prefs)
+        flash("تنظیمات اعلان‌ها با موفقیت ذخیره شد.", "success")
+        return redirect(url_for("dashboard.notification_settings"))
+
+    pref_model = NotificationService.get_preferences(current_user.id)
+    current_prefs = json.loads(pref_model.preferences_json or "{}")
+    
+    # Prepare data for template
+    notif_types = []
+    for n_type in NotificationType:
+        settings = current_prefs.get(n_type.value, {"web": True})
+        notif_types.append({
+            "value": n_type.value,
+            "name": n_type.value.replace("_", " ").title(),
+            "web_enabled": settings.get("web", True)
+        })
+
+    return render_template(
+        "dashboard/notification_settings.html",
+        notif_types=notif_types
+    )

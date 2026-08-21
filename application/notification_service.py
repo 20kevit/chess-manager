@@ -2,7 +2,7 @@
 from typing import List, Optional
 from datetime import datetime
 from app.extensions import db
-from infrastructure.repositories import NotificationRepository
+from infrastructure.repositories import NotificationRepository, NotificationPreferenceRepository
 from infrastructure.db_models import NotificationModel
 from application.notification_types import NotificationType
 
@@ -16,8 +16,13 @@ class NotificationService:
         title: str,
         message: str,
         link_url: Optional[str] = None
-    ) -> NotificationModel:
-        """Creates a new notification record."""
+    ) -> Optional[NotificationModel]:
+        """Creates a new notification record if the user has enabled it for Web."""
+        # Check user preferences for Web channel
+        pref = NotificationPreferenceRepository.get_or_create(user_id)
+        if not pref.is_channel_enabled(type.value, "web"):
+            return None # User has disabled this notification type for Web
+            
         notification = NotificationModel(
             user_id=user_id,
             type=type.value,
@@ -44,3 +49,15 @@ class NotificationService:
     @staticmethod
     def mark_all_as_read(user_id: int) -> int:
         return NotificationRepository.mark_all_as_read(user_id)
+        
+    @staticmethod
+    def get_preferences(user_id: int):
+        return NotificationPreferenceRepository.get_or_create(user_id)
+
+    @staticmethod
+    def update_preferences(user_id: int, preferences_dict: dict):
+        import json
+        pref = NotificationPreferenceRepository.get_or_create(user_id)
+        pref.preferences_json = json.dumps(preferences_dict)
+        NotificationPreferenceRepository.save(pref)
+        return pref

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}تنظیمات اعلان‌ها{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 700px;">
+    <div class="page-header">
+        <h1>تنظیمات اعلان‌ها</h1>
+        <p style="color: var(--gray-600); font-size: 0.9em;">مشخص کنید کدام اعلان‌ها را در سایت می‌خواهید دریافت کنید.</p>
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-section">
+            <table class="table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>نوع اعلان</th>
+                        <th style="width: 100px; text-align: center;">دریافت در سایت</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for n in notif_types %}
+                    <tr>
+                        <td>{{ n.name }}</td>
+                        <td style="text-align: center;">
+                            <input type="checkbox" name="web_{{ n.value }}" {% if n.web_enabled %}checked{% endif %}>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">انصراف</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

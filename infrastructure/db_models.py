@@ -462,3 +462,22 @@ class NotificationModel(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship("UserModel", backref="notifications")
+
+
+class NotificationPreferenceModel(db.Model):
+    """Stores user preferences for different notification types and channels."""
+    __tablename__ = "notification_preferences"
+    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"}
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    # JSON format: {"REGISTRATION_APPROVED": {"web": true, "telegram": false}, ...}
+    preferences_json = db.Column(db.Text, default="{}")
+    
+    user = db.relationship("UserModel", backref=db.backref("notif_pref", uselist=False))
+
+    def is_channel_enabled(self, type_str: str, channel: str = "web") -> bool:
+        """Checks if a specific channel is enabled for a notification type. Defaults to True."""
+        import json
+        prefs = json.loads(self.preferences_json or "{}")
+        type_pref = prefs.get(type_str, {})
+        return type_pref.get(channel, True) # Default to True if not specified
