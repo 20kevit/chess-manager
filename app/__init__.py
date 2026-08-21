@@ -72,6 +72,13 @@ def create_app(config_class=None) -> Flask:
     from application.notification_dispatcher import NotificationDispatcher
     NotificationDispatcher.register_provider(WebProvider())
     # ────────────────────────────────────────────────
+    # ── Phase 9E & 9F: Register Notification Providers ──
+    from application.providers.web_provider import WebProvider
+    from application.providers.telegram_provider import TelegramProvider
+    from application.notification_dispatcher import NotificationDispatcher
+    NotificationDispatcher.register_provider(WebProvider())
+    NotificationDispatcher.register_provider(TelegramProvider())
+    # ────────────────────────────────────────────────────────
 
     @flask_app.errorhandler(404)
     def not_found(e):

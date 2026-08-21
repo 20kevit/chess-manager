@@ -437,9 +437,9 @@ def notification_settings():
     if request.method == "POST":
         prefs = {}
         for n_type in NotificationType:
-            # Default to False if not checked, True if checked
             web_enabled = request.form.get(f"web_{n_type.value}") == "on"
-            prefs[n_type.value] = {"web": web_enabled}
+            telegram_enabled = request.form.get(f"telegram_{n_type.value}") == "on"
+            prefs[n_type.value] = {"web": web_enabled, "telegram": telegram_enabled}
             
         NotificationService.update_preferences(current_user.id, prefs)
         flash("تنظیمات اعلان‌ها با موفقیت ذخیره شد.", "success")
@@ -451,14 +451,16 @@ def notification_settings():
     # Prepare data for template
     notif_types = []
     for n_type in NotificationType:
-        settings = current_prefs.get(n_type.value, {"web": True})
+        settings = current_prefs.get(n_type.value, {})
         notif_types.append({
             "value": n_type.value,
             "name": n_type.value.replace("_", " ").title(),
-            "web_enabled": settings.get("web", True)
+            "web_enabled": settings.get("web", True),
+            "telegram_enabled": settings.get("telegram", True) # Default to True
         })
 
     return render_template(
         "dashboard/notification_settings.html",
-        notif_types=notif_types
+        notif_types=notif_types,
+        telegram_connected=True if current_user.telegram_chat_id else False
     )

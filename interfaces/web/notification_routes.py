@@ -2,6 +2,8 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import current_user, login_required
 from application.notification_service import NotificationService
+from application.telegram_service import TelegramService
+from infrastructure.db_models import UserModel
 
 notification_bp = Blueprint("notification", __name__)
 
@@ -61,3 +63,38 @@ def api_mark_all_read():
     """API endpoint to mark all notifications as read."""
     count = NotificationService.mark_all_as_read(current_user.id)
     return jsonify({"success": True, "updated_count": count})
+
+# --- Telegram Integration ---
+@notification_bp.route("/api/telegram/webhook", methods=["POST"])
+def telegram_webhook():
+    """Endpoint for Telegram to send updates to."""
+    data = request.json
+    if not data or "message" not in data:
+        return jsonify({"success": False}), 400
+        
+    message = data["message"]
+    text = message.get("text", "")
+    chat_id = message.get("chat", {}).get("id")
+    
+    if text.startswith("/start ") and chat_id:
+        token = text.split(" ", 1)[1]
+        TelegramService.link_account(token, chat_id)
+        # Optionally send a success message back
+        TelegramService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
+        
+    return jsonify({"success": True}), 200
+
+@notification_bp.route("/dashboard/notifications/telegram/connect")
+@login_required
+def connect_telegram():
+    """Generates token and redirects user to Telegram bot."""
+    token = TelegramService.generate_link_token(current_user.id)
+    bot_username = "YourBotUsername" # Replace with your bot username or fetch from config
+    return redirect(f"https://t.me/{bot_username}?start={token}")
+
+@notification_bp.route("/dashboard/notifications/telegram/disconnect", methods=["POST"])
+@login_required
+def disconnect_telegram():
+    """Disconnects Telegram account."""
+    TelegramService.unlink_account(current_user.id)
+    return redirect(url_for("dashboard.notification_settings"))

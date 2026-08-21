@@ -18,6 +18,11 @@ class UserModel(db.Model, UserMixin):
     roles = db.relationship("UserRoleModel", backref="user", cascade="all, delete-orphan")
     profile = db.relationship("PlayerProfileModel", backref="user", uselist=False)
 
+    # ── Phase 9F: Telegram Integration Fields ──
+    telegram_chat_id = db.Column(db.String(50), nullable=True, index=True)
+    telegram_link_token = db.Column(db.String(100), nullable=True)
+    telegram_link_expires_at = db.Column(db.DateTime, nullable=True)
+
     # ── Password Security ──
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)

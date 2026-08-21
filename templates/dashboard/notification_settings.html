@@ -6,37 +6,80 @@
 <div class="form-container" style="max-width: 700px;">
     <div class="page-header">
         <h1>تنظیمات اعلان‌ها</h1>
-        <p style="color: var(--gray-600); font-size: 0.9em;">مشخص کنید کدام اعلان‌ها را در سایت می‌خواهید دریافت کنید.</p>
+        <p style="color: var(--gray-600); font-size: 0.9em;">پیکربندی کانال‌های دریافت و نوع اعلان‌ها.</p>
     </div>
 
-    <form method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <!-- بخش اتصال به پیام‌رسان‌ها -->
+    <div style="background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 25px;">
+        <div style="font-size: 1.1rem; font-weight: 700; color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f3f4f6;">
+            اتصال به پیام‌رسان‌ها
+        </div>
         
-        <div class="form-section">
-            <table class="table" style="width: 100%;">
-                <thead>
-                    <tr>
-                        <th>نوع اعلان</th>
-                        <th style="width: 100px; text-align: center;">دریافت در سایت</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for n in notif_types %}
-                    <tr>
-                        <td>{{ n.name }}</td>
-                        <td style="text-align: center;">
-                            <input type="checkbox" name="web_{{ n.value }}" {% if n.web_enabled %}checked{% endif %}>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 8px; background: #f9fafb; margin-bottom: 10px;">
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-weight: 600; color: #1f2937;">تلگرام</span>
+                <span style="font-size: 0.85rem; color: #6b7280; margin-top: 3px;">
+                    {% if telegram_connected %}
+                        ✅ حساب تلگرام شما متصل است.
+                    {% else %}
+                        ❌ حساب تلگرام متصل نیست.
+                    {% endif %}
+                </span>
+            </div>
+            {% if telegram_connected %}
+            <form action="{{ url_for('notification.disconnect_telegram') }}" method="POST" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-small">قطع اتصال</button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('notification.connect_telegram') }}" class="btn btn-success btn-small">اتصال به تلگرام</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- بخش تنظیمات نوع اعلان‌ها -->
+    <div style="background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 25px;">
+        <div style="font-size: 1.1rem; font-weight: 700; color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f3f4f6;">
+            مدیریت اعلان‌ها
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
-            <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">انصراف</a>
-        </div>
-    </form>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-section">
+                <table class="table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>نوع اعلان</th>
+                            <th style="width: 100px; text-align: center;">سایت</th>
+                            {% if telegram_connected %}
+                            <th style="width: 100px; text-align: center;">تلگرام</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for n in notif_types %}
+                        <tr>
+                            <td>{{ n.name }}</td>
+                            <td style="text-align: center;">
+                                <input type="checkbox" name="web_{{ n.value }}" {% if n.web_enabled %}checked{% endif %}>
+                            </td>
+                            {% if telegram_connected %}
+                            <td style="text-align: center;">
+                                <input type="checkbox" name="telegram_{{ n.value }}" {% if n.telegram_enabled %}checked{% endif %}>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+                <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">انصراف</a>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
