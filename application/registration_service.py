@@ -150,6 +150,25 @@ class RegistrationService:
             }, ensure_ascii=False),
             promo_code_id=promo_code.id if promo_code else None
         )
+
+        # ── Phase 9C: Notify User about Registration Submission ──
+        try:
+            from application.notification_service import NotificationService
+            from application.notification_types import NotificationType
+            recipient_id = user.id if user else (registration.profile.user_id if registration.profile else None)
+            if recipient_id:
+                NotificationService.create_notification(
+                    user_id=recipient_id,
+                    type=NotificationType.REGISTRATION_SUBMITTED,
+                    title="ثبت‌نام ثبت شد",
+                    message=f"درخواست شما برای مسابقه '{tournament.name}' ثبت شد و در انتظار تأیید است.",
+                    link_url=f"/{tournament.public_id}"
+                )
+                db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to send registration notification: {str(e)}")
+        # ──────────────────────────────────────────
         
         return RegistrationRepository.save(registration)
 
@@ -185,6 +204,26 @@ class RegistrationService:
             registration.promo_code.used_count += 1
             
         db.session.commit()
+        
+        # ── Phase 9C: Notify User about Registration Approval ──
+        try:
+            from application.notification_service import NotificationService
+            from application.notification_types import NotificationType
+            recipient_id = registration.user_id if registration.user_id else (registration.profile.user_id if registration.profile else None)
+            if recipient_id:
+                NotificationService.create_notification(
+                    user_id=recipient_id,
+                    type=NotificationType.REGISTRATION_APPROVED,
+                    title="ثبت‌نام تأیید شد",
+                    message=f"درخواست شما برای مسابقه '{tournament.name}' توسط داور تأیید شد.",
+                    link_url=f"/{tournament.public_id}"
+                )
+                db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to send approval notification: {str(e)}")
+        # ──────────────────────────────────────────
+        
         return participant
 
     @staticmethod
@@ -196,5 +235,24 @@ class RegistrationService:
             raise ValueError("این درخواست قبلاً پردازش شده است یا در حال پرداخت است.")
 
         registration.status = "rejected"
-        registration.rejection_reason = reason # Save the reason
+        registration.rejection_reason = reason
         db.session.commit()
+
+        # ── Phase 9C: Notify User about Registration Rejection ──
+        try:
+            from application.notification_service import NotificationService
+            from application.notification_types import NotificationType
+            recipient_id = registration.user_id if registration.user_id else (registration.profile.user_id if registration.profile else None)
+            if recipient_id:
+                NotificationService.create_notification(
+                    user_id=recipient_id,
+                    type=NotificationType.REGISTRATION_REJECTED,
+                    title="ثبت‌نام رد شد",
+                    message=f"متأسفانه درخواست شما برای مسابقه '{registration.tournament.name}' رد شد. دلیل: {reason or 'ذکر نشده'}",
+                    link_url=f"/{registration.tournament.public_id}"
+                )
+                db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to send rejection notification: {str(e)}")
+        # ──────────────────────────────────────────

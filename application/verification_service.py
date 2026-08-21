@@ -91,6 +91,26 @@ class VerificationService:
         req.rejection_reason = None
 
         db.session.commit()
+        
+        # ── Phase 9C: Notify User about FIDE Verification Approval ──
+        try:
+            from application.notification_service import NotificationService
+            from application.notification_types import NotificationType
+            recipient_id = profile.user_id if profile.user_id else None
+            if recipient_id:
+                NotificationService.create_notification(
+                    user_id=recipient_id,
+                    type=NotificationType.FIDE_VERIFICATION_APPROVED,
+                    title="تأیید هویت فیده",
+                    message="هویت فیده شما با موفقیت توسط مدیر سایت تأیید شد.",
+                    link_url="/dashboard"
+                )
+                db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to send fide approval notification: {str(e)}")
+        # ──────────────────────────────────────────
+        
         return req
 
     @staticmethod
@@ -112,4 +132,24 @@ class VerificationService:
         req.rejection_reason = reason
 
         db.session.commit()
+        
+        # ── Phase 9C: Notify User about FIDE Verification Rejection ──
+        try:
+            from application.notification_service import NotificationService
+            from application.notification_types import NotificationType
+            recipient_id = profile.user_id if profile.user_id else None
+            if recipient_id:
+                NotificationService.create_notification(
+                    user_id=recipient_id,
+                    type=NotificationType.FIDE_VERIFICATION_REJECTED,
+                    title="رد هویت فیده",
+                    message=f"درخواست تأیید هویت فیده شما رد شد. دلیل: {reason or 'ذکر نشده'}",
+                    link_url="/dashboard"
+                )
+                db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to send fide rejection notification: {str(e)}")
+        # ──────────────────────────────────────────
+        
         return req

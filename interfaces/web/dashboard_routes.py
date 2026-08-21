@@ -297,6 +297,23 @@ def add_staff(public_id):
     )
     db.session.add(new_staff)
     db.session.commit()
+    
+    # ── Phase 9C: Notify User about Arbiter Invitation ──
+    try:
+        from application.notification_service import NotificationService
+        from application.notification_types import NotificationType
+        NotificationService.create_notification(
+            user_id=user.id,
+            type=NotificationType.ARBITER_INVITATION,
+            title="دعوت‌نامه داوری",
+            message=f"شما برای داوری مسابقه '{tournament.name}' دعوت شده‌اید.",
+            link_url=url_for("dashboard.index", _external=False)
+        )
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to send arbiter invitation notification: {str(e)}")
+    # ──────────────────────────────────────────
+    
     flash(f"دعوت‌نامه با موفقیت برای {user.email} ارسال شد.", "success")
     return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
 

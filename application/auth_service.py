@@ -28,6 +28,24 @@ class AuthService:
         
         saved_user = UserRepository.save(user)
         db.session.commit()
+        
+        # ── Phase 9C: Send Welcome Notification ──
+        try:
+            from application.notification_service import NotificationService
+            from application.notification_types import NotificationType
+            NotificationService.create_notification(
+                user_id=saved_user.id,
+                type=NotificationType.WELCOME,
+                title="خوش آمدید!",
+                message="ثبت‌نام شما با موفقیت انجام شد. به سیستم مدیریت مسابقات شطرنج خوش آمدید.",
+                link_url="/dashboard"
+            )
+            db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to send welcome notification: {str(e)}")
+        # ──────────────────────────────────────────
+        
         return saved_user   
 
     @staticmethod
