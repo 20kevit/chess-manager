@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import current_user, login_required
 from application.notification_service import NotificationService
 from application.telegram_service import TelegramService
+from application.bale_service import BaleService
 from infrastructure.db_models import UserModel
 
 notification_bp = Blueprint("notification", __name__)
@@ -97,4 +98,38 @@ def connect_telegram():
 def disconnect_telegram():
     """Disconnects Telegram account."""
     TelegramService.unlink_account(current_user.id)
+    return redirect(url_for("dashboard.notification_settings"))
+
+# --- Bale Integration ---
+@notification_bp.route("/api/bale/webhook", methods=["POST"])
+def bale_webhook():
+    """Endpoint for Bale to send updates to."""
+    data = request.json
+    if not data or "message" not in data:
+        return jsonify({"success": False}), 400
+        
+    message = data["message"]
+    text = message.get("text", "")
+    chat_id = message.get("chat", {}).get("id")
+    
+    if text.startswith("/start ") and chat_id:
+        token = text.split(" ", 1)[1]
+        BaleService.link_account(token, chat_id)
+        BaleService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
+        
+    return jsonify({"success": True}), 200
+
+@notification_bp.route("/dashboard/notifications/bale/connect")
+@login_required
+def connect_bale():
+    """Generates token and redirects user to Bale bot."""
+    token = BaleService.generate_link_token(current_user.id)
+    bot_username = "YourBaleBotUsername" # Replace with your bot username
+    return redirect(f"https://ble.ir/{bot_username}?start={token}")
+
+@notification_bp.route("/dashboard/notifications/bale/disconnect", methods=["POST"])
+@login_required
+def disconnect_bale():
+    """Disconnects Bale account."""
+    BaleService.unlink_account(current_user.id)
     return redirect(url_for("dashboard.notification_settings"))

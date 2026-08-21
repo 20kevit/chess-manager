@@ -23,6 +23,11 @@ class UserModel(db.Model, UserMixin):
     telegram_link_token = db.Column(db.String(100), nullable=True)
     telegram_link_expires_at = db.Column(db.DateTime, nullable=True)
 
+    # ── Phase 9G: Bale Integration Fields ──
+    bale_chat_id = db.Column(db.String(50), nullable=True, index=True)
+    bale_link_token = db.Column(db.String(100), nullable=True)
+    bale_link_expires_at = db.Column(db.DateTime, nullable=True)
+
     # ── Password Security ──
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)

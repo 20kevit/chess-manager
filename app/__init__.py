@@ -80,6 +80,16 @@ def create_app(config_class=None) -> Flask:
     NotificationDispatcher.register_provider(TelegramProvider())
     # ────────────────────────────────────────────────────────
 
+    # ── Phase 9E, 9F & 9G: Register Notification Providers ──
+    from application.providers.web_provider import WebProvider
+    from application.providers.telegram_provider import TelegramProvider
+    from application.providers.bale_provider import BaleProvider
+    from application.notification_dispatcher import NotificationDispatcher
+    NotificationDispatcher.register_provider(WebProvider())
+    NotificationDispatcher.register_provider(TelegramProvider())
+    NotificationDispatcher.register_provider(BaleProvider())
+    # ──────────────────────────────────────────────────────────
+    
     @flask_app.errorhandler(404)
     def not_found(e):
         return render_template("errors/404.html"), 404

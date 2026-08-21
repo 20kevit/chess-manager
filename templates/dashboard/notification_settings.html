@@ -15,15 +15,12 @@
             اتصال به پیام‌رسان‌ها
         </div>
         
+        <!-- Telegram Row -->
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 8px; background: #f9fafb; margin-bottom: 10px;">
             <div style="display: flex; flex-direction: column;">
                 <span style="font-weight: 600; color: #1f2937;">تلگرام</span>
                 <span style="font-size: 0.85rem; color: #6b7280; margin-top: 3px;">
-                    {% if telegram_connected %}
-                        ✅ حساب تلگرام شما متصل است.
-                    {% else %}
-                        ❌ حساب تلگرام متصل نیست.
-                    {% endif %}
+                    {% if telegram_connected %} ✅ حساب تلگرام شما متصل است. {% else %} ❌ حساب تلگرام متصل نیست. {% endif %}
                 </span>
             </div>
             {% if telegram_connected %}
@@ -33,6 +30,24 @@
             </form>
             {% else %}
             <a href="{{ url_for('notification.connect_telegram') }}" class="btn btn-success btn-small">اتصال به تلگرام</a>
+            {% endif %}
+        </div>
+
+        <!-- Bale Row -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 8px; background: #f9fafb; margin-bottom: 10px;">
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-weight: 600; color: #1f2937;">بله</span>
+                <span style="font-size: 0.85rem; color: #6b7280; margin-top: 3px;">
+                    {% if bale_connected %} ✅ حساب بله شما متصل است. {% else %} ❌ حساب بله متصل نیست. {% endif %}
+                </span>
+            </div>
+            {% if bale_connected %}
+            <form action="{{ url_for('notification.disconnect_bale') }}" method="POST" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-small">قطع اتصال</button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('notification.connect_bale') }}" class="btn btn-success btn-small">اتصال به بله</a>
             {% endif %}
         </div>
     </div>
@@ -51,10 +66,9 @@
                     <thead>
                         <tr>
                             <th>نوع اعلان</th>
-                            <th style="width: 100px; text-align: center;">سایت</th>
-                            {% if telegram_connected %}
-                            <th style="width: 100px; text-align: center;">تلگرام</th>
-                            {% endif %}
+                            <th style="width: 80px; text-align: center;">سایت</th>
+                            {% if telegram_connected %}<th style="width: 80px; text-align: center;">تلگرام</th>{% endif %}
+                            {% if bale_connected %}<th style="width: 80px; text-align: center;">بله</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -67,6 +81,11 @@
                             {% if telegram_connected %}
                             <td style="text-align: center;">
                                 <input type="checkbox" name="telegram_{{ n.value }}" {% if n.telegram_enabled %}checked{% endif %}>
+                            </td>
+                            {% endif %}
+                            {% if bale_connected %}
+                            <td style="text-align: center;">
+                                <input type="checkbox" name="bale_{{ n.value }}" {% if n.bale_enabled %}checked{% endif %}>
                             </td>
                             {% endif %}
                         </tr>
