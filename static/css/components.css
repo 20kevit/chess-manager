@@ -516,10 +516,12 @@
 
 .notification-dropdown {
     position: absolute;
-    right: 0;
+    left: 0; /* تغییر از right به left برای جلوگیری از خروج از صفحه در RTL */
     top: 100%;
     width: 350px;
+    max-width: calc(100vw - 40px); /* جلوگیری از خروج در موبایل */
     background: white;
+    color: #1f2937; /* تعیین رنگ متن پایه برای جلوگیری از نامرئی شدن */
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     border: 1px solid var(--gray-200);
@@ -533,11 +535,13 @@
     padding: 12px;
     border-bottom: 1px solid var(--gray-200);
     font-weight: bold;
+    color: #1f2937;
 }
 
 .notif-dropdown-header a {
     font-size: 0.85em;
     font-weight: normal;
+    color: var(--primary);
 }
 
 .notif-dropdown-body {
@@ -549,16 +553,27 @@
     padding: 12px;
     border-bottom: 1px solid var(--gray-100);
     font-size: 0.9em;
+    color: #1f2937;
 }
 
 .notif-dropdown-item.unread {
     background: var(--primary-light);
 }
 
+.notif-dropdown-item strong {
+    display: block;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
 .notif-dropdown-item p {
-    margin: 4px 0;
-    color: var(--gray-600);
+    margin: 0;
+    color: #4b5563;
     font-size: 0.85em;
+}
+
+.notif-dropdown-item small {
+    color: #9ca3af;
 }
 
 /* Full Page Styles */
@@ -569,6 +584,7 @@
     padding: 15px;
     border-bottom: 1px solid var(--gray-200);
     transition: background 0.2s;
+    color: #1f2937;
 }
 
 .notification-item.unread {
@@ -587,10 +603,10 @@
 
 .notif-content p {
     margin: 4px 0;
-    color: var(--gray-600);
+    color: #4b5563;
     font-size: 0.9em;
 }
 
 .notif-content small {
-    color: var(--gray-400);
+    color: #9ca3af;
 }

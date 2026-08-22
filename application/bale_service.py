@@ -4,9 +4,18 @@ import secrets
 import logging
 import requests
 from datetime import datetime, timedelta
-from typing import Optional
 from app.extensions import db
 from infrastructure.db_models import UserModel
+
+# ── Setup Dedicated Logger ──
+logger = logging.getLogger("BaleDebug")
+logger.setLevel(logging.INFO)
+log_file = os.path.join(os.getcwd(), 'bale_debug.log')
+handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+if not logger.handlers:
+    logger.addHandler(handler)
 
 class BaleService:
     BOT_TOKEN = os.environ.get("BALE_BOT_TOKEN", "")
@@ -15,26 +24,31 @@ class BaleService:
     @staticmethod
     def generate_link_token(user_id: int) -> str:
         """Generates a secure, one-time use token for linking Bale account."""
-        user = UserModel.query.get(user_id)
+        logger.info(f"Attempting to generate Bale token for user_id: {user_id}")
+        user = db.session.get(UserModel, user_id)
         if not user:
+            logger.error(f"User not found: {user_id}")
             return None
             
         token = secrets.token_urlsafe(32)
         user.bale_link_token = token
         user.bale_link_expires_at = datetime.utcnow() + timedelta(minutes=10)
         db.session.commit()
-        
+        logger.info(f"Bale token generated successfully: {token}")
         return token
 
     @staticmethod
     def link_account(token: str, chat_id: str) -> bool:
         """Validates token and links Bale chat_id to the user."""
+        logger.info(f"BALE Link account called. Token: {token}, Chat ID: {chat_id}")
         user = UserModel.query.filter_by(bale_link_token=token).first()
         
         if not user:
+            logger.error("BALE Link failed: User with this token not found in DB.")
             return False
             
         if user.bale_link_expires_at < datetime.utcnow():
+            logger.error("BALE Link failed: Token has expired.")
             user.bale_link_token = None
             db.session.commit()
             return False
@@ -43,35 +57,52 @@ class BaleService:
         user.bale_link_token = None # Invalidate token
         user.bale_link_expires_at = None
         db.session.commit()
-        
+        logger.info(f"BALE Link SUCCESSFUL! User {user.id} linked to chat_id {chat_id}.")
         return True
 
     @staticmethod
     def unlink_account(user_id: int) -> bool:
-        user = UserModel.query.get(user_id)
+        logger.info(f"BALE Unlink account called for user_id: {user_id}")
+        user = db.session.get(UserModel, user_id)
         if user:
             user.bale_chat_id = None
             db.session.commit()
+            logger.info("BALE Unlink successful.")
             return True
+        logger.error("BALE Unlink failed: User not found.")
         return False
 
     @staticmethod
-    def send_message(chat_id: str, text: str) -> bool:
+    def send_message(chat_id: str, text: str, link_url: str = None) -> bool:
         """Sends a message via Bale Bot API."""
+        import re
+        logger.info(f"Attempting to send Bale message to chat_id: {chat_id}")
         if not BaleService.BASE_URL:
-            logging.error("Bale Bot Token not configured.")
+            logger.error("Send failed: BALE_BOT_TOKEN is not set in environment.")
             return False
             
         url = f"{BaleService.BASE_URL}/sendMessage"
+        
+        # Bale doesn't parse HTML well, so we strip tags for clean text
+        clean_text = re.sub('<[^<]+?>', '', text)
+        
         payload = {
             "chat_id": chat_id,
-            "text": text,
-            "parse_mode": "HTML"
+            "text": clean_text
         }
+        
+        if link_url:
+            payload["reply_markup"] = {
+                "inline_keyboard": [
+                    [{"text": "مشاهده در سایت", "url": link_url}]
+                ]
+            }
         
         try:
             response = requests.post(url, json=payload, timeout=5)
+            logger.info(f"Bale API response status: {response.status_code}")
+            logger.info(f"Bale API response body: {response.text}")
             return response.status_code == 200
         except Exception as e:
-            logging.error(f"Bale API error: {str(e)}")
+            logger.error(f"Bale API error (network/timeout): {str(e)}")
             return False

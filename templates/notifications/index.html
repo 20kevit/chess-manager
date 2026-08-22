@@ -4,29 +4,25 @@
 
 {% block content %}
 <div class="form-container" style="max-width: 900px;">
-    <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <h1>اعلان‌های شما</h1>
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--gray-200); padding-bottom: 10px;">
+        <h1 style="margin: 0;">اعلان‌های شما</h1>
         {% if unread_count > 0 %}
-        <form id="readAllForm" style="display:inline;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-secondary btn-small">علامت‌گذاری همه به عنوان خوانده‌شده</button>
-        </form>
+        <button id="markAllReadBtn" class="btn btn-secondary" style="white-space: nowrap;">علامت‌گذاری همه به عنوان خوانده‌شده</button>
         {% endif %}
     </div>
 
     <div id="notificationsList">
         {% if notifications %}
             {% for n in notifications %}
-            <div class="notification-item {{ 'unread' if not n.is_read else '' }}" data-id="{{ n.id }}">
-                <div class="notif-icon">🔔</div>
-                <div class="notif-content">
+            <div class="notif-row {{ 'unread' if not n.is_read else '' }}" data-id="{{ n.id }}">
+                <div class="notif-row-icon">
+                    {% if not n.is_read %}<span class="unread-dot"></span>{% endif %}
+                </div>
+                <div class="notif-row-content">
                     <strong>{{ n.title }}</strong>
                     <p>{{ n.message }}</p>
                     <small>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                 </div>
-                {% if n.link_url %}
-                <a href="{{ n.link_url }}" class="btn btn-primary btn-small">مشاهده</a>
-                {% endif %}
             </div>
             {% endfor %}
         {% else %}
@@ -35,33 +31,96 @@
     </div>
 </div>
 
+<style>
+.notif-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+    border-bottom: 1px solid var(--gray-100);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.notif-row:hover { background: var(--gray-50); }
+.notif-row.unread { background: var(--primary-light); }
+.notif-row.unread:hover { background: var(--primary-light); }
+
+.notif-row-icon { width: 10px; padding-top: 5px; }
+.unread-dot { 
+    display: inline-block; 
+    width: 10px; 
+    height: 10px; 
+    background: var(--primary); 
+    border-radius: 50%; 
+}
+
+.notif-row-content strong { color: #1f2937; display: block; }
+.notif-row-content p { margin: 4px 0; color: #4b5563; font-size: 0.9em; }
+.notif-row-content small { color: #9ca3af; }
+</style>
+
 <script>
-document.getElementById('readAllForm')?.addEventListener('submit', function(e) {
-    e.preventDefault();
-    fetch('/api/notifications/read-all', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': this.csrf_token.value
+function getCSRFToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+
+function updateBellBadge() {
+    const badge = document.getElementById('notifCount');
+    if (badge) {
+        let currentCount = parseInt(badge.innerText) || 0;
+        currentCount = Math.max(0, currentCount - 1);
+        if (currentCount === 0) {
+            badge.remove();
+        } else {
+            badge.innerText = currentCount;
         }
-    }).then(res => res.json()).then(data => {
-        if(data.success) {
-            document.querySelectorAll('.notification-item.unread').forEach(el => el.classList.remove('unread'));
-            document.getElementById('readAllForm').style.display = 'none';
-        }
+    }
+}
+
+// Mark individual notification as read on row click
+document.querySelectorAll('.notif-row.unread').forEach(item => {
+    item.addEventListener('click', function(e) {
+        const id = this.dataset.id;
+        const dot = this.querySelector('.unread-dot');
+        
+        fetch(`/api/notifications/${id}/read`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        }).then(res => res.json()).then(data => {
+            if(data.success) {
+                this.classList.remove('unread');
+                this.style.cursor = 'default';
+                if(dot) dot.remove();
+                updateBellBadge();
+                
+                if(document.querySelectorAll('.notif-row.unread').length === 0) {
+                    document.getElementById('markAllReadBtn')?.remove();
+                }
+            }
+        });
     });
 });
 
-document.querySelectorAll('.notification-item.unread').forEach(item => {
-    item.addEventListener('click', function() {
-        const id = this.dataset.id;
-        fetch(`/api/notifications/${id}/read`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            }
-        }).then(res => res.json()).then(data => {
-            if(data.success) this.classList.remove('unread');
-        });
+// Mark all as read
+document.getElementById('markAllReadBtn')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    fetch('/api/notifications/read-all', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    }).then(res => res.json()).then(data => {
+        if(data.success) {
+            document.querySelectorAll('.notif-row.unread').forEach(el => {
+                el.classList.remove('unread');
+                el.style.cursor = 'default';
+                let dot = el.querySelector('.unread-dot');
+                if(dot) dot.remove();
+            });
+            
+            const badge = document.getElementById('notifCount');
+            if(badge) badge.remove();
+            
+            this.remove();
+        }
     });
 });
 </script>

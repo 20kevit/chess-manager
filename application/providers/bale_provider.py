@@ -1,5 +1,6 @@
 # application/providers/bale_provider.py
 import logging
+from flask import request
 from application.notification_provider_interface import NotificationProviderInterface
 from application.bale_service import BaleService
 from infrastructure.db_models import UserModel
@@ -14,8 +15,14 @@ class BaleProvider(NotificationProviderInterface):
         if not user or not user.bale_chat_id:
             return False # User hasn't linked Bale
             
-        text = f"🔔 <b>{data.get('title', '')}</b>\n\n{data.get('message', '')}"
-        if data.get('link_url'):
-            text += f"\n\n<a href='{data.get('link_url')}'>مشاهده</a>"
+        text = f"ðŸ”” <b>{data.get('title', '')}</b>\n\n{data.get('message', '')}"
+        link_url = data.get('link_url')
+        
+        # Convert relative URL to absolute URL for Bale buttons
+        if link_url and not link_url.startswith('http'):
+            try:
+                link_url = request.host_url.rstrip('/') + '/' + link_url.lstrip('/')
+            except RuntimeError:
+                pass # Outside of request context
             
-        return BaleService.send_message(user.bale_chat_id, text)
+        return BaleService.send_message(user.bale_chat_id, text, link_url)

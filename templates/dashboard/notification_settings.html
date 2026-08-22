@@ -29,7 +29,7 @@
                 <button type="submit" class="btn btn-danger btn-small">قطع اتصال</button>
             </form>
             {% else %}
-            <a href="{{ url_for('notification.connect_telegram') }}" class="btn btn-success btn-small">اتصال به تلگرام</a>
+            <a href="{{ url_for('notification.connect_telegram') }}" class="btn btn-success" style="white-space: nowrap;">اتصال به تلگرام</a>
             {% endif %}
         </div>
 
@@ -47,7 +47,7 @@
                 <button type="submit" class="btn btn-danger btn-small">قطع اتصال</button>
             </form>
             {% else %}
-            <a href="{{ url_for('notification.connect_bale') }}" class="btn btn-success btn-small">اتصال به بله</a>
+            <a href="{{ url_for('notification.connect_bale') }}" class="btn btn-success" style="white-space: nowrap;">اتصال به بله</a>   
             {% endif %}
         </div>
     </div>

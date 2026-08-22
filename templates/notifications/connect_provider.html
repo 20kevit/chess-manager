@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}اتصال حساب{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 600px; text-align: center; margin-top: 50px;">
+    <h1>اتصال به {{ provider_name }}</h1>
+    <p style="color: var(--gray-600); margin-bottom: 30px;">
+        برای اتصال حساب کاربری خود، روی دکمه زیر کلیک کنید تا به {{ provider_name }} منتقل شوید. سپس دکمه <strong>Start</strong> را در {{ provider_name }} بزنید.
+    </p>
+    
+    <a href="{{ provider_link }}" class="btn btn-primary btn-large" style="text-decoration: none;">
+        باز کردن {{ provider_name }} و اتصال حساب
+    </a>
+    
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('dashboard.notification_settings') }}" class="btn btn-secondary">بازگشت به تنظیمات</a>
+    </div>
+</div>
+{% endblock %}

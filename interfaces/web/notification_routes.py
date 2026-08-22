@@ -1,6 +1,8 @@
 # interfaces/web/notification_routes.py
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+import os
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import current_user, login_required
+from app.extensions import csrf 
 from application.notification_service import NotificationService
 from application.telegram_service import TelegramService
 from application.bale_service import BaleService
@@ -67,21 +69,36 @@ def api_mark_all_read():
 
 # --- Telegram Integration ---
 @notification_bp.route("/api/telegram/webhook", methods=["POST"])
+@csrf.exempt
 def telegram_webhook():
     """Endpoint for Telegram to send updates to."""
+    import logging
+    logger = logging.getLogger("TelegramDebug")
+    logger.info(">>> Webhook endpoint hit by Telegram!")
+    
     data = request.json
+    logger.info(f"Raw data received: {data}")
+    
     if not data or "message" not in data:
+        logger.warning("Webhook called without 'message' key.")
         return jsonify({"success": False}), 400
         
     message = data["message"]
     text = message.get("text", "")
     chat_id = message.get("chat", {}).get("id")
+    logger.info(f"Extracted -> Text: {text}, Chat ID: {chat_id}")
     
     if text.startswith("/start ") and chat_id:
         token = text.split(" ", 1)[1]
-        TelegramService.link_account(token, chat_id)
-        # Optionally send a success message back
-        TelegramService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
+        logger.info(f"Extracted token: {token}")
+        
+        success = TelegramService.link_account(token, chat_id)
+        logger.info(f"link_account function returned: {success}")
+        
+        if success:
+            TelegramService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
+        else:
+            TelegramService.send_message(str(chat_id), "❌ لینک اتصال نامعتبر یا منقضی شده است.")
         
     return jsonify({"success": True}), 200
 
@@ -90,7 +107,7 @@ def telegram_webhook():
 def connect_telegram():
     """Generates token and redirects user to Telegram bot."""
     token = TelegramService.generate_link_token(current_user.id)
-    bot_username = "YourBotUsername" # Replace with your bot username or fetch from config
+    bot_username = os.environ.get("TELEGRAM_BOT_USERNAME", "")
     return redirect(f"https://t.me/{bot_username}?start={token}")
 
 @notification_bp.route("/dashboard/notifications/telegram/disconnect", methods=["POST"])
@@ -102,20 +119,36 @@ def disconnect_telegram():
 
 # --- Bale Integration ---
 @notification_bp.route("/api/bale/webhook", methods=["POST"])
+@csrf.exempt
 def bale_webhook():
     """Endpoint for Bale to send updates to."""
+    import logging
+    logger = logging.getLogger("BaleDebug")
+    logger.info(">>> Bale Webhook endpoint hit by Bale!")
+    
     data = request.json
+    logger.info(f"Raw Bale data received: {data}")
+    
     if not data or "message" not in data:
+        logger.warning("Bale webhook called without 'message' key.")
         return jsonify({"success": False}), 400
         
     message = data["message"]
     text = message.get("text", "")
     chat_id = message.get("chat", {}).get("id")
+    logger.info(f"Extracted Bale -> Text: {text}, Chat ID: {chat_id}")
     
     if text.startswith("/start ") and chat_id:
         token = text.split(" ", 1)[1]
-        BaleService.link_account(token, chat_id)
-        BaleService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
+        logger.info(f"Extracted Bale token: {token}")
+        
+        success = BaleService.link_account(token, chat_id)
+        logger.info(f"Bale link_account function returned: {success}")
+        
+        if success:
+            BaleService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
+        else:
+            BaleService.send_message(str(chat_id), "❌ لینک اتصال نامعتبر یا منقضی شده است.")
         
     return jsonify({"success": True}), 200
 
@@ -124,7 +157,7 @@ def bale_webhook():
 def connect_bale():
     """Generates token and redirects user to Bale bot."""
     token = BaleService.generate_link_token(current_user.id)
-    bot_username = "YourBaleBotUsername" # Replace with your bot username
+    bot_username = os.environ.get("BALE_BOT_USERNAME", "")
     return redirect(f"https://ble.ir/{bot_username}?start={token}")
 
 @notification_bp.route("/dashboard/notifications/bale/disconnect", methods=["POST"])

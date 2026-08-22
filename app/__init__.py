@@ -67,19 +67,6 @@ def create_app(config_class=None) -> Flask:
     from app.cli import register_cli
     register_cli(flask_app)
 
-    # ── Phase 9E: Register Notification Providers ──
-    from application.providers.web_provider import WebProvider
-    from application.notification_dispatcher import NotificationDispatcher
-    NotificationDispatcher.register_provider(WebProvider())
-    # ────────────────────────────────────────────────
-    # ── Phase 9E & 9F: Register Notification Providers ──
-    from application.providers.web_provider import WebProvider
-    from application.providers.telegram_provider import TelegramProvider
-    from application.notification_dispatcher import NotificationDispatcher
-    NotificationDispatcher.register_provider(WebProvider())
-    NotificationDispatcher.register_provider(TelegramProvider())
-    # ────────────────────────────────────────────────────────
-
     # ── Phase 9E, 9F & 9G: Register Notification Providers ──
     from application.providers.web_provider import WebProvider
     from application.providers.telegram_provider import TelegramProvider

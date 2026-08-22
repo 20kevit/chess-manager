@@ -14,6 +14,8 @@ class NotificationDispatcher:
 
     @classmethod
     def dispatch(cls, user_id: int, type_str: str, data: dict):
+        if not user_id:
+            return
         pref = NotificationPreferenceRepository.get_or_create(user_id)
         
         for provider in cls._providers:

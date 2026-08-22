@@ -129,6 +129,60 @@ class RoundService:
                     auto_pair_index += 1
 
         db.session.commit()
+        
+        # ── Phase 9C: Notify Players about Round Creation ──
+        try:
+            from application.notification_service import NotificationService
+            from application.notification_types import NotificationType
+            import logging
+            
+            for pm in pairing_models:
+                white_p = pm.white_participant
+                black_p = pm.black_participant
+                
+                if not white_p:
+                    continue
+                    
+                white_user_id = white_p.profile.user_id if white_p.profile else None
+                
+                if black_p:
+                    # Notify White Player
+                    if white_user_id:
+                        msg_white = f"قرعه‌کشی دور {new_round.round_number} انجام شد.\n\n شما در میز {pm.board_number} با رنگ سفید در مقابل {black_p.full_name} با رنگ سیاه بازی می‌کنید.\n\n با آرزوی موفقیت!"
+                        NotificationService.create_notification(
+                            user_id=white_user_id,
+                            type=NotificationType.ROUND_CREATED,
+                            title=f"اعلام قرعه‌کشی دور {new_round.round_number}",
+                            message=msg_white,
+                            link_url=f"/{tournament.public_id}"
+                        )
+                    
+                    # Notify Black Player
+                    black_user_id = black_p.profile.user_id if black_p.profile else None
+                    if black_user_id:
+                        msg_black = f"قرعه‌کشی دور {new_round.round_number} انجام شد.\n\n شما در میز {pm.board_number} با رنگ سیاه در مقابل {white_p.full_name} با رنگ سفید بازی می‌کنید.\n\n با آرزوی موفقیت!"
+                        NotificationService.create_notification(
+                            user_id=black_user_id,
+                            type=NotificationType.ROUND_CREATED,
+                            title=f"اعلام قرعه‌کشی دور {new_round.round_number}",
+                            message=msg_black,
+                            link_url=f"/{tournament.public_id}"
+                        )
+                elif pm.result in ["bye", "half-bye", "zero-bye"]:
+                    # Notify Bye Player
+                    if white_user_id:
+                        msg_bye = f"قرعه‌کشی دور {new_round.round_number} انجام شد.\n\n شما در این دور استراحت (Bye) دارید."
+                        NotificationService.create_notification(
+                            user_id=white_user_id,
+                            type=NotificationType.ROUND_CREATED,
+                            title=f"اعلام قرعه‌کشی دور {new_round.round_number}",
+                            message=msg_bye,
+                            link_url=f"/{tournament.public_id}"
+                        )
+        except Exception as e:
+            logging.error(f"Failed to send round notifications: {str(e)}")
+        # ─────────────────────────────────────────────────────
+        
         return new_round
 
     @staticmethod
