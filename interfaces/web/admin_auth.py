@@ -46,9 +46,9 @@ def require_admin(public_id):
         # برگزارکننده تورنمنت
         if tournament.organizer_id == current_user.id:
             return tournament
-        # داور اختصاصی این تورنمنت
+        # داور اختصاصی این تورنمنت — فقط دعوت‌نامه‌های تأییدشده (accepted) دسترسی دارند
         is_assigned = TournamentStaffModel.query.filter_by(
-            tournament_id=tournament.id, user_id=current_user.id
+            tournament_id=tournament.id, user_id=current_user.id, status="accepted"
         ).first()
         if is_assigned:
             return tournament
