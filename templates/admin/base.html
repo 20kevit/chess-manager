@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-layout">
+    <!-- Mobile Toggle -->
+    <button class="admin-sidebar-toggle" onclick="document.querySelector('.admin-sidebar').classList.toggle('open')">
+        ☰ منوی مدیریت
+    </button>
+    
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-header">
+                <h3>پنل مدیریت سیستم</h3>
+                <p class="admin-user-name">{{ current_user.email }}</p>
+            </div>
+            
+            <nav class="admin-nav">
+                <a href="{{ url_for('admin.dashboard') }}" class="admin-nav-item {% if active_section == 'dashboard' %}active{% endif %}">
+                    📊 داشبورد
+                </a>
+                <a href="{{ url_for('admin.manage_users') }}" class="admin-nav-item {% if active_section == 'users' %}active{% endif %}">
+                    👥 کاربران
+                </a>
+                <a href="{{ url_for('admin.manage_tournaments') }}" class="admin-nav-item {% if active_section == 'tournaments' %}active{% endif %}">
+                    🏆 مسابقات
+                </a>
+                <a href="{{ url_for('fide.fide_dashboard') }}" class="admin-nav-item {% if active_section == 'fide' %}active{% endif %}">
+                    🌐 داده‌های فیده
+                </a>
+                <a href="{{ url_for('fide.verifications_list') }}" class="admin-nav-item {% if active_section == 'verifications' %}active{% endif %}">
+                    ✅ تأیید هویت
+                </a>
+                <a href="{{ url_for('admin.notification_status') }}" class="admin-nav-item {% if active_section == 'notifications' %}active{% endif %}">
+                    🔔 اعلان‌ها
+                </a>
+                <a href="{{ url_for('admin.system_health') }}" class="admin-nav-item {% if active_section == 'system' %}active{% endif %}">
+                    💻 سلامت سیستم
+                </a>
+            </nav>
+            
+            <div class="admin-sidebar-footer">
+                <a href="{{ url_for('dashboard.index') }}" class="admin-nav-item">
+                    ← بازگشت به سایت
+                </a>
+                <a href="{{ url_for('auth.logout') }}" class="admin-nav-item">
+                    🚪 خروج
+                </a>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="admin-main">
+            {% block admin_content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<style>
+.admin-layout { min-height: calc(100vh - 60px); }
+.admin-sidebar-toggle {
+    display: none;
+    width: 100%;
+    padding: 12px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: right;
+}
+.admin-container {
+    display: flex;
+    gap: 0;
+    min-height: calc(100vh - 100px);
+}
+.admin-sidebar {
+    width: 250px;
+    background: #1a252f;
+    color: #ecf0f1;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+.admin-sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #2c3e50;
+}
+.admin-sidebar-header h3 {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+}
+.admin-user-name {
+    margin: 0;
+    font-size: 12px;
+    color: #95a5a6;
+}
+.admin-nav {
+    flex: 1;
+    padding: 10px 0;
+    overflow-y: auto;
+}
+.admin-nav-item {
+    display: block;
+    padding: 12px 20px;
+    color: #bdc3c7;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s;
+}
+.admin-nav-item:hover {
+    background: #2c3e50;
+    color: #fff;
+}
+.admin-nav-item.active {
+    background: #3498db;
+    color: #fff;
+    border-right: 3px solid #2980b9;
+}
+.admin-sidebar-footer {
+    padding: 10px 0;
+    border-top: 1px solid #2c3e50;
+}
+.admin-main {
+    flex: 1;
+    padding: 25px;
+    background: #f5f6fa;
+    overflow-y: auto;
+}
+@media (max-width: 768px) {
+    .admin-sidebar-toggle { display: block; }
+    .admin-sidebar {
+        position: fixed;
+        top: 60px;
+        right: -250px;
+        z-index: 1000;
+        transition: right 0.3s;
+        height: calc(100vh - 60px);
+    }
+    .admin-sidebar.open { right: 0; }
+    .admin-main { padding: 15px; }
+}
+</style>
+{% endblock %}

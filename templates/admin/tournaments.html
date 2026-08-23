@@ -1,0 +1,92 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<h1 class="page-title">مدیریت مسابقات</h1>
+
+<div class="admin-toolbar">
+    <form method="GET" class="search-form">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="جستجو بر اساس نام..." class="search-input">
+        <select name="status" class="filter-select">
+            <option value="">همه وضعیت‌ها</option>
+            <option value="setup" {% if status_filter == 'setup' %}selected{% endif %}>در حال تنظیم</option>
+            <option value="ongoing" {% if status_filter == 'ongoing' %}selected{% endif %}>در حال برگزاری</option>
+            <option value="finished" {% if status_filter == 'finished' %}selected{% endif %}>پایان‌یافته</option>
+        </select>
+        <button type="submit" class="btn btn-primary">جستجو</button>
+    </form>
+</div>
+
+<div class="table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>نام</th>
+                <th>کد عمومی</th>
+                <th>شهر</th>
+                <th>نوع</th>
+                <th>دور</th>
+                <th>وضعیت</th>
+                <th>بازیکنان</th>
+                <th>تاریخ</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in tournaments %}
+            {% set t = item.tournament %}
+            <tr>
+                <td>{{ t.name }}</td>
+                <td><code>{{ t.public_id }}</code></td>
+                <td>{{ t.city or '-' }}</td>
+                <td>{{ t.time_control_type }}</td>
+                <td>{{ t.current_round }}/{{ t.total_rounds }}</td>
+                <td><span class="status-badge status-{{ t.status }}">{{ t.status }}</span></td>
+                <td>{{ item.participant_count }}</td>
+                <td>{{ t.created_at.strftime('%Y-%m-%d') if t.created_at else '-' }}</td>
+                <td><a href="{{ url_for('tournament.view', public_id=t.public_id) }}" class="btn btn-sm btn-info">مشاهده</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="9" class="empty-state">مسابقه‌ای یافت نشد.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if pagination.pages > 1 %}
+<div class="pagination">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for('admin.manage_tournaments', page=pagination.prev_page, q=search_query, status=status_filter) }}" class="page-link">« قبلی</a>
+    {% endif %}
+    <span class="page-info">صفحه {{ pagination.page }} از {{ pagination.pages }}</span>
+    {% if pagination.has_next %}
+    <a href="{{ url_for('admin.manage_tournaments', page=pagination.next_page, q=search_query, status=status_filter) }}" class="page-link">بعدی »</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<style>
+.page-title { margin: 0 0 20px 0; font-size: 24px; color: #2c3e50; }
+.admin-toolbar { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+.search-form { display: flex; gap: 10px; flex-wrap: wrap; }
+.search-input { flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+.filter-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block; }
+.btn-primary { background: #3498db; color: white; }
+.btn-info { background: #17a2b8; color: white; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.table-container { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.08); overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th { text-align: right; padding: 12px; background: #f8f9fa; color: #495057; font-weight: 600; border-bottom: 2px solid #dee2e6; white-space: nowrap; }
+.admin-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+.admin-table tr:hover { background: #f8f9fa; }
+.empty-state { text-align: center; padding: 30px; color: #7f8c8d; }
+.status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.status-setup { background: #f39c12; color: white; }
+.status-ongoing { background: #3498db; color: white; }
+.status-finished { background: #2ecc71; color: white; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
+.page-link { padding: 8px 16px; background: #3498db; color: white; border-radius: 4px; text-decoration: none; font-size: 14px; }
+.page-info { font-size: 13px; color: #7f8c8d; }
+code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+</style>
+{% endblock %}

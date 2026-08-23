@@ -35,6 +35,10 @@
                     {% if current_user.has_role('organizer') %}
                         <a href="{{ url_for('tournament.create') }}">ایجاد تورنومنت</a>
                     {% endif %}
+
+                    {% if current_user.is_authenticated and current_user.is_admin %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="nav-link">پنل مدیریت</a>
+                    {% endif %}
                     
                     <!-- Notification Bell -->
                     <div class="notification-bell-container">

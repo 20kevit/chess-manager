@@ -1,0 +1,62 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<h1 class="page-title">سلامت سیستم</h1>
+
+<div class="health-container">
+    <div class="health-item">
+        <span class="health-label">وضعیت برنامه:</span>
+        <span class="status-badge status-{{ 'active' if health.app_status == 'OK' else 'inactive' }}">{{ health.app_status }}</span>
+    </div>
+    <div class="health-item">
+        <span class="health-label">پایگاه داده:</span>
+        <span class="status-badge status-{{ 'active' if health.database == 'Connected' else 'inactive' }}">{{ health.database }}</span>
+    </div>
+    <div class="health-item">
+        <span class="health-label">داده‌های فیده:</span>
+        <span class="status-badge status-{{ 'active' if health.fide_data == 'Available' else 'inactive' }}">{{ health.fide_data }}</span>
+    </div>
+    <div class="health-item">
+        <span class="health-label">ربات تلگرام:</span>
+        <span class="status-badge status-{{ 'active' if health.telegram == 'Configured' else 'inactive' }}">{{ health.telegram }}</span>
+    </div>
+    <div class="health-item">
+        <span class="health-label">ربات بله:</span>
+        <span class="status-badge status-{{ 'active' if health.bale == 'Configured' else 'inactive' }}">{{ health.bale }}</span>
+    </div>
+</div>
+
+{% if health.disk_usage %}
+<div class="detail-card" style="margin-top: 20px;">
+    <h2 class="card-title">فضای دیسک (داده‌های فیده)</h2>
+    <div class="disk-info">
+        <div class="disk-bar-container">
+            <div class="disk-bar" style="width: {{ health.disk_usage.percent }}%"></div>
+        </div>
+        <div class="disk-stats">
+            <span>استفاده شده: {{ health.disk_usage.used_gb }} GB</span>
+            <span>کل: {{ health.disk_usage.total_gb }} GB</span>
+            <span>آزاد: {{ health.disk_usage.free_gb }} GB</span>
+            <span>({{ health.disk_usage.percent }}%)</span>
+        </div>
+        <p class="disk-path">مسیر: {{ health.disk_usage.path }}</p>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.page-title { margin: 0 0 20px 0; font-size: 24px; color: #2c3e50; }
+.health-container { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+.health-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.health-label { font-size: 14px; color: #2c3e50; font-weight: 500; }
+.status-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+.status-active { background: #2ecc71; color: white; }
+.status-inactive { background: #e74c3c; color: white; }
+.detail-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+.card-title { margin: 0 0 15px 0; font-size: 16px; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+.disk-bar-container { width: 100%; height: 24px; background: #ecf0f1; border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+.disk-bar { height: 100%; background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c); transition: width 0.5s; }
+.disk-stats { display: flex; gap: 20px; font-size: 13px; color: #2c3e50; flex-wrap: wrap; }
+.disk-path { font-size: 12px; color: #95a5a6; margin-top: 8px; }
+</style>
+{% endblock %}

@@ -1,54 +1,179 @@
-<!-- templates/admin/users.html -->
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
-{% block title %}مدیریت کاربران سیستم{% endblock %}
+{% block admin_content %}
+<h1 class="page-title">مدیریت کاربران</h1>
 
-{% block content %}
-<div class="container">
-    <h2>مدیریت کاربران و نقش‌ها</h2>
-    
-    <table class="table table-striped">
+<!-- Search & Filter -->
+<div class="admin-toolbar">
+    <form method="GET" class="search-form">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="جستجو بر اساس ایمیل..." class="search-input">
+        <select name="role" class="filter-select">
+            <option value="">همه نقش‌ها</option>
+            <option value="player" {% if role_filter == 'player' %}selected{% endif %}>بازیکن</option>
+            <option value="organizer" {% if role_filter == 'organizer' %}selected{% endif %}>برگزارکننده</option>
+            <option value="arbiter" {% if role_filter == 'arbiter' %}selected{% endif %}>داور</option>
+            <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>ادمین سیستم</option>
+        </select>
+        <button type="submit" class="btn btn-primary">جستجو</button>
+        {% if search_query or role_filter %}
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">پاک کردن فیلتر</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Users Table -->
+<div class="table-container">
+    <table class="admin-table">
         <thead>
             <tr>
+                <th>#</th>
                 <th>ایمیل</th>
-                <th>ادمین سیستمی</th>
                 <th>نقش‌ها</th>
+                <th>وضعیت</th>
+                <th>تاریخ ثبت‌نام</th>
                 <th>عملیات</th>
             </tr>
         </thead>
         <tbody>
             {% for user in users %}
             <tr>
+                <td>{{ user.id }}</td>
                 <td>{{ user.email }}</td>
                 <td>
-                    {% if user.is_admin %}
-                        <span class="badge badge-danger">بله</span>
-                    {% else %}
-                        <span class="badge badge-secondary">خیر</span>
-                    {% endif %}
-                </td>
-                <td>
+                    {% if user.is_admin %}<span class="badge badge-admin">ادمین</span>{% endif %}
                     {% for role in user.roles %}
-                        <span class="badge badge-info">{{ role.role }}</span>
+                    <span class="badge badge-{{ role.role }}">{{ role.role }}</span>
                     {% endfor %}
                 </td>
                 <td>
-                    <form action="{{ url_for('admin.toggle_role', user_id=user.id, role_name='organizer') }}" method="POST" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-sm {% if 'organizer' in user.role_names %}btn-danger{% else %}btn-success{% endif %}">
-                            {% if 'organizer' in user.role_names %}حذف نقش برگزارکننده{% else %}افزودن نقش برگزارکننده{% endif %}
-                        </button>
-                    </form>
-                    <form action="{{ url_for('admin.toggle_role', user_id=user.id, role_name='arbiter') }}" method="POST" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-sm {% if 'arbiter' in user.role_names %}btn-danger{% else %}btn-success{% endif %}">
-                            {% if 'arbiter' in user.role_names %}حذف نقش داور{% else %}افزودن نقش داور{% endif %}
-                        </button>
-                    </form>
+                    {% if user.is_active %}
+                    <span class="status-badge status-active">فعال</span>
+                    {% else %}
+                    <span class="status-badge status-inactive">غیرفعال</span>
+                    {% endif %}
                 </td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</td>
+                <td>
+                    <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="btn btn-sm btn-info">جزئیات</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="empty-state">هیچ کاربری یافت نشد.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<div class="pagination">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for('admin.manage_users', page=pagination.prev_page, q=search_query, role=role_filter) }}" class="page-link">« قبلی</a>
+    {% endif %}
+    
+    <span class="page-info">صفحه {{ pagination.page }} از {{ pagination.pages }} ({{ pagination.total }} کاربر)</span>
+    
+    {% if pagination.has_next %}
+    <a href="{{ url_for('admin.manage_users', page=pagination.next_page, q=search_query, role=role_filter) }}" class="page-link">بعدی »</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<style>
+.page-title { margin: 0 0 20px 0; font-size: 24px; color: #2c3e50; }
+.admin-toolbar {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+.search-form { display: flex; gap: 10px; flex-wrap: wrap; }
+.search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn-primary { background: #3498db; color: white; }
+.btn-secondary { background: #95a5a6; color: white; }
+.btn-info { background: #17a2b8; color: white; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.table-container {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th {
+    text-align: right;
+    padding: 12px;
+    background: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+.admin-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+.admin-table tr:hover { background: #f8f9fa; }
+.empty-state { text-align: center; padding: 30px; color: #7f8c8d; }
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-left: 2px;
+    background: #ecf0f1;
+    color: #2c3e50;
+}
+.badge-admin { background: #e74c3c; color: white; }
+.badge-player { background: #3498db; color: white; }
+.badge-organizer { background: #2ecc71; color: white; }
+.badge-arbiter { background: #f39c12; color: white; }
+.status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.status-active { background: #2ecc71; color: white; }
+.status-inactive { background: #e74c3c; color: white; }
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+.page-link {
+    padding: 8px 16px;
+    background: #3498db;
+    color: white;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+}
+.page-link:hover { background: #2980b9; }
+.page-info { font-size: 13px; color: #7f8c8d; }
+</style>
 {% endblock %}
