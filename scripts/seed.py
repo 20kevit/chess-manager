@@ -47,7 +47,6 @@ def create_seed_tournament():
 
         tournament = TournamentModel(
             public_id=TournamentRepository.generate_public_id(),
-            admin_code=TournamentRepository.generate_admin_code(),
             name="مسابقات بین‌المللی شطرنج ایران ۱۴۰۴",
             city="تهران",
             federation="IRI",
@@ -62,7 +61,6 @@ def create_seed_tournament():
         TournamentRepository.save(tournament)
 
         print(f"   شناسه: {tournament.public_id}")
-        print(f"   کد ادمین: {tournament.admin_code}")
 
         # افزودن بازیکنان
         print(f"👥 افزودن {len(DEMO_PLAYERS)} بازیکن...")
@@ -114,7 +112,6 @@ def create_seed_tournament():
         print("=" * 50)
         print(f"✅ تورنومنت نمونه ساخته شد!")
         print(f"   لینک عمومی: https://swiss.20kevit.ir/{tournament.public_id}")
-        print(f"   لینک ادمین: https://swiss.20kevit.ir/{tournament.public_id}/admin/{tournament.admin_code}")
         print(f"   ورود ادمین: https://swiss.20kevit.ir/{tournament.public_id}/admin/login")
         print("=" * 50)
 

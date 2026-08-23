@@ -1,7 +1,7 @@
 # interfaces/web/round_routes.py
 """
 Round HTTP handlers.
-All routes use session-based auth via admin_auth.require_admin().
+All routes use user-account based auth via admin_auth.require_admin().
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from interfaces.web.admin_auth import require_admin
@@ -20,9 +20,7 @@ round_bp = Blueprint("round", __name__)
 def _require_admin_or_redirect(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return None, redirect(url_for(
-            "admin_auth.admin_login", public_id=public_id
-        ))
+        return None, redirect(url_for("auth.login"))
     return tournament, None
 
 
@@ -44,8 +42,8 @@ def round_list(public_id):
 def round_new(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
-        
+        return redirect(url_for("auth.login"))
+
     try:
         new_round = RoundService.create_next_round(tournament)
         flash(f"Round {new_round.round_number} generated successfully.", "success")

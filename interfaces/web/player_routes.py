@@ -1,6 +1,6 @@
 """
 Player HTTP handlers.
-All routes use session-based auth via admin_auth.require_admin().
+All routes use user-account based auth via admin_auth.require_admin().
 """
 import uuid
 import json
@@ -20,7 +20,7 @@ player_bp = Blueprint("player", __name__)
 def _require_admin_or_redirect(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return None, redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return None, redirect(url_for("auth.login"))
     return tournament, None
 
 
@@ -47,7 +47,7 @@ def player_list(public_id):
 def player_add(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         try:

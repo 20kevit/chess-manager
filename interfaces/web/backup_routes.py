@@ -1,12 +1,14 @@
 """
 Backup and restore via JSON.
-All routes use session-based auth.
+All routes use user-account based auth (require_admin / organizer role).
 """
 import json
 import traceback
 from datetime import datetime, date
 from flask import Blueprint, Response, request, redirect, url_for, flash, render_template, jsonify
+from flask_login import login_required
 from interfaces.web.admin_auth import require_admin
+from interfaces.web.decorators import role_required
 from infrastructure.repositories import (
     ParticipantRepository, PairingRepository, RoundRepository, TournamentRepository
 )
@@ -35,7 +37,7 @@ class DateEncoder(json.JSONEncoder):
 def export_json(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
 
     participants = ParticipantRepository.get_all(tournament.id)
     rounds = RoundRepository.get_all(tournament.id)
@@ -117,7 +119,7 @@ def export_json(public_id):
 def import_json(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         file = request.files.get("json_file")
@@ -143,7 +145,7 @@ def import_json(public_id):
                 flash("داده‌ها ادغام شد", "success")
 
             return redirect(url_for(
-                "admin_auth.admin_panel", public_id=public_id
+                "dashboard.manage_tournament", public_id=public_id
             ))
 
         except json.JSONDecodeError:
@@ -312,7 +314,7 @@ def _merge_import(tournament, data):
 def export_provider(public_id, provider_name):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
 
     try:
         file_content = ImportExportService.export_tournament(
@@ -328,18 +330,18 @@ def export_provider(public_id, provider_name):
         )
     except ImportExportError as e:
         flash(f"خطا در خروجی: {str(e)}", "error")
-        return redirect(url_for("admin_auth.admin_panel", public_id=public_id))
+        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
     except Exception as e:
         traceback.print_exc()
         flash(f"خطای غیرمنتظره: {str(e)}", "error")
-        return redirect(url_for("admin_auth.admin_panel", public_id=public_id))
+        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
 
 
 @backup_bp.route("/<public_id>/admin/backup/import/<provider_name>", methods=["GET", "POST"])
 def import_provider(public_id, provider_name):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         file = request.files.get("json_file")
@@ -368,7 +370,7 @@ def import_provider(public_id, provider_name):
             else:
                 flash("داده‌ها ادغام شد", "success")
 
-            return redirect(url_for("admin_auth.admin_panel", public_id=public_id))
+            return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
 
         except ImportExportError as e:
             flash(f"خطا در ورودی: {str(e)}", "error")
@@ -383,6 +385,8 @@ def import_provider(public_id, provider_name):
 
 
 @backup_bp.route("/create/from-backup/<provider_name>", methods=["POST"])
+@login_required
+@role_required("organizer")
 def preview_tournaments_from_backup(provider_name):
     file = request.files.get("json_file")
     if not file:
@@ -418,6 +422,8 @@ def preview_tournaments_from_backup(provider_name):
 
 
 @backup_bp.route("/create/execute/<provider_name>", methods=["POST"])
+@login_required
+@role_required("organizer")
 def create_tournament_from_backup(provider_name):
     is_ajax = (
         request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -462,20 +468,19 @@ def create_tournament_from_backup(provider_name):
         )
 
         flash(
-            f"تورنمنت '{new_tournament.name}' با موفقیت ایجاد شد. کد دسترسی ادمین: {new_tournament.admin_code}",
+            f"تورنمنت '{new_tournament.name}' با موفقیت ایجاد شد.",
             "success"
         )
 
         if is_ajax:
             return jsonify({
                 "success": True,
-                "redirect_url": url_for("admin_auth.admin_panel", public_id=new_tournament.public_id),
+                "redirect_url": url_for("dashboard.manage_tournament", public_id=new_tournament.public_id),
                 "tournament_public_id": new_tournament.public_id,
-                "tournament_name": new_tournament.name,
-                "admin_code": new_tournament.admin_code
+                "tournament_name": new_tournament.name
             })
 
-        return redirect(url_for("admin_auth.admin_panel", public_id=new_tournament.public_id))
+        return redirect(url_for("dashboard.manage_tournament", public_id=new_tournament.public_id))
 
     except ImportExportError as e:
         if is_ajax:

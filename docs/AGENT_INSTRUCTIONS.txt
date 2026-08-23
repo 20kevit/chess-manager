@@ -28,7 +28,7 @@ When writing or modifying code, you **MUST** follow these absolute rules:
 3. **Incremental Updates:** `PlayerModel.points`, `color_history`, and `float_history` must be updated *incrementally* by the `RoundService` after each round. Do not recalculate the entire history unless performing a legacy repair (`_full_refresh_stats`).
 
 ### B. Security & Routing
-4. **Session-Based Auth ONLY:** Admin authorization relies strictly on `session[f"admin_{public_id}"]`. You MUST NOT append `admin_code` or `/admin/` to any URLs or routes. Use `require_admin()` from `admin_auth.py` for route protection.
+4. **Account-Based Authorization ONLY:** Tournament administration is authorized through user accounts (system admin, organizer, or accepted arbiter staff invitation) via `require_admin()` from `admin_auth.py`. The legacy `admin_code` session mechanism is REMOVED. Never reintroduce secret-code URLs or parallel authorization mechanisms.
 5. **No Admin-Specific Pages:** Do not create separate templates for admins. Use the Unified UI philosophy (`{% if is_admin %}`) to inject arbiter controls into the same `view.html` page seen by public users.
 
 ### C. FIDE Domain Rules

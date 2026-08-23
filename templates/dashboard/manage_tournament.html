@@ -108,10 +108,14 @@ function searchArbiters() {
         return;
     }
     
-    fetch(`/dashboard/api/search-users?q=${encodeURIComponent(query)}`)
+    fetch(`/dashboard/api/search-users?q=${encodeURIComponent(query)}&public_id={{ tournament.public_id }}`)
         .then(response => response.json())
         .then(data => {
             resultsDiv.innerHTML = '';
+            if (!Array.isArray(data)) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
             if (data.length === 0) {
                 resultsDiv.innerHTML = '<div style="padding: 10px; color: #6b7280;">کاربری یافت نشد</div>';
             } else {

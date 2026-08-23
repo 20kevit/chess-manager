@@ -20,7 +20,7 @@ registration_bp = Blueprint("registration", __name__)
 def pricing_settings(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         try:
@@ -52,7 +52,7 @@ def pricing_settings(public_id):
 def add_promo_code(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
         
     code = request.form.get("code", "").strip().upper()
     discount_percent = int(request.form.get("discount_percent", 0) or 0)
@@ -91,7 +91,7 @@ def add_promo_code(public_id):
 def delete_promo_code(public_id, promo_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
         
     promo = PromoCodeModel.query.get(promo_id)
     if promo and promo.tournament_id == tournament.id:
@@ -107,7 +107,7 @@ def delete_promo_code(public_id, promo_id):
 def manage_registrations(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
 
     registrations = RegistrationRepository.get_for_tournament(tournament.id)
     
@@ -140,7 +140,7 @@ def manage_registrations(public_id):
 def approve_registration(public_id, reg_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
         
     try:
         RegistrationService.approve_registration(reg_id)
@@ -154,7 +154,7 @@ def approve_registration(public_id, reg_id):
 def reject_registration(public_id, reg_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
         
     try:
         reason = request.form.get("rejection_reason", "").strip()

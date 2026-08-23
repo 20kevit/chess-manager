@@ -19,6 +19,11 @@ def create_app(config_class=None) -> Flask:
     else:
         flask_app.config.from_object(Config)
 
+    # Session cookie hardening: Secure only where deployment is HTTPS-only.
+    flask_app.config["SESSION_COOKIE_SECURE"] = (
+        flask_app.config.get("ENV") == "production"
+    )
+
     db.init_app(flask_app)
 
     from app.extensions import migrate
@@ -38,7 +43,6 @@ def create_app(config_class=None) -> Flask:
     from interfaces.web.player_routes import player_bp
     from interfaces.web.round_routes import round_bp
     from interfaces.web.print_routes import print_bp
-    from interfaces.web.admin_auth import admin_auth_bp
     from interfaces.web.backup_routes import backup_bp
     from interfaces.web.auth_routes import auth_bp
     from interfaces.web.admin_routes import admin_bp
@@ -53,7 +57,6 @@ def create_app(config_class=None) -> Flask:
     flask_app.register_blueprint(player_bp)
     flask_app.register_blueprint(round_bp)
     flask_app.register_blueprint(print_bp)
-    flask_app.register_blueprint(admin_auth_bp)
     flask_app.register_blueprint(backup_bp)
     flask_app.register_blueprint(auth_bp)
     flask_app.register_blueprint(admin_bp)

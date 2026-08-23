@@ -13,7 +13,7 @@ from infrastructure.db_models import (
     NotificationModel, 
     NotificationPreferenceModel
 )
-import random
+import secrets
 import string
 
 
@@ -21,12 +21,6 @@ class TournamentRepository:
     @staticmethod
     def get_by_public_id(public_id: str) -> Optional[TournamentModel]:
         return TournamentModel.query.filter_by(public_id=public_id).first()
-
-    @staticmethod
-    def get_by_admin(public_id: str, admin_code: str) -> Optional[TournamentModel]:
-        return TournamentModel.query.filter_by(
-            public_id=public_id, admin_code=admin_code
-        ).first()
 
     @staticmethod
     def save(tournament: TournamentModel) -> TournamentModel:
@@ -37,17 +31,9 @@ class TournamentRepository:
     @staticmethod
     def generate_public_id() -> str:
         while True:
-            pid = "".join(random.choices(string.digits, k=8))
+            pid = "".join(secrets.choice(string.digits) for _ in range(8))
             if not TournamentModel.query.filter_by(public_id=pid).first():
                 return pid
-
-    @staticmethod
-    def generate_admin_code() -> str:
-        chars = string.ascii_letters + string.digits
-        while True:
-            code = "".join(random.choices(chars, k=16))
-            if not TournamentModel.query.filter_by(admin_code=code).first():
-                return code
 
     @staticmethod
     def get_global_stats() -> dict:
@@ -62,8 +48,9 @@ class TournamentRepository:
         stats["tournaments"] = valid_tournaments.count()
         
         if stats["tournaments"] > 0:
-            stats["arbiters"] = db.session.query(TournamentModel.admin_code).filter(
-                TournamentModel.status != "setup"
+            stats["arbiters"] = db.session.query(TournamentModel.organizer_id).filter(
+                TournamentModel.status != "setup",
+                TournamentModel.organizer_id.isnot(None)
             ).distinct().count()
             
             stats["players"] = db.session.query(TournamentParticipantModel.id).join(

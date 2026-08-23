@@ -24,7 +24,6 @@ def setup_data(app):
         # Create Tournament
         tournament = TournamentModel(
             public_id="12345678",
-            admin_code="test_admin_code_9c",
             name="Test Tournament 9C",
             total_rounds=5,
             status="setup"

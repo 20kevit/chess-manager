@@ -16,11 +16,11 @@ tournament_bp = Blueprint("tournament", __name__)
 
 def is_current_admin(tournament):
     """
-    Check if the user is authorized for this specific tournament.
-    Matches the session key used in admin_login.
+    Check if the current user may administer this specific tournament.
+    Uses the account-based authorization model (system admin / organizer /
+    accepted arbiter staff).
     """
-    session_key = f"admin_{tournament.public_id}"
-    return session.get(session_key) == tournament.admin_code
+    return require_admin(tournament.public_id) is not None
 
 def _validate_public_id(public_id: str):
     if not public_id.isdigit() or len(public_id) != 8:
@@ -67,7 +67,6 @@ def create():
                 "tournament/created.html",
                 tournament=tournament,
                 public_url=public_url,
-                admin_code=tournament.admin_code,
             )
         except Exception as e:
             # در صورت بروز خطا
@@ -417,7 +416,7 @@ def search():
 def settings(public_id):
     tournament = require_admin(public_id)
     if not tournament:
-        return redirect(url_for("admin_auth.admin_login", public_id=public_id))
+        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         try:

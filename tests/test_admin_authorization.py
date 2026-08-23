@@ -40,7 +40,6 @@ def setup_access(app):
 
         tournament = TournamentModel(
             public_id="99999901",
-            admin_code="authz_admin_code",
             name="AuthZ Test Tournament",
             total_rounds=3,
             status="setup",
@@ -117,3 +116,28 @@ class TestStaffInvitationAuthorization:
         _login(client, data["sysadmin"].id)
         resp = client.get(f"/{data['tournament'].public_id}/players")
         assert resp.status_code == 200
+
+
+class TestLegacyAdminCodeRemoved:
+    """The legacy admin_code authorization mechanism must be fully gone."""
+
+    def test_admin_login_route_removed(self, app, setup_access):
+        data = setup_access
+        client = app.test_client()
+        resp = client.get(f"/{data['tournament'].public_id}/admin/login")
+        assert resp.status_code == 404
+
+    def test_admin_link_login_route_removed(self, app, setup_access):
+        data = setup_access
+        client = app.test_client()
+        resp = client.get(f"/{data['tournament'].public_id}/admin/link/anything")
+        assert resp.status_code == 404
+
+    def test_legacy_session_value_grants_nothing(self, app, setup_access):
+        data = setup_access
+        client = app.test_client()
+        # Even forging the old legacy session key must NOT grant arbiter view
+        with client.session_transaction() as sess:
+            sess[f"admin_{data['tournament'].public_id}"] = "forged_or_old_code"
+        resp = client.get(f"/{data['tournament'].public_id}/players")
+        assert resp.status_code == 302  # redirected away, not an admin render

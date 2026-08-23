@@ -28,7 +28,6 @@ def benchmark(num_players, num_rounds):
         # ساخت تورنومنت
         t = TournamentModel(
             public_id=TournamentRepository.generate_public_id(),
-            admin_code=TournamentRepository.generate_admin_code(),
             name=f"Benchmark {num_players}p",
             time_control_type="rapid",
             total_rounds=num_rounds,

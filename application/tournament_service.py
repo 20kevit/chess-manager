@@ -64,7 +64,6 @@ class TournamentService:
 
         tournament = TournamentModel(
             public_id=TournamentRepository.generate_public_id(),
-            admin_code=TournamentRepository.generate_admin_code(),
             name=form_data.get("name", "").strip(),
             city=form_data.get("city", "").strip(),
             federation=form_data.get("federation", "IRI").strip() or "IRI",

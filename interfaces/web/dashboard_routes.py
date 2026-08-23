@@ -221,7 +221,16 @@ def update_profile():
 @dashboard_bp.route("/dashboard/api/search-users")
 @login_required
 def search_users():
-    """AJAX endpoint to search for users by name or email"""
+    """AJAX endpoint for tournament admins to search users by name or email.
+
+    Restricted to the tournament-management context: the caller must pass the
+    tournament public_id and be authorized to administer it. Prevents
+    platform-wide user/email enumeration by regular accounts.
+    """
+    public_id = request.args.get("public_id", "")
+    if not public_id or require_admin(public_id) is None:
+        return jsonify({"success": False, "error": "دسترسی غیرمجاز"}), 403
+
     query = request.args.get("q", "").strip()
     if len(query) < 2:
         return jsonify([])

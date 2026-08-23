@@ -114,7 +114,6 @@ class TournamentModel(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String(8), unique=True, nullable=False, index=True)
-    admin_code = db.Column(db.String(255), unique=True, nullable=False)
     name = db.Column(db.String(200), nullable=False)
     city = db.Column(db.String(100), default="")
     federation = db.Column(db.String(5), default="IRI")

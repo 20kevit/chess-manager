@@ -1,6 +1,8 @@
 # interfaces/web/notification_routes.py
 import os
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+import hmac
+import logging
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, current_app
 from flask_login import current_user, login_required
 from app.extensions import csrf 
 from application.notification_service import NotificationService
@@ -9,6 +11,19 @@ from application.bale_service import BaleService
 from infrastructure.db_models import UserModel
 
 notification_bp = Blueprint("notification", __name__)
+
+
+def _webhook_secret_valid(config_key, header_name):
+    """
+    Validates the messenger webhook secret header against the configured
+    shared secret. If no secret is configured for the channel, the check is
+    skipped (returns True) to stay backwards compatible.
+    """
+    expected = current_app.config.get(config_key, "")
+    if not expected:
+        return True
+    provided = request.headers.get(header_name, "")
+    return hmac.compare_digest(provided, expected)
 
 @notification_bp.route("/notifications")
 @login_required
@@ -72,12 +87,16 @@ def api_mark_all_read():
 @csrf.exempt
 def telegram_webhook():
     """Endpoint for Telegram to send updates to."""
-    import logging
+    if not _webhook_secret_valid("TELEGRAM_WEBHOOK_SECRET", "X-Telegram-Bot-Api-Secret-Token"):
+        logger = logging.getLogger("TelegramDebug")
+        logger.warning("Telegram webhook rejected: invalid secret token.")
+        return jsonify({"success": False}), 403
+
     logger = logging.getLogger("TelegramDebug")
     logger.info(">>> Webhook endpoint hit by Telegram!")
     
     data = request.json
-    logger.info(f"Raw data received: {data}")
+    logger.info(f"Raw data received: {str(data)[:500]}")  # truncate to blunt log flooding
     
     if not data or "message" not in data:
         logger.warning("Webhook called without 'message' key.")
@@ -122,12 +141,16 @@ def disconnect_telegram():
 @csrf.exempt
 def bale_webhook():
     """Endpoint for Bale to send updates to."""
-    import logging
+    if not _webhook_secret_valid("BALE_WEBHOOK_SECRET", "X-Bale-Bot-Api-Secret-Token"):
+        logger = logging.getLogger("BaleDebug")
+        logger.warning("Bale webhook rejected: invalid secret token.")
+        return jsonify({"success": False}), 403
+
     logger = logging.getLogger("BaleDebug")
     logger.info(">>> Bale Webhook endpoint hit by Bale!")
     
     data = request.json
-    logger.info(f"Raw Bale data received: {data}")
+    logger.info(f"Raw Bale data received: {str(data)[:500]}")  # truncate to blunt log flooding
     
     if not data or "message" not in data:
         logger.warning("Bale webhook called without 'message' key.")

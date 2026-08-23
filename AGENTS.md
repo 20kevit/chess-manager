@@ -32,7 +32,7 @@ There is no linter/formatter config and no CI pipeline in this repository.
 - If `DB_NAME` is set → MySQL (`mysql+pymysql`, `utf8mb4`, pool_pre_ping/recycle 280). Otherwise → SQLite `sqlite:///local.db` (dev default).
 - Production fail-fast: raises if `SECRET_KEY` or `DB_NAME` missing when `FLASK_ENV=production`.
 - FIDE settings: `FIDE_DATA_DIR` (default `data/fide`), `FIDE_RAW_RETENTION_DAYS=90`, `FIDE_ALLOWED_FEDERATIONS=["IRI"]`, `FIDE_XML_URL`.
-- Other env vars: `ZARINPAL_MERCHANT_ID`, `ZARINPAL_SANDBOX` (default true), `TELEGRAM_BOT_TOKEN`/`TELEGRAM_BOT_USERNAME`, `BALE_BOT_TOKEN`/`BALE_BOT_USERNAME`.
+- Other env vars: `ZARINPAL_MERCHANT_ID`, `ZARINPAL_SANDBOX` (default true), `TELEGRAM_BOT_TOKEN`/`TELEGRAM_BOT_USERNAME`, `BALE_BOT_TOKEN`/`BALE_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`/`BALE_WEBHOOK_SECRET`. Session cookies: `SameSite=Lax` always, `Secure` automatically in production (HTTPS-only).
 
 ## Architecture & Dependency Rules (STRICT)
 
@@ -65,7 +65,7 @@ More detail in `docs/` (AGENT_INSTRUCTIONS.txt, DOMAIN.md, APPLICATION.md, INFRA
 Result vocabulary everywhere (9 types): `"1-0", "0-1", "1/2", "+/-", "-/+", "+/+", "bye", "half-bye", "zero-bye"`.
 
 ### `infrastructure/` — persistence & external systems
-- `db_models.py`: all SQLAlchemy models. Key ones: `UserModel` (password_hash pbkdf2:sha256, `is_admin`, telegram/bale link tokens), `UserRoleModel` (`player|organizer|arbiter`), `PlayerProfileModel` (FIDE id, verification status), `TournamentModel` (`public_id` 8-digit URL key, `admin_code` secret, status, pricing/rulebook JSON), `TournamentParticipantModel` (start_number, `pairing_no`, points/color_history/float_history), `RoundModel` + `PairingModel` (+ floats, result), `ByeRequestModel`, `ManualPairingModel`, `RegistrationModel`, `PaymentModel`, `TournamentStaffModel` (per-tournament arbiter invites), `TempImportDataModel`, `FidePlayerModel`/`FideRatingModel`/`FideImportModel`, `PlayerVerificationModel`, `NotificationModel`, `NotificationPreferenceModel`.
+- `db_models.py`: all SQLAlchemy models. Key ones: `UserModel` (password_hash pbkdf2:sha256, `is_admin`, telegram/bale link tokens), `UserRoleModel` (`player|organizer|arbiter`), `PlayerProfileModel` (FIDE id, verification status), `TournamentModel` (`public_id` 8-digit URL key, status, pricing/rulebook JSON), `TournamentParticipantModel` (start_number, `pairing_no`, points/color_history/float_history), `RoundModel` + `PairingModel` (+ floats, result), `ByeRequestModel`, `ManualPairingModel`, `RegistrationModel`, `PaymentModel`, `TournamentStaffModel` (per-tournament arbiter invites), `TempImportDataModel`, `FidePlayerModel`/`FideRatingModel`/`FideImportModel`, `PlayerVerificationModel`, `NotificationModel`, `NotificationPreferenceModel`.
 - `repositories.py`: ~16 static-method repositories (Tournament, PlayerProfile, Participant, Round, Pairing, ManualPairing, User, Registration, PromoCode, Payment, Fide*, Notification*). Flush-only contract; services commit.
 - `fide/storage.py`: downloads/unzips monthly XML into `data/fide/<YYYY-MM>/`, retention cleanup.
 - `gateways/zarinpal_gateway.py`: implements `PaymentGatewayInterface`; sandbox default; Toman→Rial ×10.
@@ -78,7 +78,7 @@ auth, verification (FIDE-ID claims), tournament, round, registration (+ pricing/
 tournament, player, round, print, admin_auth, backup, auth, admin (system-admin dashboard), dashboard, registration, payment, fide, player_profile, notification.
 - Access helpers: `require_admin(public_id)` in `admin_auth.py` returns tournament or None; checks (in order) system admin → organizer → accepted `TournamentStaffModel` assignment → legacy `session["admin_<public_id>"] == admin_code`.
 - Global decorators in `decorators.py`: `role_required(*roles)` (redirects/flashes), `admin_required` (403).
-- Unified UI: public `tournament.view` page doubles as arbiter console (`is_admin` flag). Never create separate admin pages/routes; never put `admin_code` in URLs or redirects.
+- Unified UI: public `tournament.view` page doubles as arbiter console (`is_admin` flag). Never create separate admin pages/routes.
 
 ## Key flows
 
@@ -105,6 +105,11 @@ Vanilla JS + custom CSS only (no Bootstrap/Tailwind/jQuery/React). RTL Persian, 
 ## Code style
 
 English for code/comments/commit messages; user-facing strings and flash messages in Persian. No TODO markers convention currently — issues surface in code review.
+
+## Deferred (technical debt)
+
+- **No login/admin rate limiting** — brute-force/spraying protection intentionally deferred (strong pbkdf2 hashing mitigates; revisit post-beta).
+- **Six stale Phase 9A/9D/9H/10 tests** fail against the current fire-and-forget notification API contract (`tests/test_phase9a.py`, `9d`, `9h`, `test_phase10.py::self_demotion`); they predate the provider-based dispatch redesign and need contract updates, not product changes.
 
 ## Deployment
 

@@ -28,10 +28,9 @@ Dependencies must strictly point inward toward the Application and Infrastructur
 
 ## 4. Module Specifications
 
-### A. Authentication (`admin_auth.py`)
-- **Session-Based Only:** Admin authorization is stored securely in the Flask session (`session[f"admin_{public_id}"]`).
+### A. Authentication & Authorization
+- **Account-Based Only:** Tournament administration is authorized exclusively through user accounts: system admin, tournament organizer, or accepted `TournamentStaffModel` arbiter invitation. The legacy `admin_code` session mechanism has been removed.
 - **Core Helper:** `require_admin(public_id)` must be used by other blueprints to verify access. It returns the `TournamentModel` if authorized, or `None` (requiring an abort or redirect by the caller).
-- **No URL Leaks:** The `admin_code` is validated upon login and never appended to `url_for()` calls.
 
 ### B. Tournament Routes (`tournament_routes.py`)
 - **Unified View:** The `view(public_id)` endpoint serves BOTH public users and arbiters. It dynamically sets `is_admin = is_current_admin(tournament)` and passes it to the template, allowing the UI to adapt without changing the URL.

@@ -40,6 +40,17 @@ class Config:
         if ENV == 'production':
             raise RuntimeError("SECRET_KEY environment variable must be set in production.")
         SECRET_KEY = secrets.token_hex(32)
+
+    # ── Session cookie hardening ──
+    # SESSION_COOKIE_SECURE is resolved in create_app() from ENV so that config
+    # subclasses are honored; production is HTTPS-only, local dev is HTTP.
+    SESSION_COOKIE_SAMESITE = 'Lax'
+
+    # ── Messenger webhook secrets (setWebhook secret_token) ──
+    # When set, incoming webhooks must present the matching secret header,
+    # otherwise they are rejected with 403 before any processing/logging.
+    TELEGRAM_WEBHOOK_SECRET = os.environ.get('TELEGRAM_WEBHOOK_SECRET', '')
+    BALE_WEBHOOK_SECRET = os.environ.get('BALE_WEBHOOK_SECRET', '')
     
     # ── Phase 7: FIDE Data Integration ──
     FIDE_DATA_DIR = os.path.join(os.getcwd(), 'data', 'fide')

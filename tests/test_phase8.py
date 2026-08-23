@@ -74,7 +74,6 @@ class TestPhase8:
             # Create a mock tournament
             tournament = TournamentModel(
                 public_id="12345678",
-                admin_code="test_admin_code",
                 name="Test Tournament",
                 time_control_type="rapid", # Should fetch rapid rating (1900)
                 total_rounds=5,

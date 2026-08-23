@@ -8,7 +8,7 @@
 </div>
 
 <div class="admin-actions">
-    <!-- Clean URL without admin_code -->
+    <!-- Clean URL without secret codes -->
     <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 بازگشت به داشبورد</a>
     <a href="{{ url_for('player.csv_template', public_id=tournament.public_id) }}" class="btn btn-secondary">📥 دانلود فایل نمونه CSV</a>
 </div>

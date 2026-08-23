@@ -296,7 +296,6 @@ class ImportExportService:
         try:
             new_tournament = TournamentModel(
                 public_id=TournamentRepository.generate_public_id(),
-                admin_code=TournamentRepository.generate_admin_code(),
                 name=target_tournament.name,
                 city="",
                 federation="IRI",
