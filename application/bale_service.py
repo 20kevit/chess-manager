@@ -7,15 +7,23 @@ from datetime import datetime, timedelta
 from app.extensions import db
 from infrastructure.db_models import UserModel
 
-# ── Setup Dedicated Logger ──
+# ── Dedicated Debug Logger ──
+# Handler is attached lazily on first use so that importing this module never
+# writes to the filesystem (CWD may be read-only or unexpected in production).
 logger = logging.getLogger("BaleDebug")
 logger.setLevel(logging.INFO)
-log_file = os.path.join(os.getcwd(), 'bale_debug.log')
-handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-if not logger.handlers:
-    logger.addHandler(handler)
+
+def _ensure_log_handler():
+    if logger.handlers:
+        return
+    try:
+        log_file = os.path.join(os.getcwd(), 'bale_debug.log')
+        handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+        handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        logger.addHandler(handler)
+    except OSError:
+        # Never let debug logging break the service.
+        logger.addHandler(logging.NullHandler())
 
 class BaleService:
     BOT_TOKEN = os.environ.get("BALE_BOT_TOKEN", "")
@@ -24,6 +32,7 @@ class BaleService:
     @staticmethod
     def generate_link_token(user_id: int) -> str:
         """Generates a secure, one-time use token for linking Bale account."""
+        _ensure_log_handler()
         logger.info(f"Attempting to generate Bale token for user_id: {user_id}")
         user = db.session.get(UserModel, user_id)
         if not user:
@@ -40,6 +49,7 @@ class BaleService:
     @staticmethod
     def link_account(token: str, chat_id: str) -> bool:
         """Validates token and links Bale chat_id to the user."""
+        _ensure_log_handler()
         logger.info(f"BALE Link account called. Token: {token}, Chat ID: {chat_id}")
         user = UserModel.query.filter_by(bale_link_token=token).first()
         
@@ -62,6 +72,7 @@ class BaleService:
 
     @staticmethod
     def unlink_account(user_id: int) -> bool:
+        _ensure_log_handler()
         logger.info(f"BALE Unlink account called for user_id: {user_id}")
         user = db.session.get(UserModel, user_id)
         if user:
@@ -76,6 +87,7 @@ class BaleService:
     def send_message(chat_id: str, text: str, link_url: str = None) -> bool:
         """Sends a message via Bale Bot API."""
         import re
+        _ensure_log_handler()
         logger.info(f"Attempting to send Bale message to chat_id: {chat_id}")
         if not BaleService.BASE_URL:
             logger.error("Send failed: BALE_BOT_TOKEN is not set in environment.")

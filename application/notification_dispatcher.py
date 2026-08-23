@@ -10,6 +10,10 @@ class NotificationDispatcher:
 
     @classmethod
     def register_provider(cls, provider: NotificationProviderInterface):
+        # Idempotent: prevent duplicate registration when create_app() is called
+        # more than once in the same process (tests, scripts, re-initialization).
+        if any(type(existing) is type(provider) for existing in cls._providers):
+            return
         cls._providers.append(provider)
 
     @classmethod
