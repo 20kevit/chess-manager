@@ -257,36 +257,6 @@ def float_pair_legal(
     return True
 
 
-def downfloat_penalty(
-    player: EnginePlayer,
-    incoming_ids: set,
-) -> int:
-    """
-    Numeric penalty for choosing this player as downfloater.
-    Lower = better candidate for floating.
-
-    Used for sorting/comparison in the search algorithm.
-    """
-    penalty = 0
-
-    # Re-floating an incoming player is worse
-    if player.id in incoming_ids:
-        penalty += 1000
-
-    # More consecutive downs = worse
-    penalty += player.floats.consecutive_downs * 100
-
-    # Floated last round = worse
-    if player.floats.last_was_down:
-        penalty += 50
-
-    # Higher ranked = worse to float (prefer floating lower-ranked)
-    # Lower pno = higher ranked = more penalty
-    penalty -= player.pno
-
-    return penalty
-
-
 # ═══════════════════════════════════════════════════════════════════
 #  Internal Helpers
 # ═══════════════════════════════════════════════════════════════════

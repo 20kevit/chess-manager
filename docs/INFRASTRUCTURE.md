@@ -43,8 +43,8 @@ Repositories are dumb data-access objects.
 ## 6. External Providers Isolation
 External clients handle data transformation only. They must not make business decisions or save directly to the database.
 
-**FIDE Client (`fide_client.py`):**
-- Strictly an HTTP scraper. Returns raw HTML or basic dicts. MUST NOT update `PlayerModel` directly.
+**FIDE Client (`infrastructure/fide/storage.py`):**
+- Strictly an HTTP downloader (monthly rating-list XML) plus file storage/retention. Parsing lives in `domain/fide/parser.py`. Neither updates player/participant models directly.
 
 **Coronate Provider (`providers/`):**
 - Converts between internal entities and Coronate JSON format.

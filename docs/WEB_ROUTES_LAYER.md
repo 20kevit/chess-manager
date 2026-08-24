@@ -50,7 +50,7 @@ Dependencies must strictly point inward toward the Application and Infrastructur
 - **AJAX Support:** The `/create/from-backup` endpoint supports AJAX requests (returning JSON instead of HTML) for dynamic UI previews.
 
 ## 5. Error Handling & Middlewares
-- **Decorator:** `handle_route_errors` (in `error_handlers.py`) should be used to catch `ValueError` or generic exceptions, flash them, and safely redirect the user.
+- **Route pattern:** Catch `ValueError` from the service layer, `flash()` its Persian message, and redirect back; unexpected exceptions are logged and flashed generically (global 403/404/413/500 handlers live in `app/__init__.py`).
 - **HTTP Aborts:** Use `abort(404)` immediately if `public_id` format is invalid or the entity does not exist in the Repository.
 
 ## 6. Testing Requirements

@@ -640,12 +640,3 @@ def _to_pairing_cards(
         ))
 
     return cards
-
-
-def _float_tag(player: EnginePlayer) -> str:
-    """Return the float direction tag for output."""
-    if player.is_downfloater:
-        return "D"
-    if player.is_upfloater:
-        return "U"
-    return ""

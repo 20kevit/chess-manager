@@ -132,6 +132,14 @@ class ParticipantRepository:
 
     @staticmethod
     def update_points(tournament_id: int) -> None:
+        """
+        Legacy/repair utility: recompute participant points from stored results.
+
+        NOT used on production paths. Production backup restores and imports
+        must use RoundService.rebuild_swiss_state(), which additionally
+        reconstructs color/float history, received_bye, and pairing numbers.
+        Kept for seed/benchmark scripts.
+        """
         participants = ParticipantRepository.get_all(tournament_id)
         pairings = PairingModel.query.filter_by(tournament_id=tournament_id).all()
         score_map = {p.id: 0.0 for p in participants}
@@ -241,17 +249,6 @@ class ManualPairingRepository:
         return ManualPairingModel.query.filter_by(
             tournament_id=tournament_id, round_number=round_number
         ).all()
-
-    @staticmethod
-    def get_by_player(tournament_id: int, round_number: int, participant_id: int) -> Optional[ManualPairingModel]:
-        return ManualPairingModel.query.filter(
-            ManualPairingModel.tournament_id == tournament_id,
-            ManualPairingModel.round_number == round_number,
-            db.or_(
-                ManualPairingModel.white_participant_id == participant_id,
-                ManualPairingModel.black_participant_id == participant_id,
-            ),
-        ).first()
 
     @staticmethod
     def save(mp: ManualPairingModel) -> ManualPairingModel:

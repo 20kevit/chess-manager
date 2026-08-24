@@ -57,7 +57,6 @@ Modules:
     floats.py          — Float state & restrictions (C.04.2)
     bye.py             — Bye selection (C.04.2)
     pairer.py          — Core Dutch algorithm (C.04.3)
-    transposition.py   — Systematic transposition generator
     exchange.py        — Systematic exchange generator
     validator.py       — Independent compliance checker
 """

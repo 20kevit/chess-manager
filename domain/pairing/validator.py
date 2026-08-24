@@ -41,7 +41,6 @@ from domain.pairing.models import (
     RoundResult,
     make_engine_players,
 )
-from domain.pairing.color import is_legal_orientation
 
 
 # ═══════════════════════════════════════════════════════════════════

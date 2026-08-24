@@ -54,9 +54,7 @@ Performance note:
         Triple:     120 * 120 = 14,400
         Total:     ~16,525 exchange patterns
 
-    Each exchange is followed by up to m! transpositions, so total
-    search space can grow rapidly. The engine must split brackets
-    before reaching this point (handled by engine.py's MAX_HALF_SIZE).
+    The engine splits brackets so S1/S2 never grow that large.
 
 This module is stateless and deterministic. Zero external dependencies.
 """
@@ -107,44 +105,6 @@ def generate_exchanges(
         yield from _generate_k_exchanges(s1, s2, k)
 
     return
-
-
-def apply_exchange(
-    s1: List[EnginePlayer],
-    s2: List[EnginePlayer],
-    exchange: List[Tuple[int, int]],
-) -> Tuple[List[EnginePlayer], List[EnginePlayer]]:
-    """
-    Apply a specific exchange pattern to S1 and S2.
-
-    An exchange pattern is a list of (s1_index, s2_index) pairs
-    indicating which players to swap.
-
-    After swapping, both halves are re-sorted by pairing number.
-
-    Args:
-        s1: Original S1 half (will NOT be modified).
-        s2: Original S2 half (will NOT be modified).
-        exchange: List of (s1_index, s2_index) tuples.
-
-    Returns:
-        (new_s1, new_s2) after applying the exchange and re-sorting.
-    """
-    # Make copies to avoid modifying originals
-    new_s1 = list(s1)
-    new_s2 = list(s2)
-
-    # Perform the swaps
-    for s1_idx, s2_idx in exchange:
-        if s1_idx >= len(new_s1) or s2_idx >= len(new_s2):
-            continue
-        new_s1[s1_idx], new_s2[s2_idx] = new_s2[s2_idx], new_s1[s1_idx]
-
-    # Re-sort both halves by pairing number
-    new_s1.sort(key=lambda p: p.pno)
-    new_s2.sort(key=lambda p: p.pno)
-
-    return new_s1, new_s2
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -253,52 +213,3 @@ def _swap_groups(
     new_s2.sort(key=lambda p: p.pno)
 
     return new_s1, new_s2
-
-
-# ═══════════════════════════════════════════════════════════════════
-#  Exchange Counting
-# ═══════════════════════════════════════════════════════════════════
-
-def count_single_exchanges(
-    s1_size: int,
-    s2_size: int,
-) -> int:
-    """Return the number of single exchange patterns."""
-    return s1_size * s2_size
-
-
-def count_k_exchanges(
-    s1_size: int,
-    s2_size: int,
-    k: int,
-) -> int:
-    """
-    Return the number of k-size exchange patterns.
-    This is C(s1_size, k) * C(s2_size, k).
-    """
-    from domain.pairing.transposition import _factorial
-
-    def nCr(n, r):
-        if r > n:
-            return 0
-        return _factorial(n) // (_factorial(r) * _factorial(n - r))
-
-    return nCr(s1_size, k) * nCr(s2_size, k)
-
-
-def total_exchange_count(
-    s1_size: int,
-    s2_size: int,
-    max_k: int = None,
-) -> int:
-    """
-    Return the total number of exchange patterns for all k up to max_k.
-    """
-    if max_k is None:
-        max_k = min(s1_size, s2_size)
-
-    total = 0
-    for k in range(1, max_k + 1):
-        total += count_k_exchanges(s1_size, s2_size, k)
-
-    return total

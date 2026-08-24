@@ -1,13 +1,11 @@
 # application/player_profile_service.py
 from typing import Optional, Dict, List
 from infrastructure.repositories import (
-    PlayerProfileRepository, 
-    FidePlayerRepository, 
-    FideRatingRepository, 
-    ParticipantRepository, 
-    PairingRepository, 
-    PairingRepository, 
+    PlayerProfileRepository,
+    FidePlayerRepository,
+    FideRatingRepository,
     ParticipantRepository,
+    PairingRepository,
 )
 
 class PlayerProfileService:

@@ -357,14 +357,6 @@ def build_brackets(players: List[EnginePlayer]) -> List[Bracket]:
     return brackets
 
 
-def count_total_pairs(brackets: List[Bracket]) -> int:
-    """
-    Calculate the total number of pairs across all brackets.
-    """
-    total_players = sum(b.count for b in brackets)
-    return total_players // 2
-
-
 def get_bracket_summary(brackets: List[Bracket]) -> str:
     """
     Return a human-readable summary of bracket structure.

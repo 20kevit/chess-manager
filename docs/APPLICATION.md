@@ -45,7 +45,7 @@ Handles tournament configuration and the generation of standings.
 ### C. Player Service (`player_service.py`)
 Handles player registration and management.
 - **Age Category Detection:** Automatically assigns U08-U20 or S50/S65 categories based on birthdate if not explicitly provided.
-- **FIDE Integration:** Calls `infrastructure.fide_client` to scrape HTML, passes it to `domain.fide.parse_fide_html`, and returns structured JSON to the frontend.
+- **FIDE Integration:** Uses `application.fide_search_service` over the locally imported FIDE database (`infrastructure.fide.storage` + `domain.fide.parser`) and returns structured JSON to the frontend.
 
 ### D. Import/Export Service (`import_export_service.py`)
 Orchestrates moving data in and out of the system.

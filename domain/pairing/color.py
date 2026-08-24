@@ -187,53 +187,6 @@ def has_legal_assignment(
     return is_legal_orientation(p1, p2) or is_legal_orientation(p2, p1)
 
 
-def color_compatibility(
-    p1: EnginePlayer,
-    p2: EnginePlayer,
-) -> int:
-    """
-    Score how well two players' color preferences align.
-
-    Higher = better.
-
-    Scale:
-         4 = Both have absolute opposite (ideal)
-         3 = One absolute, other compatible
-         2 = Both have strong opposite
-         1 = One strong/mild, other neutral
-         0 = Both neutral
-        -1 = Same-direction mild conflict
-        -2 = Same-direction strong conflict
-        -3 = Same-direction absolute conflict (may be illegal)
-    """
-    if not has_legal_assignment(p1, p2):
-        return -3
-
-    c1 = p1.color.preference
-    c2 = p2.color.preference
-
-    s1 = c1.strength
-    s2 = c2.strength
-
-    # No preference at all
-    if s1 == 0 and s2 == 0:
-        return 0
-
-    d1 = c1.direction
-    d2 = c2.direction
-
-    # Opposite directions — always good
-    if d1 and d2 and d1 != d2:
-        return min(s1, s2) + max(s1, s2)
-
-    # Same direction — conflict
-    if d1 and d2 and d1 == d2:
-        return -(s1 + s2)
-
-    # One has preference, other neutral
-    return max(s1, s2)
-
-
 # ═══════════════════════════════════════════════════════════════════
 #  Internal Helpers
 # ═══════════════════════════════════════════════════════════════════
