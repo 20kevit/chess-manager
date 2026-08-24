@@ -2,7 +2,7 @@
 FIDE Import Orchestration Service.
 Downloads, parses, and stores FIDE rating data into the database.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from app.extensions import db
 from infrastructure.repositories import FidePlayerRepository, FideRatingRepository, FideImportRepository
@@ -29,6 +29,26 @@ class FideImportService:
                 "status": "skipped",
                 "message": f"Period {period} already imported successfully."
             }
+
+        # 1b. Guard against concurrent/double-triggered imports: a fresh
+        # 'pending' record means an import is currently running.
+        if (
+            existing_import
+            and existing_import.status == "pending"
+            and existing_import.downloaded_at
+            and (datetime.utcnow() - existing_import.downloaded_at) < timedelta(minutes=15)
+        ):
+            return {
+                "status": "already_running",
+                "message": f"An import for period {period} is already in progress."
+            }
+
+        # 1c. A stale 'pending' record means a previous run was killed before
+        # completing (e.g. request timeout). Mark it failed so the dashboard
+        # reflects reality; retries remain safe (existence-checked upserts).
+        if existing_import and existing_import.status == "pending":
+            existing_import.status = "failed"
+            existing_import.error_message = "Marked failed: previous run did not complete."
 
         # 2. Get or create import record
         import_record = existing_import or FideImportModel(period=period)

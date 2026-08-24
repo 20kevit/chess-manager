@@ -40,6 +40,8 @@ def trigger_import():
             flash(f"ایمپورت با موفقیت انجام شد. (پردازش شده: {result.get('processed')})", "success")
         elif result.get("status") == "skipped":
             flash("این ماه قبلاً ایمپورت شده است.", "info")
+        elif result.get("status") == "already_running":
+            flash("ایمپورت این ماه در حال حاضر در جریان است. لطفاً چند دقیقه بعد بررسی کنید.", "info")
         else:
             flash(f"خطا در ایمپورت: {result.get('message')}", "error")
     except Exception as e:

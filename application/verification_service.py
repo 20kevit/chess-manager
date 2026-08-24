@@ -29,6 +29,16 @@ class VerificationService:
         if not fide_player:
             raise ValueError("کد فیده در پایگاه داده محلی یافت نشد. لطفاً ابتدا آن را از پنل مدیریت Import کنید.")
 
+        # A FIDE identity may be claimed by at most one profile: reject the
+        # request if another profile is already pending/verified for this ID.
+        conflict = PlayerProfileModel.query.filter(
+            PlayerProfileModel.id != profile_id,
+            PlayerProfileModel.fide_id == requested_fide_id,
+            PlayerProfileModel.fide_verification_status.in_(["pending", "verified"]),
+        ).first()
+        if conflict:
+            raise ValueError("این کد فیده قبلاً توسط پروفایل دیگری ثبت یا تأیید شده است.")
+
         # Check for existing pending request
         existing_req = PlayerVerificationRepository.get_pending_for_profile(profile_id)
         if existing_req:
@@ -81,9 +91,31 @@ class VerificationService:
         if not profile:
             raise ValueError("پروفایل بازیکن یافت نشد.")
 
+        # Final integrity check: another profile must not already be VERIFIED
+        # for this FIDE ID (a stale pending claim elsewhere is fine — reject it).
+        conflict = PlayerProfileModel.query.filter(
+            PlayerProfileModel.id != profile.id,
+            PlayerProfileModel.fide_id == req.requested_fide_id,
+            PlayerProfileModel.fide_verification_status == "verified",
+        ).first()
+        if conflict:
+            raise ValueError("این کد فیده پیش‌تر به پروفایل دیگری تأیید شده است.")
+
         # Link and verify
         profile.fide_id = req.requested_fide_id
         profile.fide_verification_status = "verified"
+
+        # Sync the official FIDE title from the local rating list so title
+        # snapshots/pricing cannot rely on self-entered values. Titles are
+        # code-like data (unlike Persian names, which stay user-owned).
+        fide_record = FidePlayerRepository.get_by_fide_id(req.requested_fide_id)
+        if fide_record:
+            official_title = (
+                fide_record.title or fide_record.wtitle
+                or fide_record.otitle or fide_record.foatitle or ""
+            ).strip()
+            if official_title:
+                profile.fide_title = official_title
 
         req.status = "approved"
         req.reviewed_at = datetime.utcnow()
