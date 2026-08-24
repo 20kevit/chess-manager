@@ -24,8 +24,9 @@ class TournamentRepository:
 
     @staticmethod
     def save(tournament: TournamentModel) -> TournamentModel:
+        """Persist without committing; the service layer owns the transaction."""
         db.session.add(tournament)
-        db.session.commit()
+        db.session.flush()
         return tournament
 
     @staticmethod
@@ -212,10 +213,6 @@ class PairingRepository:
         db.session.flush()
 
     @staticmethod
-    def commit() -> None:
-        db.session.commit()
-
-    @staticmethod
     def get_all_games_for_participants(participant_ids: List[int]) -> List[PairingModel]:
         """
         Fetches all pairings for a list of participant IDs across all tournaments.
@@ -297,7 +294,7 @@ class UserRepository:
         if not existing:
             new_role = UserRoleModel(user_id=user.id, role=role_name)
             db.session.add(new_role)
-            db.session.commit()
+            db.session.flush()
 
 
 # در انتهای فایل infrastructure/repositories.py اضافه کنید:
@@ -320,8 +317,9 @@ class RegistrationRepository:
 
     @staticmethod
     def save(reg: RegistrationModel) -> RegistrationModel:
+        """Persist without committing; the service layer owns the transaction."""
         db.session.add(reg)
-        db.session.commit()
+        db.session.flush()
         return reg
 
 class PromoCodeRepository:
@@ -338,8 +336,9 @@ class PromoCodeRepository:
 
     @staticmethod
     def save(promo: PromoCodeModel) -> PromoCodeModel:
+        """Persist without committing; the service layer owns the transaction."""
         db.session.add(promo)
-        db.session.commit()
+        db.session.flush()
         return promo
 
 class PaymentRepository:
@@ -543,24 +542,26 @@ class NotificationRepository:
 
     @staticmethod
     def mark_as_read(notification_id: int, user_id: int) -> bool:
-        """Marks a notification as read. Security: Ensures user owns the notification."""
+        """Marks a notification as read. Security: Ensures user owns the notification.
+        Flush-only; the service layer commits."""
         notification = NotificationModel.query.filter_by(
             id=notification_id, user_id=user_id
         ).first()
         
         if notification and not notification.is_read:
             notification.is_read = True
-            db.session.commit()
+            db.session.flush()
             return True
         return False
 
     @staticmethod
     def mark_all_as_read(user_id: int) -> int:
-        """Marks all unread notifications as read for a specific user."""
+        """Marks all unread notifications as read for a specific user.
+        Flush-only; the service layer commits."""
         count = NotificationModel.query.filter_by(
             user_id=user_id, is_read=False
         ).update({"is_read": True})
-        db.session.commit()
+        db.session.flush()
         return count
 
 
@@ -576,6 +577,7 @@ class NotificationPreferenceRepository:
 
     @staticmethod
     def save(pref: NotificationPreferenceModel) -> NotificationPreferenceModel:
+        """Persist without committing; the service layer owns the transaction."""
         db.session.add(pref)
-        db.session.commit()
+        db.session.flush()
         return pref

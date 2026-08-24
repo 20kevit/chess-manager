@@ -313,6 +313,7 @@ class RegistrationModel(db.Model):
     status = db.Column(db.String(20), default="pending") # pending, approved, rejected, withdrawn, payment_pending
     final_price = db.Column(db.Integer, default=0)
     pricing_breakdown = db.Column(db.Text, default="{}") # JSON string of pricing details
+    rejection_reason = db.Column(db.String(255), nullable=True)
     
     # Phase 5: Payment Method and Receipt
     payment_method = db.Column(db.String(20), default="online") # online, transfer

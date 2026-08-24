@@ -2,7 +2,9 @@ from datetime import datetime, date
 from typing import Optional
 from app.extensions import db
 from infrastructure.repositories import PlayerProfileRepository, ParticipantRepository, FidePlayerRepository
-from infrastructure.db_models import PlayerProfileModel, TournamentParticipantModel
+from infrastructure.db_models import (
+    PlayerProfileModel, TournamentParticipantModel, ByeRequestModel, ManualPairingModel
+)
 
 _AGE_CATEGORY_MAP = [(8, "U08"), (10, "U10"), (12, "U12"), (14, "U14"), (16, "U16"), (18, "U18"), (20, "U20")]
 
@@ -127,6 +129,15 @@ class PlayerService:
 
     @staticmethod
     def delete(participant: TournamentParticipantModel, tournament_id: int) -> None:
+        # Remove rows referencing the participant first so deletion stays
+        # FK-safe on MySQL (bye requests / manual locks may exist pre-round-1).
+        ByeRequestModel.query.filter_by(participant_id=participant.id).delete()
+        ManualPairingModel.query.filter(
+            db.or_(
+                ManualPairingModel.white_participant_id == participant.id,
+                ManualPairingModel.black_participant_id == participant.id,
+            )
+        ).delete(synchronize_session=False)
         ParticipantRepository.delete(participant)
         ParticipantRepository.renumber(tournament_id)
         db.session.commit()

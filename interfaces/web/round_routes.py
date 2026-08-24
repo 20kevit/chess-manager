@@ -199,13 +199,8 @@ def manual_pairing_remove(public_id):
     if redir:
         return redir
     participant_id = request.form.get("participant_id", type=int)
-    next_round = tournament.current_round + 1
-    mp = ManualPairingModel.query.filter_by(
-        tournament_id=tournament.id, round_number=next_round, white_participant_id=participant_id
-    ).first()
-    if mp:
-        db.session.delete(mp)
-        db.session.commit()
+    removed = RoundService.remove_manual_pairing(tournament, participant_id)
+    if removed:
         flash("جفت‌گذاری دستی لغو شد.", "success")
     else:
         flash("جفت‌گذاری یافت نشد.", "error")
@@ -216,10 +211,8 @@ def cancel_bye(public_id, bye_id):
     tournament, redir = _require_admin_or_redirect(public_id)
     if redir:
         return redir
-    bye = ByeRequestModel.query.get(bye_id)
-    if bye and bye.tournament_id == tournament.id:
-        db.session.delete(bye)
-        db.session.commit()
+    cancelled = RoundService.cancel_bye_request(tournament, bye_id)
+    if cancelled:
         flash("درخواست استراحت لغو شد.", "success")
     else:
         flash("درخواست استراحت یافت نشد.", "error")

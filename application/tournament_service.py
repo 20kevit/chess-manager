@@ -16,6 +16,7 @@ from domain.tiebreak.models import PlayerTiebreakData, GameRecord
 from domain.rating.calculator import calculate_tournament_ratings
 from domain.rating.models import RatingPlayerData, RatingGameRecord
 from flask_login import current_user
+from sqlalchemy.exc import IntegrityError
 
 class TournamentService:
 
@@ -87,7 +88,18 @@ class TournamentService:
             bank_card_number=form_data.get("bank_card_number", "").strip(),
             rulebook_text=form_data.get("rulebook_text", "").strip(),
         )
-        return TournamentRepository.save(tournament)
+        for attempt in range(3):
+            try:
+                TournamentRepository.save(tournament)
+                db.session.commit()
+                break
+            except IntegrityError:
+                # Rare race on the random 8-digit public_id; regenerate & retry.
+                db.session.rollback()
+                if attempt == 2:
+                    raise ValueError("خطا در ایجاد تورنمنت. لطفاً دوباره تلاش کنید.")
+                tournament.public_id = TournamentRepository.generate_public_id()
+        return tournament
 
     @staticmethod
     def update_settings(tournament: TournamentModel, form_data: dict) -> None:

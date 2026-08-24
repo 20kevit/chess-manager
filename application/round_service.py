@@ -332,6 +332,31 @@ class RoundService:
         db.session.add(bye_req)
         db.session.commit()
 
+    @staticmethod
+    def remove_manual_pairing(tournament, participant_id: int) -> bool:
+        """Removes a pre-round manual pairing lock. Returns True if removed."""
+        next_round = tournament.current_round + 1
+        mp = ManualPairingModel.query.filter_by(
+            tournament_id=tournament.id,
+            round_number=next_round,
+            white_participant_id=participant_id,
+        ).first()
+        if not mp:
+            return False
+        db.session.delete(mp)
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def cancel_bye_request(tournament, bye_id: int) -> bool:
+        """Cancels a bye request belonging to this tournament. Returns True if cancelled."""
+        bye = ByeRequestModel.query.get(bye_id)
+        if bye and bye.tournament_id == tournament.id:
+            db.session.delete(bye)
+            db.session.commit()
+            return True
+        return False
+
     # ═════════════════════════════════════════════════════════
     #  4. Maintenance & Deletion
     # ═════════════════════════════════════════════════════════
@@ -342,6 +367,13 @@ class RoundService:
         tournament.current_round = max(0, round_obj.round_number - 1)
         db.session.commit()
         RoundService._full_refresh_stats(tournament.id)
+
+    @staticmethod
+    def rebuild_swiss_state(tournament_id: int) -> None:
+        """Public entry point: fully reconstruct Swiss pairing state
+        (points, color/float history, received_bye, pairing_no) from stored
+        results. Used after imports/restores."""
+        RoundService._full_refresh_stats(tournament_id)
 
     @staticmethod
     def _full_refresh_stats(tournament_id):
@@ -358,7 +390,12 @@ class RoundService:
             pairings = PairingModel.query.filter_by(round_id=r.id).all()
             for pr in pairings:
                 RoundService._update_participant_stats_incremental(pr)
-        
+
+        # FIDE Dutch: pairing numbers are deterministic (rating DESC,
+        # start_number ASC) and are restored alongside the histories so an
+        # imported/restored tournament can continue pairing correctly.
+        RoundService._initialize_pairing_numbers(tournament_id)
+
         db.session.commit()
 
     # ═════════════════════════════════════════════════════════

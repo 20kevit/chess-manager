@@ -92,6 +92,15 @@ class PaymentService:
             # بررسی Race Condition برای ظرفیت تورنمنت
             tournament = registration.tournament
             if tournament.max_players:
+                # Serialize the capacity check against concurrent approvals
+                # (no-op on SQLite; FOR UPDATE on MySQL).
+                from sqlalchemy import select
+                from infrastructure.db_models import TournamentModel as _TournamentModel
+                db.session.execute(
+                    select(_TournamentModel.id)
+                    .where(_TournamentModel.id == tournament.id)
+                    .with_for_update()
+                )
                 active_count = len(ParticipantRepository.get_active(tournament.id))
                 # شمارش ثبت‌نام‌های پرداخت شده اما هنوز تأیید نشده
                 paid_count = RegistrationModel.query.filter_by(

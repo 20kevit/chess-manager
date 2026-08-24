@@ -13,6 +13,7 @@ from infrastructure.db_models import (
 )
 from application.player_service import PlayerService
 from domain.pricing import calculate_price, TournamentPricingData, PlayerPricingData, PromoCodeData
+from sqlalchemy import select
 
 class RegistrationService:
 
@@ -46,7 +47,14 @@ class RegistrationService:
                 raise ValueError("مهلت ثبت‌نام به پایان رسیده است.")
 
         # 2. Check Capacity
+        # Row-lock the tournament so concurrent registrations serialize on the
+        # count-then-insert check (no-op lock on SQLite; FOR UPDATE on MySQL).
         if tournament.max_players:
+            db.session.execute(
+                select(TournamentModel.id)
+                .where(TournamentModel.id == tournament.id)
+                .with_for_update()
+            )
             active_count = ParticipantRepository.get_active(tournament.id)
             pending_count = RegistrationModel.query.filter_by(
                 tournament_id=tournament.id, status="pending"
@@ -150,6 +158,8 @@ class RegistrationService:
             }, ensure_ascii=False),
             promo_code_id=promo_code.id if promo_code else None
         )
+        RegistrationRepository.save(registration)
+        db.session.commit()
 
         # ── Phase 9C: Notify User about Registration Submission ──
         try:
@@ -169,8 +179,8 @@ class RegistrationService:
             import logging
             logging.error(f"Failed to send registration notification: {str(e)}")
         # ──────────────────────────────────────────
-        
-        return RegistrationRepository.save(registration)
+
+        return registration
 
     @staticmethod
     def approve_registration(registration_id: int) -> TournamentParticipantModel:
@@ -201,7 +211,13 @@ class RegistrationService:
         registration.status = "approved"
         
         if registration.promo_code:
-            registration.promo_code.used_count += 1
+            # Re-read the row under lock so concurrent approvals cannot
+            # overshoot max_uses (no-op on SQLite; FOR UPDATE on MySQL).
+            promo = PromoCodeModel.query.filter_by(
+                id=registration.promo_code.id
+            ).with_for_update().first()
+            if promo:
+                promo.used_count += 1
             
         db.session.commit()
         

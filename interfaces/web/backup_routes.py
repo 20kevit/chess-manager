@@ -97,6 +97,11 @@ def export_json(public_id):
                             pr.black_participant_id, participants
                         ),
                         "result": pr.result,
+                        # Float tags needed to fully restore Swiss pairing state.
+                        # Older backups lack these keys; the importer falls back
+                        # to result-derived reconstruction.
+                        "white_float": pr.white_float,
+                        "black_float": pr.black_float,
                     }
                     for pr in pairings
                     if pr.round_id == r.id
@@ -255,10 +260,16 @@ def _replace_import(tournament, data):
                 white_participant_id=start_num_to_id.get(w_num),
                 black_participant_id=start_num_to_id.get(b_num),
                 result=pr_data.get("result", ""),
+                white_float=pr_data.get("white_float"),
+                black_float=pr_data.get("black_float"),
             )
             db.session.add(pairing)
 
     db.session.commit()
+    # Reconstruct all Swiss pairing state (points, color/float history,
+    # received_bye, pairing_no) from the restored results.
+    from application.round_service import RoundService
+    RoundService.rebuild_swiss_state(tournament.id)
 
 
 def _merge_import(tournament, data):
@@ -266,6 +277,9 @@ def _merge_import(tournament, data):
     existing_names = {
         f"{p.profile.first_name.strip().lower()}{p.profile.last_name.strip().lower()}" for p in existing
     }
+    # Newcomers must not disturb existing pairing numbers (FIDE: pairing_no is
+    # fixed once assigned); they continue after the highest existing number.
+    next_pairing_no = max((p.pairing_no or 0) for p in existing) if existing else 0
 
     for p_data in data.get("players", []):
         name_key = f"{p_data['first_name'].strip().lower()}{p_data['last_name'].strip().lower()}"
@@ -294,10 +308,12 @@ def _merge_import(tournament, data):
         db.session.flush()
 
         next_num = ParticipantRepository.next_start_number(tournament.id)
+        next_pairing_no += 1
         participant = TournamentParticipantModel(
             tournament_id=tournament.id,
             player_profile_id=profile.id,
             start_number=next_num,
+            pairing_no=next_pairing_no,
             rating_snapshot=p_data.get("rating", 0),
             fide_title_snapshot=p_data.get("fide_title", ""),
             k_factor=p_data.get("k_factor", 20),

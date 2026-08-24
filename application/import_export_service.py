@@ -240,8 +240,10 @@ class ImportExportService:
                     db.session.add(new_pairing)
 
             db.session.commit()
-            ParticipantRepository.update_points(tournament.id)
-            db.session.commit()
+            # Full Swiss state reconstruction (points, color/float history,
+            # received_bye, pairing_no) — points-only recompute is not enough.
+            from application.round_service import RoundService
+            RoundService.rebuild_swiss_state(tournament.id)
 
         except Exception as e:
             db.session.rollback()
@@ -408,9 +410,9 @@ class ImportExportService:
                     db.session.add(new_pairing)
             
             db.session.commit()
-            
-            ParticipantRepository.update_points(new_tournament.id)
-            db.session.commit()
+
+            from application.round_service import RoundService
+            RoundService.rebuild_swiss_state(new_tournament.id)
             
             return new_tournament
             
