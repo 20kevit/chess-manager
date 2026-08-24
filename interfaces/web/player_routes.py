@@ -222,6 +222,12 @@ def _handle_csv_preview(tournament, public_id):
         return redirect(request.url)
 
 
+    # Replace any abandoned previous preview for this session (H-5) so
+    # temp_import_data does not accumulate orphan rows.
+    old_key = session.get("csv_import_key")
+    if old_key:
+        TempImportDataModel.query.filter_by(session_key=old_key).delete()
+
     temp_record = TempImportDataModel(
         session_key=str(uuid.uuid4()),
         data_json=json.dumps(players_data, ensure_ascii=False)

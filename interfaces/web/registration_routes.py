@@ -1,7 +1,10 @@
 # interfaces/web/registration_routes.py
 import json
+import os
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import (Blueprint, render_template, request, redirect, url_for,
+                   flash, abort, current_app, send_file)
+from werkzeug.utils import secure_filename
 from interfaces.web.admin_auth import require_admin
 from infrastructure.repositories import TournamentRepository, RegistrationRepository, PromoCodeRepository
 from application.tournament_service import TournamentService
@@ -10,8 +13,6 @@ from flask_login import current_user, login_required
 from infrastructure.db_models import RegistrationModel, PromoCodeModel
 from domain.pricing import calculate_price, PlayerPricingData, PromoCodeData
 from flask import jsonify
-import os
-from werkzeug.utils import secure_filename
 from app.extensions import db
 
 registration_bp = Blueprint("registration", __name__)
@@ -280,24 +281,99 @@ def upload_receipt(reg_id):
     if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
         flash("فرمت فایل مجاز نیست (فقط JPG, PNG, PDF).", "error")
         return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
-        
-    # Create a safe filename
+
+    # Enforce the receipt-specific size limit (global ceiling is 8 MB).
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    max_receipt_bytes = current_app.config.get("MAX_RECEIPT_BYTES", 5 * 1024 * 1024)
+    if file_size > max_receipt_bytes:
+        flash("حجم فایل رسید نباید بیشتر از ۵ مگابایت باشد.", "error")
+        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+
+    # Private storage (Category H): receipts live under <instance>/uploads/receipts,
+    # outside the web-servable static tree, anchored to app.instance_path — never CWD.
+    upload_dir = current_app.config["RECEIPT_UPLOAD_DIR"]
+    os.makedirs(upload_dir, exist_ok=True)
+
     ext = file.filename.rsplit('.', 1)[1].lower()
     filename = secure_filename(f"receipt_{reg.id}.{ext}")
-    upload_folder = os.path.join('static', 'uploads', 'receipts')
-    
-    # Create folder if it doesn't exist
-    if not os.path.exists(upload_folder):
-        os.makedirs(upload_folder)
-        
-    file_path = os.path.join(upload_folder, filename)
+    file_path = os.path.join(upload_dir, filename)
+
+    # Remove any previous receipt for this registration (extension may change).
+    for old_ext in allowed_extensions:
+        old_path = os.path.join(upload_dir, secure_filename(f"receipt_{reg.id}.{old_ext}"))
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
     file.save(file_path)
-    
-    # Update Database
+
+    # Store only the bare filename; the physical directory is application-owned.
     reg.payment_method = "transfer"
-    # Store relative path for url_for
-    reg.receipt_path = f"uploads/receipts/{filename}"
+    reg.receipt_path = filename
     db.session.commit()
     
     flash("رسید شما با موفقیت آپلود شد. در انتظار تایید برگزارکننده.", "success")
     return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+
+
+_RECEIPT_MIMETYPES = {
+    "pdf": "application/pdf",
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+}
+
+
+def _resolve_receipt_absolute_path(receipt_path: str):
+    """
+    Resolves a stored receipt_path to an absolute filesystem path.
+
+    New-format records store the bare filename inside RECEIPT_UPLOAD_DIR.
+    Legacy records ("uploads/receipts/receipt_N.ext") are first looked up in
+    the private directory and then fall back to the historical static location
+    so pre-existing production receipts keep working until they are migrated.
+    Returns None when no readable file exists.
+    """
+    if not receipt_path:
+        return None
+
+    filename = os.path.basename(receipt_path)
+    private_candidate = os.path.join(current_app.config["RECEIPT_UPLOAD_DIR"], filename)
+    if os.path.isfile(private_candidate):
+        return private_candidate
+
+    if "/" in receipt_path or "\\" in receipt_path:
+        legacy_candidate = os.path.join(current_app.static_folder, receipt_path.replace("/", os.sep))
+        if os.path.isfile(legacy_candidate):
+            return legacy_candidate
+
+    return None
+
+
+@registration_bp.route("/registration/<int:reg_id>/receipt")
+@login_required
+def download_receipt(reg_id):
+    """Authenticated access to a bank-transfer receipt.
+
+    Allowed: the registration owner, or a tournament admin/arbiter/organizer
+    via the existing require_admin(public_id) authorization path. Everyone
+    else — including authenticated users unrelated to this tournament — is
+    denied. The physical filesystem path is never exposed.
+    """
+    reg = RegistrationRepository.get_by_id(reg_id)
+    if not reg or not reg.receipt_path:
+        abort(404)
+
+    is_owner = reg.user_id == current_user.id
+    is_tournament_admin = require_admin(reg.tournament.public_id) is not None
+    if not (is_owner or is_tournament_admin):
+        abort(403)
+
+    absolute_path = _resolve_receipt_absolute_path(reg.receipt_path)
+    if not absolute_path:
+        abort(404)
+
+    ext = absolute_path.rsplit(".", 1)[-1].lower() if "." in absolute_path else ""
+    mimetype = _RECEIPT_MIMETYPES.get(ext, "application/octet-stream")
+    return send_file(absolute_path, mimetype=mimetype, download_name=os.path.basename(absolute_path))

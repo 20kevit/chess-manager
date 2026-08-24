@@ -1,7 +1,9 @@
 """
 Flask application factory.
 """
-from flask import Flask, render_template
+import os
+
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 from app.extensions import db, login_manager
 from config import Config
@@ -22,6 +24,13 @@ def create_app(config_class=None) -> Flask:
     # Session cookie hardening: Secure only where deployment is HTTPS-only.
     flask_app.config["SESSION_COOKIE_SECURE"] = (
         flask_app.config.get("ENV") == "production"
+    )
+
+    # Upload hardening (Category H): global request-size ceiling plus a
+    # private, non-web-servable directory for bank-payment receipts.
+    flask_app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB
+    flask_app.config["RECEIPT_UPLOAD_DIR"] = os.path.join(
+        flask_app.instance_path, "uploads", "receipts"
     )
 
     db.init_app(flask_app)
@@ -91,6 +100,11 @@ def create_app(config_class=None) -> Flask:
     @flask_app.errorhandler(500)
     def server_error(e):
         return render_template("errors/500.html"), 500
+
+    @flask_app.errorhandler(413)
+    def request_entity_too_large(e):
+        flash("حجم فایل ارسال‌شده بیش از حد مجاز (۸ مگابایت) است.", "error")
+        return redirect(request.referrer or url_for("tournament.index")), 302
 
     @flask_app.template_filter('toman_formatter')
     def toman_formatter(value):

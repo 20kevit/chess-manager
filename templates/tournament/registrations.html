@@ -59,7 +59,7 @@
                             {% if reg.payment_method == 'online' %}
                                 {{ item.ref_id or '-' }}
                             {% elif reg.payment_method == 'transfer' and reg.receipt_path %}
-                                <a href="{{ url_for('static', filename=reg.receipt_path) }}" target="_blank" class="btn btn-info btn-sm">مشاهده رسید</a>
+                                <a href="{{ url_for('registration.download_receipt', reg_id=reg.id) }}" target="_blank" class="btn btn-info btn-sm">مشاهده رسید</a>
                             {% else %}
                                 -
                             {% endif %}

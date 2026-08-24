@@ -17,3 +17,6 @@ data/
 # Other
 generate_ai_context.py
 .htaccess
+
+# Private user uploads (receipts) - never enter version control
+instance/uploads/
