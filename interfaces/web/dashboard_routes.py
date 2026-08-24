@@ -446,10 +446,12 @@ def notification_settings():
     if request.method == "POST":
         prefs = {}
         for n_type in NotificationType:
-            web_enabled = request.form.get(f"web_{n_type.value}") == "on"
-            telegram_enabled = request.form.get(f"telegram_{n_type.value}") == "on"
-            prefs[n_type.value] = {"web": web_enabled, "telegram": telegram_enabled}
-            
+            prefs[n_type.value] = {
+                "web": request.form.get(f"web_{n_type.value}") == "on",
+                "telegram": request.form.get(f"telegram_{n_type.value}") == "on",
+                "bale": request.form.get(f"bale_{n_type.value}") == "on",
+            }
+
         NotificationService.update_preferences(current_user.id, prefs)
         flash("تنظیمات اعلان‌ها با موفقیت ذخیره شد.", "success")
         return redirect(url_for("dashboard.notification_settings"))
@@ -465,11 +467,13 @@ def notification_settings():
             "value": n_type.value,
             "name": n_type.value.replace("_", " ").title(),
             "web_enabled": settings.get("web", True),
-            "telegram_enabled": settings.get("telegram", True) # Default to True
+            "telegram_enabled": settings.get("telegram", True), # Default to True
+            "bale_enabled": settings.get("bale", True),
         })
 
     return render_template(
         "dashboard/notification_settings.html",
         notif_types=notif_types,
-        telegram_connected=True if current_user.telegram_chat_id else False
+        telegram_connected=True if current_user.telegram_chat_id else False,
+        bale_connected=True if current_user.bale_chat_id else False
     )

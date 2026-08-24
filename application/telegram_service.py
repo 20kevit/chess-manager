@@ -25,6 +25,12 @@ def _ensure_log_handler():
         # Never let debug logging break the service.
         logger.addHandler(logging.NullHandler())
 
+
+def _mask(value: str) -> str:
+    """Safe-for-logs preview of secrets (link tokens) and chat IDs."""
+    value = str(value or "")
+    return f"{value[:6]}…" if len(value) > 6 else "…"
+
 class TelegramService:
     BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}" if BOT_TOKEN else ""
@@ -43,14 +49,14 @@ class TelegramService:
         user.telegram_link_token = token
         user.telegram_link_expires_at = datetime.utcnow() + timedelta(minutes=10)
         db.session.commit()
-        logger.info(f"Token generated successfully: {token}")
+        logger.info(f"Token generated successfully: {_mask(token)} (user_id={user_id})")
         return token
 
     @staticmethod
     def link_account(token: str, chat_id: str) -> bool:
         """Validates token and links Telegram chat_id to the user."""
         _ensure_log_handler()
-        logger.info(f"Link account called. Token: {token}, Chat ID: {chat_id}")
+        logger.info(f"Link account called. Token: {_mask(token)}, Chat ID: {_mask(chat_id)}")
         user = UserModel.query.filter_by(telegram_link_token=token).first()
         
         if not user:
@@ -67,7 +73,7 @@ class TelegramService:
         user.telegram_link_token = None # Invalidate token
         user.telegram_link_expires_at = None
         db.session.commit()
-        logger.info(f"Link SUCCESSFUL! User {user.id} linked to chat_id {chat_id}.")
+        logger.info(f"Link SUCCESSFUL! User {user.id} linked to chat_id {_mask(chat_id)}.")
         return True
 
     @staticmethod
@@ -87,7 +93,7 @@ class TelegramService:
     def send_message(chat_id: str, text: str, link_url: str = None) -> bool:
         """Sends a message via Telegram Bot API."""
         _ensure_log_handler()
-        logger.info(f"Attempting to send message to chat_id: {chat_id}")
+        logger.info(f"Attempting to send message to chat_id: {_mask(chat_id)}")
         if not TelegramService.BASE_URL:
             logger.error("Send failed: TELEGRAM_BOT_TOKEN is not set in environment.")
             return False

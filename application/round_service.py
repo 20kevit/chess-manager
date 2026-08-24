@@ -4,6 +4,7 @@ FIDE Dutch Swiss compliant with Incremental Updates and Manual Adjustments.
 """
 from datetime import datetime
 import logging
+import time
 from typing import Dict, List, Optional, Set, Tuple
 
 from app.extensions import db
@@ -167,6 +168,11 @@ class RoundService:
         db.session.commit()
         
         # ── Phase 9C: Notify Players about Round Creation ──
+        # NOTE (scale): this fan-out runs synchronously inside the request —
+        # one dispatch per player, each Telegram/Bale send being an external
+        # HTTP call. Fine for beta-scale fields (~<=50 linked players);
+        # revisit with an async strategy if round sizes grow.
+        _fanout_started = time.monotonic()
         try:
             from application.notification_service import NotificationService
             from application.notification_types import NotificationType
@@ -216,6 +222,12 @@ class RoundService:
                         )
         except Exception as e:
             logging.error(f"Failed to send round notifications: {str(e)}")
+        finally:
+            _fanout_seconds = time.monotonic() - _fanout_started
+            logging.info(
+                "Notification fan-out for tournament %s round %s took %.2fs (%d boards)",
+                tournament.id, new_round.round_number, _fanout_seconds, len(pairing_models),
+            )
         # ─────────────────────────────────────────────────────
         
         return new_round
