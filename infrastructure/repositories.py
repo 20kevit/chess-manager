@@ -374,6 +374,14 @@ class FidePlayerRepository:
         return FidePlayerModel.query.get(fide_id)
 
     @staticmethod
+    def get_by_fide_ids(fide_ids: List[str]) -> Dict[str, FidePlayerModel]:
+        """Bulk fetch mapped by fide_id. Missing IDs are simply absent."""
+        if not fide_ids:
+            return {}
+        rows = FidePlayerModel.query.filter(FidePlayerModel.fide_id.in_(fide_ids)).all()
+        return {p.fide_id: p for p in rows}
+
+    @staticmethod
     def save(player: FidePlayerModel) -> FidePlayerModel:
         db.session.add(player)
         db.session.flush()
@@ -456,6 +464,24 @@ class FideRatingRepository:
         db.session.add(rating)
         db.session.flush()
         return rating
+
+    @staticmethod
+    def get_latest_for_fide_ids(fide_ids: List[str]) -> Dict[Tuple[str, str], FideRatingModel]:
+        """Bulk variant of get_latest_rating: one query returning the latest-
+        period row per (fide_id, rating_type) for the given IDs."""
+        if not fide_ids:
+            return {}
+        rows = (
+            FideRatingModel.query.filter(FideRatingModel.fide_id.in_(fide_ids))
+            .order_by(FideRatingModel.period.asc())
+            .all()
+        )
+        # Ascending order + overwrite ⇒ the surviving value per key is the
+        # latest period. Periods are unique per key (DB unique constraint).
+        latest: Dict[Tuple[str, str], FideRatingModel] = {}
+        for row in rows:
+            latest[(row.fide_id, row.rating_type)] = row
+        return latest
 
     @staticmethod
     def get_rating_history(fide_id: str) -> Dict[str, List[Dict]]:

@@ -64,20 +64,21 @@ class VerificationService:
 
     @staticmethod
     def get_pending_requests() -> List[dict]:
-        """Admin fetches all pending requests with profile and fide data."""
+        """Admin fetches all pending requests with profile and fide data.
+        FIDE records are fetched in one bulk query, mapped by fide_id."""
         requests = PlayerVerificationRepository.get_all_pending()
+        fide_map = FidePlayerRepository.get_by_fide_ids(
+            [req.requested_fide_id for req in requests]
+        )
+
         results = []
-        
         for req in requests:
-            profile = req.player_profile
-            fide_player = FidePlayerRepository.get_by_fide_id(req.requested_fide_id)
-            
             results.append({
                 "req": req,
-                "profile": profile,
-                "fide_player": fide_player
+                "profile": req.player_profile,
+                "fide_player": fide_map.get(req.requested_fide_id)
             })
-            
+
         return results
 
     @staticmethod

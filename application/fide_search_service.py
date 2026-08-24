@@ -3,7 +3,7 @@ FIDE Search Service.
 Handles searching the local FIDE database.
 """
 from typing import List, Dict, Optional
-from infrastructure.repositories import FidePlayerRepository
+from infrastructure.repositories import FidePlayerRepository, FideRatingRepository
 
 class FideSearchService:
 
@@ -11,16 +11,19 @@ class FideSearchService:
     def search(query: str, federation: Optional[str] = None, limit: int = 20) -> List[Dict]:
         """
         Searches for players and returns formatted data including latest ratings.
+        Ratings are fetched in one bulk query (latest period per type).
         """
         players = FidePlayerRepository.search_players(query, federation, limit)
+        ratings = FideRatingRepository.get_latest_for_fide_ids(
+            [p.fide_id for p in players]
+        )
         results = []
-        
+
         for p in players:
-            # Fetch latest ratings for each type
-            std = FidePlayerRepository.get_latest_rating(p.fide_id, "standard")
-            rapid = FidePlayerRepository.get_latest_rating(p.fide_id, "rapid")
-            blitz = FidePlayerRepository.get_latest_rating(p.fide_id, "blitz")
-            
+            std = ratings.get((p.fide_id, "standard"))
+            rapid = ratings.get((p.fide_id, "rapid"))
+            blitz = ratings.get((p.fide_id, "blitz"))
+
             results.append({
                 "fide_id": p.fide_id,
                 "name": p.name,
@@ -33,5 +36,5 @@ class FideSearchService:
                 "blitz": blitz.rating if blitz else 0,
                 "period": std.period if std else "" # Period of the standard rating
             })
-            
+
         return results

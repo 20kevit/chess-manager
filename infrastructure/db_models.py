@@ -324,8 +324,9 @@ class RegistrationModel(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    tournament = db.relationship("TournamentModel", backref="registrations")
-    profile = db.relationship("PlayerProfileModel", backref="registrations")
+    # Eager loading to prevent N+1 queries on registration management pages
+    tournament = db.relationship("TournamentModel", backref="registrations", lazy="joined")
+    profile = db.relationship("PlayerProfileModel", backref="registrations", lazy="joined")
     user = db.relationship("UserModel", backref="registrations")
     promo_code = db.relationship("PromoCodeModel", backref="registrations")
     payments = db.relationship("PaymentModel", backref="registration", cascade="all, delete-orphan")
