@@ -58,7 +58,9 @@ class PlayerService:
         k_factor = int(form_data.get("k_factor", 20) or 20)
 
         # ── Phase 8A: Auto-fetch FIDE rating if not provided manually ──
-        if rating == 0 and profile.fide_id and profile.fide_verification_status == "verified":
+        # Any usable FIDE ID seeds the snapshot from the official rating list;
+        # the separate identity *verification* workflow is unaffected.
+        if rating == 0 and profile.fide_id:
             rating_type = getattr(tournament, "time_control_type", "standard")
             if rating_type not in ["standard", "rapid", "blitz"]:
                 rating_type = "standard"

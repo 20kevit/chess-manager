@@ -28,9 +28,15 @@ class PaymentService:
         # بررسی تراکنش قبلی در حال انتظار برای جلوگیری از رکوردهای اضافی
         existing_payment = PaymentRepository.get_pending_for_registration(registration.id)
         if existing_payment and existing_payment.authority:
-            # اگر قبلاً authority گرفته اما کاربر برگشته، لینک همان را برمی‌گردانیم
-            payment_url = f"{PaymentService.gateway.base_pay_url}/{existing_payment.authority}"
-            return payment_url
+            if existing_payment.amount != registration.final_price:
+                # Price changed since this authority was issued; it can never
+                # verify successfully. Invalidate it and request a fresh one.
+                existing_payment.status = "cancelled"
+                db.session.commit()
+            else:
+                # اگر قبلاً authority گرفته اما کاربر برگشته، لینک همان را برمی‌گردانیم
+                payment_url = f"{PaymentService.gateway.base_pay_url}/{existing_payment.authority}"
+                return payment_url
 
         # درخواست از درگاه
         description = f"ثبت‌نام در مسابقات {registration.tournament.name}"
@@ -62,7 +68,9 @@ class PaymentService:
     @staticmethod
     def process_callback(authority: str, status: str) -> RegistrationModel:
         """مدیریت بازگشت از درگاه (کال‌بک)"""
-        payment = PaymentRepository.get_by_authority(authority)
+        # Row lock serializes concurrent/duplicate callbacks so a terminal
+        # state can never be overwritten by a racing second callback.
+        payment = PaymentRepository.get_by_authority_locked(authority)
         if not payment:
             raise ValueError("تراکنش نامعتبر است.")
             
@@ -125,7 +133,10 @@ class PaymentService:
             return registration
             
         else:
-            # Verify ناموفق
+            # Verify ناموفق — but never downgrade a payment that turned
+            # successful meanwhile (e.g. code 101 handled by the other worker).
+            if payment.status == "successful":
+                return registration
             payment.status = "failed"
             payment.gateway_metadata = json.dumps({"error": verify_result.error_message})
             registration.status = "pending" # بازگشت برای تلاش مجدد

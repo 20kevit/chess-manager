@@ -351,6 +351,12 @@ class PaymentRepository:
         return PaymentModel.query.filter_by(authority=authority).first()
 
     @staticmethod
+    def get_by_authority_locked(authority: str) -> Optional[PaymentModel]:
+        """Row-locked fetch for callback processing so concurrent callbacks
+        serialize (no-op lock on SQLite; FOR UPDATE on MySQL)."""
+        return PaymentModel.query.filter_by(authority=authority).with_for_update().first()
+
+    @staticmethod
     def get_pending_for_registration(registration_id: int) -> Optional[PaymentModel]:
         return PaymentModel.query.filter_by(
             registration_id=registration_id, status="pending"
