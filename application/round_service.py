@@ -3,6 +3,7 @@ Round and pairing use-cases.
 FIDE Dutch Swiss compliant with Incremental Updates and Manual Adjustments.
 """
 from datetime import datetime
+import logging
 from typing import Dict, List, Optional, Set, Tuple
 
 from app.extensions import db
@@ -49,9 +50,12 @@ class RoundService:
         if len(active_participants) < 2:
             raise ValueError("Not enough active players to create a round.")
 
-        bye_requests = ByeRequestModel.query.filter_by(
+        all_round_bye_requests = ByeRequestModel.query.filter_by(
             tournament_id=tournament.id, for_round=next_number
         ).all()
+        # Stale requests of withdrawn players must not mint phantom bye boards.
+        active_ids = {p.id for p in active_participants}
+        bye_requests = [br for br in all_round_bye_requests if br.participant_id in active_ids]
         bye_participant_ids = {br.participant_id: br.bye_type for br in bye_requests}
 
         manual_pairings = ManualPairingRepository.get_for_round(tournament.id, next_number)
@@ -78,6 +82,31 @@ class RoundService:
             locked_pairs=locked_pairs,
         )
         result = engine.generate()
+
+        # ── FIDE legality safety-net: validate without altering anything. ──
+        # Errors block generation (nothing has been persisted yet); warnings
+        # are logged for review. Valid pairings pass through untouched.
+        _log = logging.getLogger(__name__)
+        try:
+            from domain.pairing import validate_round
+            report = validate_round(result, pairing_players)
+            for finding in report.findings:
+                if finding.level == "ERROR":
+                    _log.error(
+                        "FIDE pairing violation, tournament %s round %s: %s",
+                        tournament.id, next_number, finding,
+                    )
+                elif finding.level == "WARNING":
+                    _log.warning(
+                        "FIDE pairing warning, tournament %s round %s: %s",
+                        tournament.id, next_number, finding,
+                    )
+            if report.has_errors:
+                raise ValueError("قرعه‌کشی تولید شده با قوانین فیده مطابقت ندارد.")
+        except ValueError:
+            raise
+        except Exception:
+            _log.exception("Pairing validation crashed (non-blocking) for tournament %s.", tournament.id)
 
         new_round = RoundModel(tournament_id=tournament.id, round_number=next_number, status="ongoing")
         db.session.add(new_round)
@@ -109,13 +138,20 @@ class RoundService:
 
         PairingRepository.save_all(pairing_models)
         
-        for br in bye_requests: db.session.delete(br)
+        # Consume every request for this round, including stale ones from
+        # players who withdrew after requesting.
+        for br in all_round_bye_requests:
+            db.session.delete(br)
         ManualPairingRepository.delete_all_for_round(tournament.id, next_number)
 
         tournament.current_round = next_number
         tournament.status = "ongoing"
 
         if next_number == 1:
+            # Round-1 convention: alternate due colours across auto-paired
+            # boards (manual locks keep their explicit colours). Safe ONLY at
+            # round 1 — there is no colour history yet and float tags are all
+            # empty; generalizing this past round 1 would desync float tags.
             auto_pair_index = 0
             for pm in pairing_models:
                 if not pm.black_participant_id:
@@ -134,7 +170,6 @@ class RoundService:
         try:
             from application.notification_service import NotificationService
             from application.notification_types import NotificationType
-            import logging
             
             for pm in pairing_models:
                 white_p = pm.white_participant

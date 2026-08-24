@@ -50,6 +50,11 @@ def round_new(public_id):
     except ValueError as e:
         flash(str(e), "error")
     except Exception as e:
+        import logging
+        logging.exception(
+            "Pairing failed unexpectedly for tournament %s (round %s)",
+            public_id, tournament.current_round + 1,
+        )
         flash("An unexpected error occurred during pairing.", "error")
         
     return redirect(url_for("tournament.view", public_id=public_id))

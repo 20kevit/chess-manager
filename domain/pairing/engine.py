@@ -23,6 +23,7 @@ from domain.pairing.bracket import build_brackets, get_bracket_summary
 from domain.pairing.bye import (
     create_bye_card,
     is_bye_needed,
+    _ordered_bye_candidates,
 )
 from domain.pairing.pairer import pair_all_brackets
 from domain.pairing.color import is_legal_orientation
@@ -299,20 +300,13 @@ class SwissEngine:
         self,
         players: List[EnginePlayer],
     ) -> List[EnginePlayer]:
-        ordered = sorted(
-            players,
-            key=lambda p: (
-                p.points,
-                -p.pno,
-                p.id,
-            ),
-        )
+        # Ordering is delegated to the canonical FIDE implementation in
+        # bye.py so the engine and the standalone module cannot drift.
+        ordered = _ordered_bye_candidates(players)
+        # Prefer players who have NOT yet received a pairing-allocated bye;
+        # only when everyone has one does the raw order apply.
         fresh = [p for p in ordered if not p.data.received_bye]
-        # فقط در صورتی که هیچ کس fresh نیست، ordered برگردانده شود 
-        # که در این حالت هم Validator خطای A2 را به درستی پرتاب می‌کند
-        if fresh:
-            return fresh
-        return ordered
+        return fresh if fresh else ordered
 
     # ═════════════════════════════════════════════════════════
     #  Input Normalization
