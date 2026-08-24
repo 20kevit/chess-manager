@@ -113,4 +113,4 @@ English for code/comments/commit messages; user-facing strings and flash message
 
 ## Deployment
 
-`passenger_wsgi.py` targets Phusion Passenger (cPanel shared hosting): adds project root to `sys.path` and exposes `run.app` as `application`. No Dockerfile/Procfile/nginx config in repo. `telegram_debug.log` / `bale_debug.log` are written to CWD by the messenger services lazily on first use (handler init never happens at import time).
+`passenger_wsgi.py` targets Phusion Passenger (cPanel shared hosting): adds project root to `sys.path` and exposes `run.app` as `application`. See **`docs/DEPLOYMENT.md`** for the full clean-install runbook (Python 3.12, empty-MySQL baseline migration `.htaccess` template via `.htaccess.example`, env vars, webhooks, Zarinpal production checks). Schema is maintained by a single squashed baseline migration — regenerate only via autogenerate on an empty DB. No Dockerfile/Procfile/nginx config in repo. Runtime-writable paths (receipts, FIDE downloads, messenger logs) anchor to the Flask instance path — never CWD. `telegram_debug.log` / `bale_debug.log` are written lazily on first use (handler init never happens at import time).

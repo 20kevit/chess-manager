@@ -13,12 +13,21 @@ from infrastructure.db_models import UserModel
 logger = logging.getLogger("TelegramDebug")
 logger.setLevel(logging.INFO)
 
+def _log_file_path() -> str:
+    """Anchor the debug log to the app instance path; CWD only as a
+    last-resort fallback when no application context exists."""
+    try:
+        from flask import current_app
+        return os.path.join(current_app.instance_path, "telegram_debug.log")
+    except RuntimeError:
+        return os.path.join(os.getcwd(), "telegram_debug.log")
+
+
 def _ensure_log_handler():
     if logger.handlers:
         return
     try:
-        log_file = os.path.join(os.getcwd(), 'telegram_debug.log')
-        handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+        handler = logging.FileHandler(_log_file_path(), mode='a', encoding='utf-8')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logger.addHandler(handler)
     except OSError:

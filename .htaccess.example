@@ -1,0 +1,35 @@
+# ============================================================================
+# cPanel / Phusion Passenger — Apache configuration TEMPLATE
+#
+# Copy to the application's document root on the server as `.htaccess`
+# (that filename is intentionally gitignored) and replace EVERY placeholder:
+#
+#   /home/CPANELUSER            -> your cPanel account directory
+#   swiss_app_dev               -> the uploaded project folder name
+#   python312_app_venv          -> the virtualenv created via
+#                                  cPanel "Setup Python App" (or manually)
+#
+# This file must never contain real usernames, domains, tokens or secrets.
+# ============================================================================
+
+# ── 1. Force HTTPS (required: session cookies are Secure in production) ──
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ── 2. Serve /static directly through Apache (bypasses Python) ───────────
+#    NOTE: receipts are NOT under static/ anymore; nothing sensitive here.
+Alias /static "/home/CPANELUSER/swiss_app_dev/static"
+<Directory "/home/CPANELUSER/swiss_app_dev/static">
+    Require all granted
+</Directory>
+
+# ── 3. Passenger wiring ──────────────────────────────────────────────────
+PassengerAppRoot "/home/CPANELUSER/swiss_app_dev"
+PassengerStartupFile passenger_wsgi.py
+PassengerPython "/home/CPANELUSER/python312_app_venv/bin/python3"
+
+# Restart behavior: touch tmp/restart.txt inside the project to reload code.
+<Directory "/home/CPANELUSER/swiss_app_dev">
+    Require all granted
+</Directory>

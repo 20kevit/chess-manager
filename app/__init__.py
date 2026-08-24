@@ -33,6 +33,12 @@ def create_app(config_class=None) -> Flask:
         flask_app.instance_path, "uploads", "receipts"
     )
 
+    # FIDE downloads/retention live under the instance path too (Category K):
+    # never CWD-dependent.
+    flask_app.config["FIDE_DATA_DIR"] = os.path.join(
+        flask_app.instance_path, "data", "fide"
+    )
+
     db.init_app(flask_app)
 
     from app.extensions import migrate

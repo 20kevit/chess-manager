@@ -53,7 +53,8 @@ class Config:
     BALE_WEBHOOK_SECRET = os.environ.get('BALE_WEBHOOK_SECRET', '')
     
     # ── Phase 7: FIDE Data Integration ──
-    FIDE_DATA_DIR = os.path.join(os.getcwd(), 'data', 'fide')
+    # FIDE_DATA_DIR is resolved in create_app() from app.instance_path so it
+    # never depends on the process CWD. Set it here to override that location.
     FIDE_RAW_RETENTION_DAYS = 90
     FIDE_ALLOWED_FEDERATIONS = ["IRI"]  # Set to None or [] to import all federations
     FIDE_XML_URL = "http://ratings.fide.com/download/players_list_xml.zip"
