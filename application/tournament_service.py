@@ -17,6 +17,7 @@ from domain.rating.calculator import calculate_tournament_ratings
 from domain.rating.models import RatingPlayerData, RatingGameRecord
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
+from app.extensions import db
 
 class TournamentService:
 
