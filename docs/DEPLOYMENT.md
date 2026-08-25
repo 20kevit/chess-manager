@@ -136,10 +136,94 @@ updates with 403s visible only in `<instance>/telegram_debug.log`.
 4. Test cancel path once (`Status=NOK`) → payment `cancelled`, registration back
    to `pending`.
 
+## 14. Database schema: the three paths (Phase-8 checkpoint)
+
+The schema is maintained by ONE squashed baseline revision
+(`bb0160eefd6b`, `down_revision = None`, 20 tables). P0-A…P0-G added four
+nullable columns to that same baseline in place:
+
+| Table | Added columns |
+|---|---|
+| `player_profiles` | `phone VARCHAR(20) NULL`, `photo_path VARCHAR(255) NULL`, `id_document_path VARCHAR(255) NULL` |
+| `tournaments` | `registration_requirements TEXT NULL` |
+
+Because the revision ID was preserved, Alembic cannot distinguish a
+pre-P0 database from a post-P0 one — both are stamped
+`bb0160eefd6b`. Pick exactly one of the three paths below.
+
+### Path A — Fresh installation (empty MySQL database)
+1. Create empty DB + user; fill `.env` (`DB_*`, `SECRET_KEY`,
+   `FLASK_ENV=production`).
+2. `flask --app run.py db upgrade` → creates all 20 tables at current shape.
+3. Verify: `flask --app run.py db check` reports no pending operations;
+   log in and create a tournament.
+
+### Path B — EXISTING production database (created before the P0 release)
+`flask db upgrade` is a **no-op** here (already stamped at head). Apply the
+additive ALTERs once via cPanel phpMyAdmin or the MySQL CLI — they are
+NULLable ADD COLUMN statements only: no drop, no type change, no data loss,
+and safe to re-run after a guarded check:
+
+```sql
+-- Guarded idempotent pattern (repeat per column):
+SET @col_exists := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'player_profiles' AND COLUMN_NAME = 'phone');
+SET @ddl := IF(@col_exists = 0,
+  'ALTER TABLE player_profiles ADD COLUMN phone VARCHAR(20) NULL',
+  'SELECT ''player_profiles.phone already present''');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'player_profiles' AND COLUMN_NAME = 'photo_path');
+SET @ddl := IF(@col_exists = 0,
+  'ALTER TABLE player_profiles ADD COLUMN photo_path VARCHAR(255) NULL',
+  'SELECT ''player_profiles.photo_path already present''');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'player_profiles' AND COLUMN_NAME = 'id_document_path');
+SET @ddl := IF(@col_exists = 0,
+  'ALTER TABLE player_profiles ADD COLUMN id_document_path VARCHAR(255) NULL',
+  'SELECT ''player_profiles.id_document_path already present''');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'tournaments' AND COLUMN_NAME = 'registration_requirements');
+SET @ddl := IF(@col_exists = 0,
+  'ALTER TABLE tournaments ADD COLUMN registration_requirements TEXT NULL',
+  'SELECT ''tournaments.registration_requirements already present''');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+```
+
+Post-checks:
+1. `flask --app run.py db check` → no pending operations.
+2. Spot-check data survived (row counts on `users`, `tournaments`,
+   `registrations`, `payments` before vs after).
+3. Restart Passenger (`tmp/restart.txt`), then smoke-test §12.
+4. Do NOT run `reset_db.py` on production — it drops everything.
+
+### Path C — Local development reset (DEV ONLY)
+`python reset_db.py` performs `drop_all()` + `create_all()` from the models
+directly (no migration involved). Local SQLite/throwaway environments only.
+
+> Rule of thumb for future schema work: additive nullable columns may keep
+> being folded into the baseline WITH their ALTER statements added to this
+> section. Anything destructive requires a NEW alembic revision instead.
+
 ## Writable directories (Passenger user)
 | Path | Purpose |
 |---|---|
 | `instance/uploads/receipts/` | bank receipts (private, auto-created) |
+| `instance/uploads/profile_photos/` | player photos (private, auto-created) |
+| `instance/uploads/id_documents/` | identity documents (private, auto-created) |
 | `instance/data/fide/<YYYY-MM>/` | FIDE XML downloads (auto-created) |
 | `instance/*.log` | telegram/bale debug logs (lazy, optional) |
 | `tmp/` | Passenger restart signal |
