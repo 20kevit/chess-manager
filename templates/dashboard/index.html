@@ -451,15 +451,14 @@
                 <label>فدراسیون:</label>
                 <input type="text" name="federation" class="form-control" value="{{ profile.federation }}">
             </div>
+            <!-- P0-F: fide_title is not editable by players; it is synced
+                 from the official FIDE verification workflow. -->
+            {% if profile.fide_title %}
             <div class="form-group">
-                <label>عنوان (Title):</label>
-                <select name="fide_title" class="form-control">
-                    <option value="">هیچ</option>
-                    {% for t in ['GM', 'IM', 'FM', 'CM', 'WGM', 'WIM', 'WFM', 'WCM'] %}
-                        <option value="{{ t }}" {% if profile.fide_title == t %}selected{% endif %}>{{ t }}</option>
-                    {% endfor %}
-                </select>
+                <label>عنوان رسمی (FIDE):</label>
+                <input type="text" class="form-control" value="{{ profile.fide_title }}" disabled dir="ltr">
             </div>
+            {% endif %}
             <div class="form-group">
                 <label>تاریخ تولد:</label>
                 <input type="date" name="birth_date" class="form-control" value="{{ profile.birth_date.strftime('%Y-%m-%d') if profile.birth_date else '' }}">

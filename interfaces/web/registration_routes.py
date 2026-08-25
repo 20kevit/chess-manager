@@ -227,7 +227,10 @@ def calculate_price_api(public_id):
         return jsonify({"error": "Tournament not found"}), 404
 
     data = request.get_json()
-    fide_title = data.get("fide_title", "")
+    # P0-F: the FIDE title is taken from the player's profile, never from
+    # client input, so a posted title can never unlock a title discount.
+    profile = current_user.profile
+    fide_title = profile.fide_title if profile else ""
     gender = data.get("gender", "M")
     birth_date_str = data.get("birth_date", "")
     

@@ -196,7 +196,7 @@ class RegistrationService:
                     birth_date=birth_date,
                     federation=form_data.get("federation", "IRI").strip() or "IRI",
                     fide_id=fide_id,
-                    fide_title=form_data.get("fide_title", "").strip(),
+                    # P0-F: no fide_title from player input.
                     phone=phone,
                 )
                 db.session.add(profile)

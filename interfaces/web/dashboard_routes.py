@@ -257,7 +257,9 @@ def update_profile():
     profile.first_name = request.form.get("first_name", "").strip()
     profile.last_name = request.form.get("last_name", "").strip()
     profile.federation = request.form.get("federation", "IRI").strip() or "IRI"
-    profile.fide_title = request.form.get("fide_title", "").strip()
+    # P0-F: fide_title is deliberately NOT accepted here. The official
+    # title is owned by the FIDE verification workflow (sync on approval);
+    # players must never be able to self-declare or modify it.
     
     # New Fields: National ID and Bank Info
     profile.national_id = request.form.get("national_id", "").strip()

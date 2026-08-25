@@ -58,16 +58,11 @@
                 <label>فدراسیون</label>
                 <input type="text" name="federation" class="form-control" value="IRI">
             </div>
-            <div class="form-group col-md-6">
-                <label>عنوان فیده</label>
-                <select name="fide_title" class="form-control">
-                    <option value="">ندارم</option>
-                    {% for t in ['GM', 'IM', 'FM', 'CM', 'WGM', 'WIM', 'WFM', 'WCM'] %}
-                        <option value="{{ t }}">{{ t }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <div class="form-group col-md-6"></div>
         </div>
+        <p style="font-size: 0.8rem; color: #6b7280; margin-top: -10px;">
+            عنوان رسمی فیده (GM/IM/…) تنها پس از تأیید هویت فیده توسط مدیر سیستم به پروفایل شما اضافه می‌شود.
+        </p>
 
         <hr style="margin: 20px 0;">
         <h4>اطلاعات بانکی (برای واریز جوایز)</h4>

@@ -137,7 +137,8 @@ class AuthService:
             birth_date=birth_date,
             federation=form_data.get("federation", "IRI").strip() or "IRI",
             fide_id=form_data.get("fide_id", "").strip(),
-            fide_title=form_data.get("fide_title", "").strip(),
+            # P0-F: no fide_title from player input; official titles come
+            # exclusively from verification approval.
             national_id=form_data.get("national_id", "").strip(),
             bank_card_number=form_data.get("bank_card_number", "").strip(),
             bank_account_name=form_data.get("bank_account_name", "").strip(),
