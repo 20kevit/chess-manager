@@ -194,6 +194,20 @@ def update_profile():
         return redirect(url_for("dashboard.index"))
         
     profile = current_user.profile
+
+    # Validate phone before mutating anything so an invalid value aborts
+    # the whole update without partial changes.
+    from domain.registration import normalize_phone, INVALID_PHONE_MESSAGE
+    phone_raw = request.form.get("phone", "").strip()
+    if phone_raw:
+        normalized_phone = normalize_phone(phone_raw)
+        if not normalized_phone:
+            flash(INVALID_PHONE_MESSAGE, "error")
+            return redirect(url_for("dashboard.index"))
+        profile.phone = normalized_phone
+    else:
+        profile.phone = None
+
     profile.first_name = request.form.get("first_name", "").strip()
     profile.last_name = request.form.get("last_name", "").strip()
     profile.federation = request.form.get("federation", "IRI").strip() or "IRI"

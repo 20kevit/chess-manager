@@ -43,6 +43,7 @@ def public_profile(identifier):
     profile_data['profile'].national_id = None
     profile_data['profile'].bank_card_number = None
     profile_data['profile'].bank_account_name = None
+    profile_data['profile'].phone = None
 
     return render_template(
         "player/public_profile.html",

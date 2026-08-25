@@ -324,6 +324,10 @@
                     <span class="profile-value">{{ profile.national_id or 'وارد نشده' }}</span>
                 </div>
                 <div class="profile-row">
+                    <span class="profile-label">موبایل:</span>
+                    <span class="profile-value" dir="ltr">{{ profile.phone or 'وارد نشده' }}</span>
+                </div>
+                <div class="profile-row">
                     <span class="profile-label">شماره کارت بانکی:</span>
                     <span class="profile-value">{{ profile.bank_card_number or 'وارد نشده' }}</span>
                 </div>
@@ -408,6 +412,10 @@
             <div class="form-group">
                 <label>کد ملی:</label>
                 <input type="text" name="national_id" class="form-control" value="{{ profile.national_id or '' }}" maxlength="10">
+            </div>
+            <div class="form-group">
+                <label>موبایل (۰۹xxxxxxxxx):</label>
+                <input type="tel" name="phone" class="form-control" dir="ltr" value="{{ profile.phone or '' }}" maxlength="13" placeholder="09xxxxxxxxx">
             </div>
             <div class="form-group">
                 <label>شماره کارت بانکی (۱۶ رقمی):</label>

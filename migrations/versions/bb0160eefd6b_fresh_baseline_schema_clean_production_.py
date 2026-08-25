@@ -151,6 +151,7 @@ def upgrade():
     sa.Column('national_id', sa.String(length=10), nullable=True),
     sa.Column('bank_card_number', sa.String(length=20), nullable=True),
     sa.Column('bank_account_name', sa.String(length=100), nullable=True),
+    sa.Column('phone', sa.String(length=20), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
     mysql_charset='utf8mb4',

@@ -119,6 +119,16 @@ class AuthService:
             try: birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
             except ValueError: pass
 
+        # Canonical phone validation/normalization (single source of truth).
+        from domain.registration import normalize_phone, INVALID_PHONE_MESSAGE
+        phone_raw = form_data.get("phone", "").strip()
+        if phone_raw:
+            phone = normalize_phone(phone_raw)
+            if not phone:
+                raise ValueError(INVALID_PHONE_MESSAGE)
+        else:
+            phone = None
+
         new_profile = PlayerProfileModel(
             user_id=user_id,
             first_name=first_name,
@@ -131,6 +141,7 @@ class AuthService:
             national_id=form_data.get("national_id", "").strip(),
             bank_card_number=form_data.get("bank_card_number", "").strip(),
             bank_account_name=form_data.get("bank_account_name", "").strip(),
+            phone=phone,
         )
         db.session.add(new_profile)
         db.session.commit()

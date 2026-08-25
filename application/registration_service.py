@@ -86,6 +86,16 @@ class RegistrationService:
                     try: birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
                     except ValueError: pass
 
+                # Canonical phone validation/normalization.
+                from domain.registration import normalize_phone, INVALID_PHONE_MESSAGE
+                phone_raw = form_data.get("phone", "").strip()
+                if phone_raw:
+                    phone = normalize_phone(phone_raw)
+                    if not phone:
+                        raise ValueError(INVALID_PHONE_MESSAGE)
+                else:
+                    phone = None
+
                 profile = PlayerProfileModel(
                     user_id=user.id if user else None,
                     first_name=first_name, last_name=last_name,
@@ -94,6 +104,7 @@ class RegistrationService:
                     federation=form_data.get("federation", "IRI").strip() or "IRI",
                     fide_id=fide_id,
                     fide_title=form_data.get("fide_title", "").strip(),
+                    phone=phone,
                 )
                 db.session.add(profile)
                 db.session.flush()

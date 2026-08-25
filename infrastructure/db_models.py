@@ -87,6 +87,9 @@ class PlayerProfileModel(db.Model):
     national_id = db.Column(db.String(10), nullable=True)
     bank_card_number = db.Column(db.String(20), nullable=True)
     bank_account_name = db.Column(db.String(100), nullable=True)
+    # Canonical Iranian mobile number, normalized to 09xxxxxxxxx by
+    # domain.registration.normalize_phone.
+    phone = db.Column(db.String(20), nullable=True)
 
     @property
     def full_name(self):
