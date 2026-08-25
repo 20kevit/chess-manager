@@ -37,6 +37,71 @@ def test_messenger_logs_anchor_to_instance_inside_app_context(app):
         )
 
 
+# ── P0-G: no CWD fallback for messenger debug logs ──
+
+def _with_cleared_handlers(logger):
+    """Snapshot and clear a module-level logger; returns restore fn."""
+    saved = list(logger.handlers)
+    logger.handlers.clear()
+
+    def restore():
+        logger.handlers[:] = saved
+    return restore
+
+
+def test_log_path_is_none_without_app_context():
+    """Outside any application context there must be NO path candidate:
+    the old CWD fallback leaked stray root-level telegram/bale logs."""
+    import threading
+    from application.telegram_service import _log_file_path as tg_path
+    results = {}
+
+    # A bare thread shares no Flask context stack with the test.
+    worker = threading.Thread(target=lambda: results.update(path=tg_path()))
+    worker.start(); worker.join()
+    assert results["path"] is None
+
+
+def test_ensure_handler_outside_context_never_writes_to_cwd(app):
+    import threading
+    import logging
+    from application import bale_service
+
+    cwd_before = set(os.listdir(os.getcwd()))
+    restore = _with_cleared_handlers(bale_service.logger)
+    try:
+        worker = threading.Thread(
+            target=bale_service._ensure_log_handler)
+        worker.start(); worker.join()
+
+        attached = [h for h in bale_service.logger.handlers]
+        assert len(attached) == 1
+        assert isinstance(attached[0], logging.NullHandler)
+        new_entries = set(os.listdir(os.getcwd())) - cwd_before
+        assert not any(name.endswith(".log") for name in new_entries)
+        assert "bale_debug.log" not in new_entries
+    finally:
+        restore()
+
+
+def test_ensure_handler_inside_context_targets_instance_dir(app):
+    import logging
+    from application import telegram_service
+
+    restore = _with_cleared_handlers(telegram_service.logger)
+    try:
+        with app.app_context():
+            telegram_service._ensure_log_handler()
+            handlers = list(telegram_service.logger.handlers)
+            assert len(handlers) == 1
+            assert isinstance(handlers[0], logging.FileHandler)
+            base = os.path.basename(handlers[0].baseFilename)
+            assert base == "telegram_debug.log"
+            assert handlers[0].baseFilename.startswith(app.instance_path)
+    finally:
+        restore()
+
+
 def test_htaccess_example_is_safe_template():
     path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),

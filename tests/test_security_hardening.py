@@ -153,6 +153,34 @@ class TestWebhookSecretValidation:
         )
         assert resp.status_code == 200
 
+    # ── P0-G: malformed/non-ASCII headers must be a clean 403, never 500 ──
+
+    def test_non_ascii_telegram_secret_header_rejected_cleanly(self, app):
+        app.config["TELEGRAM_WEBHOOK_SECRET"] = "topsecret"
+        client = app.test_client()
+        resp = self._post_update(client, secret="رمز-فارسی")
+        assert resp.status_code == 403          # previously TypeError -> 500
+
+    def test_whitespace_only_secret_header_rejected(self, app):
+        app.config["TELEGRAM_WEBHOOK_SECRET"] = "topsecret"
+        client = app.test_client()
+        assert self._post_update(client, secret="   ").status_code == 403
+
+    def test_huge_garbage_secret_header_rejected(self, app):
+        app.config["TELEGRAM_WEBHOOK_SECRET"] = "topsecret"
+        client = app.test_client()
+        assert self._post_update(client, secret="A" * 8192).status_code == 403
+
+    def test_non_ascii_bale_secret_header_rejected_cleanly(self, app):
+        app.config["BALE_WEBHOOK_SECRET"] = "balesecret"
+        client = app.test_client()
+        resp = client.post(
+            "/api/bale/webhook",
+            json={"message": {"text": "x", "chat": {"id": 1}}},
+            headers={"X-Bale-Bot-Api-Secret-Token": "سِکریت"},
+        )
+        assert resp.status_code == 403
+
 
 class TestSessionCookieFlags:
 

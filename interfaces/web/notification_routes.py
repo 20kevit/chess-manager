@@ -18,12 +18,21 @@ def _webhook_secret_valid(config_key, header_name):
     Validates the messenger webhook secret header against the configured
     shared secret. If no secret is configured for the channel, the check is
     skipped (returns True) to stay backwards compatible.
+
+    P0-G hardening: comparison runs on UTF-8 bytes so malformed or
+    non-ASCII header values are rejected with a clean 403 instead of
+    raising TypeError (hmac.compare_digest is ASCII-only for str).
     """
     expected = current_app.config.get(config_key, "")
     if not expected:
         return True
     provided = request.headers.get(header_name, "")
-    return hmac.compare_digest(provided, expected)
+    try:
+        return hmac.compare_digest(
+            provided.encode("utf-8"), expected.encode("utf-8")
+        )
+    except (UnicodeError, TypeError):
+        return False
 
 @notification_bp.route("/notifications")
 @login_required

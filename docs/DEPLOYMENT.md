@@ -83,16 +83,42 @@ mkdir -p ~/swiss_app_dev/tmp && touch ~/swiss_app_dev/tmp/restart.txt
 ```
 (or use the cPanel "Restart" button).
 
-## 11. Configure Telegram/Bale webhooks
-After first successful page load (HTTPS):
+## 11. Configure Telegram/Bale webhooks (canonical procedure)
+
+This is the ONLY webhook setup procedure; `docs/NOTIFICATIONS.md` links here.
+Whenever `TELEGRAM_WEBHOOK_SECRET` / `BALE_WEBHOOK_SECRET` are set in `.env`,
+the application rejects (HTTP 403) every incoming update whose
+`X-*-Bot-Api-Secret-Token` header does not match — so registration below is
+MANDATORY whenever the secrets exist.
+
 ```bash
+# Telegram — secret_token is required:
 curl -F "url=https://YOURDOMAIN/api/telegram/webhook" \
      -F "secret_token=<TELEGRAM_WEBHOOK_SECRET>" \
      https://api.telegram.org/bot<TOKEN>/setWebhook
 
+# Bale — same shape against the Bale API:
 curl -F "url=https://YOURDOMAIN/api/bale/webhook" \
-     https://tapi.bale.ai/bot<TOKEN>/setWebhook   # verify Bale secret_token support
+     -F "secret_token=<BALE_WEBHOOK_SECRET>" \
+     https://tapi.bale.ai/bot<TOKEN>/setWebhook
 ```
+
+Both calls must answer `{"ok":true,"result":true,...}`. Then verify:
+
+```bash
+curl https://api.telegram.org/bot<TOKEN>/getWebhookInfo
+curl https://tapi.bale.ai/bot<TOKEN>/getWebhookInfo
+```
+
+`last_error_message` mentioning a bad/missing secret header means the
+registered webhook and the `.env` secret do not match — re-run setWebhook
+with the exact value from `.env`.
+
+Contingency: if a messenger platform rejects the `secret_token` parameter,
+remove that platform's `*_WEBHOOK_SECRET` from `.env` (endpoint then accepts
+unsigned updates) and restart. Never leave a secret configured while the
+webhook was registered without it — that combination silently drops all
+updates with 403s visible only in `<instance>/telegram_debug.log`.
 
 ## 12. Smoke tests
 - `/` loads 200; `/login`, `/register` render over HTTPS

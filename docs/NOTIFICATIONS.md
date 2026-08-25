@@ -28,9 +28,12 @@
 - `BALE_BOT_TOKEN`: توکن ربات بله
 
 ## راه‌اندازی Webhook (برای Production)
-پس از استقرار روی سرور با SSL معتبر، باید Webhook ها را ثبت کنید:
-```bash
-curl -F "url=https://yourdomain.com/api/telegram/webhook" https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook
-curl -F "url=https://yourdomain.com/api/bale/webhook" https://tapi.bale.ai/bot<BALE_BOT_TOKEN>/setWebhook
-```
-```
+رویه رسمی و یکتای ثبت Webhook — شامل `secret_token` برای هر دو ربات،
+اعتبارسنجی پاسخ و بررسی `getWebhookInfo` — در سند استقرار آمده است:
+
+**`docs/DEPLOYMENT.md` → بخش ۱۱**
+
+نکته حیاتی: اگر متغیرهای `TELEGRAM_WEBHOOK_SECRET` / `BALE_WEBHOOK_SECRET`
+در `.env` تنظیم شده باشند، ثبت Webhook **بدون** همان مقدار در پارامتر
+`secret_token` باعث می‌شود همه پیام‌های ورودی با خطای ۴۰۳ رد شوند
+(علت اصلی «اتصال نشدن» ربات).

@@ -9,25 +9,32 @@ from infrastructure.db_models import UserModel
 
 # ── Dedicated Debug Logger ──
 # Handler is attached lazily on first use so that importing this module never
-# writes to the filesystem (CWD may be read-only or unexpected in production).
+# writes to the filesystem. P0-G: the log is strictly instance-anchored;
+# when no application context exists we refuse to write rather than leak a
+# stray file into the process CWD (the production bug this replaces).
 logger = logging.getLogger("BaleDebug")
 logger.setLevel(logging.INFO)
 
-def _log_file_path() -> str:
-    """Anchor the debug log to the app instance path; CWD only as a
-    last-resort fallback when no application context exists."""
+def _log_file_path():
+    """Instance-anchored debug log path; None when no application context
+    exists (no safe destination -> no file writing)."""
     try:
         from flask import current_app
         return os.path.join(current_app.instance_path, "bale_debug.log")
     except RuntimeError:
-        return os.path.join(os.getcwd(), "bale_debug.log")
+        return None
 
 
 def _ensure_log_handler():
     if logger.handlers:
         return
+    path = _log_file_path()
+    if not path:
+        logger.addHandler(logging.NullHandler())
+        return
     try:
-        handler = logging.FileHandler(_log_file_path(), mode='a', encoding='utf-8')
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        handler = logging.FileHandler(path, mode='a', encoding='utf-8')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logger.addHandler(handler)
     except OSError:

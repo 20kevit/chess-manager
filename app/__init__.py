@@ -47,6 +47,21 @@ def create_app(config_class=None) -> Flask:
         flask_app.instance_path, "data", "fide"
     )
 
+    # P0-G: a configured webhook secret is enforced on every incoming
+    # update. Remind operators at boot, because the #1 production failure
+    # mode is registering the webhook WITHOUT the matching secret_token.
+    for _secret_key, _bot in (
+        ("TELEGRAM_WEBHOOK_SECRET", "Telegram"),
+        ("BALE_WEBHOOK_SECRET", "Bale"),
+    ):
+        if flask_app.config.get(_secret_key):
+            flask_app.logger.warning(
+                "%s webhook secret is configured; the webhook MUST be "
+                "registered with the matching secret_token (see "
+                "docs/DEPLOYMENT.md section 11) or every update is "
+                "rejected with 403.", _bot,
+            )
+
     db.init_app(flask_app)
 
     from app.extensions import migrate
