@@ -9,7 +9,9 @@ from infrastructure.db_models import (
 from datetime import datetime
 import os
 from app.extensions import db
-from interfaces.web.admin_auth import require_admin
+from interfaces.web.admin_auth import (
+    require_admin, require_tournament_manager, require_result_editor,
+)
 from application.verification_service import VerificationService
 from application.fide_search_service import FideSearchService
 from infrastructure.repositories import PlayerVerificationRepository
@@ -134,11 +136,16 @@ def manage_tournament(public_id):
         return redirect(url_for("dashboard.index"))
     
     staff_members = TournamentStaffModel.query.filter_by(tournament_id=tournament.id).all()
-    
+
     return render_template(
-        "dashboard/manage_tournament.html", 
+        "dashboard/manage_tournament.html",
         tournament=tournament,
-        staff_members=staff_members
+        staff_members=staff_members,
+        # P1-B: only organizer/system admin may appoint chief arbiters.
+        can_appoint_chief=(
+            current_user.is_admin
+            or tournament.organizer_id == current_user.id
+        ),
     )
 
 @dashboard_bp.route("/dashboard/profile/search", methods=["POST"])
@@ -310,15 +317,15 @@ def _shared_tournaments(profile):
 
 
 def _may_view_photo(profile) -> bool:
-    """Photo visibility: owner, system admin, or any tournament admin of a
-    shared tournament (the current require_admin model; P1-B will introduce
-    finer-grained arbiter roles)."""
+    """Photo visibility: owner, system admin, or any shared-tournament
+    official of the RESULT-EDITOR tier (organizer/chief/arbiter — the
+    matrix approved for P0-C; P1-B keeps arbiters included here)."""
     if current_user.is_admin:
         return True
     if profile.user_id == current_user.id:
         return True
     for tournament in _shared_tournaments(profile):
-        if require_admin(tournament.public_id) is not None:
+        if require_result_editor(tournament.public_id) is not None:
             return True
     return False
 
@@ -509,40 +516,57 @@ def search_users():
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage/staff/add", methods=["POST"])
 @login_required
 def add_staff(public_id):
-    """Send invitation to a user to become tournament staff"""
-    tournament = require_admin(public_id)
+    """Send invitation to a user to become tournament staff.
+
+    P1-B: manager tier only (organizer / chief arbiter / system admin —
+    a plain arbiter can no longer invite anyone). Only the organizer or
+    a system admin may appoint a chief_arbiter; chiefs may add ordinary
+    arbiters only."""
+    tournament = require_tournament_manager(public_id)
     if not tournament:
         abort(403)
-        
+
     user_id = request.form.get("user_id", type=int)
     if not user_id:
         flash("کاربر نامعتبر است.", "error")
         return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-        
+
     user = UserModel.query.get(user_id)
     if not user:
         flash("کاربر یافت نشد.", "error")
         return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-        
+
     if tournament.organizer_id == user.id:
         flash("برگزارکننده نمی‌تواند به عنوان داور اضافه شود.", "error")
         return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-        
+
+    requested_role = request.form.get("staff_role", "arbiter")
+    is_appointer = current_user.is_admin or \
+        tournament.organizer_id == current_user.id
+    if requested_role == "chief_arbiter":
+        if not is_appointer:
+            flash("تنها برگزارکننده یا مدیر سیستم می‌تواند سرداور تعیین کند.", "error")
+            return redirect(url_for("dashboard.manage_tournament",
+                                    public_id=public_id))
+        role = "chief_arbiter"
+    else:
+        role = "arbiter"
+
     existing = TournamentStaffModel.query.filter_by(
         tournament_id=tournament.id, user_id=user.id
     ).first()
-    
+
     if existing:
         if existing.status == "pending":
             flash("دعوت‌نامه قبلاً برای این کاربر ارسال شده است.", "info")
         elif existing.status == "accepted":
             flash("این کاربر قبلاً داور این تورنمنت است.", "info")
         return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-        
+
     new_staff = TournamentStaffModel(
-        tournament_id=tournament.id, 
-        user_id=user.id, 
-        role="arbiter",
+        tournament_id=tournament.id,
+        user_id=user.id,
+        role=role,
         status="pending",
         invited_by=current_user.id
     )
@@ -571,21 +595,33 @@ def add_staff(public_id):
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage/staff/remove/<int:user_id>", methods=["POST"])
 @login_required
 def remove_staff(public_id, user_id):
-    tournament = require_admin(public_id)
+    """Remove tournament staff.
+
+    P1-B: manager tier only. Chiefs may remove ordinary arbiters; only
+    the organizer or a system admin may remove another chief_arbiter."""
+    tournament = require_tournament_manager(public_id)
     if not tournament:
         abort(403)
-        
+
     staff = TournamentStaffModel.query.filter_by(
         tournament_id=tournament.id, user_id=user_id
     ).first()
-    
+
+    if staff and staff.role == "chief_arbiter":
+        is_appointer = current_user.is_admin or \
+            tournament.organizer_id == current_user.id
+        if not is_appointer:
+            flash("حذف سرداور تنها توسط برگزارکننده یا مدیر سیستم ممکن است.", "error")
+            return redirect(url_for("dashboard.manage_tournament",
+                                    public_id=public_id))
+
     if staff:
         db.session.delete(staff)
         db.session.commit()
         flash("داور حذف شد.", "success")
     else:
         flash("داور یافت نشد.", "error")
-        
+
     return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
 
 # --- Arbiter Accept/Reject Invitations ---

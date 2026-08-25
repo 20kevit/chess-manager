@@ -76,13 +76,26 @@ def _add_staff(tournament_id, user_id, status):
 
 class TestStaffInvitationAuthorization:
 
-    def test_accepted_invitation_grants_arbiter_access(self, app, setup_access):
+    def test_accepted_invitation_no_longer_grants_management(self, app, setup_access):
+        """P1-B contract change: an accepted plain arbiter is result-editor
+        tier only — player MANAGEMENT is no longer reachable."""
         data = setup_access
         _add_staff(data["tournament"].id, data["invitee"].id, "accepted")
 
         client = app.test_client()
         _login(client, data["invitee"].id)
         resp = client.get(f"/{data['tournament'].public_id}/players")
+        assert resp.status_code == 302  # manager-only since P1-B
+
+    def test_accepted_arbiter_keeps_result_console_access(self, app, setup_access):
+        """P1-B: the same accepted arbiter retains the operational
+        result console (round list)."""
+        data = setup_access
+        _add_staff(data["tournament"].id, data["invitee"].id, "accepted")
+
+        client = app.test_client()
+        _login(client, data["invitee"].id)
+        resp = client.get(f"/{data['tournament'].public_id}/rounds")
         assert resp.status_code == 200
 
     def test_pending_invitation_does_not_grant_access(self, app, setup_access):

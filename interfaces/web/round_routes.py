@@ -1,10 +1,15 @@
 # interfaces/web/round_routes.py
 """
 Round HTTP handlers.
-All routes use user-account based auth via admin_auth.require_admin().
+
+P1-B tiered authorization:
+- result-editor tier (organizer/chief/arbiter): viewing rounds, entering
+  results, finishing a round, byes/manual locks/board adjustments
+- manager tier (organizer/chief/system admin): generating and deleting
+  rounds (require_admin == require_tournament_manager)
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
-from interfaces.web.admin_auth import require_admin
+from interfaces.web.admin_auth import require_admin, require_result_editor
 from infrastructure.repositories import (
     RoundRepository, PairingRepository, ParticipantRepository, ManualPairingRepository
 )
@@ -17,8 +22,8 @@ from app.extensions import db
 round_bp = Blueprint("round", __name__)
 
 
-def _require_admin_or_redirect(public_id):
-    tournament = require_admin(public_id)
+def _require_editor_or_redirect(public_id):
+    tournament = require_result_editor(public_id)
     if not tournament:
         return None, redirect(url_for("auth.login"))
     return tournament, None
@@ -26,7 +31,7 @@ def _require_admin_or_redirect(public_id):
 
 @round_bp.route("/<public_id>/rounds")
 def round_list(public_id):
-    tournament, redir = _require_admin_or_redirect(public_id)
+    tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
     rounds = RoundRepository.get_all(tournament.id)
@@ -62,7 +67,7 @@ def round_new(public_id):
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>")
 def round_view(public_id, round_number):
-    tournament, redir = _require_admin_or_redirect(public_id)
+    tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
@@ -82,7 +87,7 @@ def round_view(public_id, round_number):
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/result", methods=["POST"])
 def save_results(public_id, round_number):
-    tournament = require_admin(public_id)
+    tournament = require_result_editor(public_id)
     if not tournament: abort(403)
     
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
@@ -98,7 +103,7 @@ def save_results(public_id, round_number):
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/finish", methods=["POST"])
 def finish_round(public_id, round_number):
-    tournament, redir = _require_admin_or_redirect(public_id)
+    tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
@@ -116,9 +121,11 @@ def finish_round(public_id, round_number):
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/delete", methods=["POST"])
 def delete_round(public_id, round_number):
-    tournament, redir = _require_admin_or_redirect(public_id)
-    if redir:
-        return redir
+    # Manager tier only (P1-B): generating and deleting rounds are
+    # administrative actions, not result-entry operations.
+    tournament = require_admin(public_id)
+    if not tournament:
+        return redirect(url_for("auth.login"))
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
     if not round_obj:
         flash("دور یافت نشد", "error")
@@ -141,7 +148,7 @@ def delete_round(public_id, round_number):
 
 @round_bp.route("/<public_id>/rounds/request-bye", methods=["GET", "POST"])
 def request_bye(public_id):
-    tournament, redir = _require_admin_or_redirect(public_id)
+    tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
     
@@ -183,7 +190,7 @@ def request_bye(public_id):
 
 @round_bp.route("/<public_id>/rounds/manual-pairing/add", methods=["POST"])
 def manual_pairing_add(public_id):
-    tournament, redir = _require_admin_or_redirect(public_id)
+    tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
     try:
@@ -200,7 +207,7 @@ def manual_pairing_add(public_id):
 
 @round_bp.route("/<public_id>/rounds/manual-pairing/remove", methods=["POST"])
 def manual_pairing_remove(public_id):
-    tournament, redir = _require_admin_or_redirect(public_id)
+    tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
     participant_id = request.form.get("participant_id", type=int)
@@ -213,7 +220,7 @@ def manual_pairing_remove(public_id):
 
 @round_bp.route("/<public_id>/rounds/bye/cancel/<int:bye_id>", methods=["POST"])
 def cancel_bye(public_id, bye_id):
-    tournament, redir = _require_admin_or_redirect(public_id)
+    tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
     cancelled = RoundService.cancel_bye_request(tournament, bye_id)
@@ -228,7 +235,7 @@ def cancel_bye(public_id, bye_id):
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/manual", methods=["GET", "POST"])
 def manual_pairing(public_id, round_number):
-    tournament, redir = _require_admin_or_redirect(public_id)
+    tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)

@@ -70,20 +70,37 @@
 
             <hr style="margin: 20px 0;">
 
+            {% if can_appoint_chief %}
+            <div class="form-group">
+                <label>نقش کاربر جدید:</label>
+                <select id="staff-role" class="form-control">
+                    <option value="arbiter">داور</option>
+                    <option value="chief_arbiter">سرداور (دسترسی مدیریتی کامل)</option>
+                </select>
+            </div>
+            {% else %}
+            <input type="hidden" id="staff-role" value="arbiter">
+            {% endif %}
+
             <h5>داوران فعلی:</h5>
             {% if staff_members %}
                 {% for staff in staff_members %}
                 <div class="list-item" style="background: #f9fafb; padding: 10px; border-radius: 8px; margin-bottom: 8px;">
-                    <div style="display:flex; flex-direction:column;">
-                        <span>{{ staff.user.email }}</span>
-                        {% if staff.status == 'pending' %}
-                        <span style="font-size:0.8rem; color: #d97706;">در انتظار پاسخ</span>
-                        {% elif staff.status == 'accepted' %}
-                        <span style="font-size:0.8rem; color: #059669;">تایید شده</span>
-                        {% elif staff.status == 'rejected' %}
-                        <span style="font-size:0.8rem; color: #dc2626;">رد شده</span>
-                        {% endif %}
-                    </div>
+                <div style="display:flex; flex-direction:column;">
+                    <span>{{ staff.user.email }}</span>
+                    {% if staff.role == 'chief_arbiter' %}
+                    <span style="font-size:0.75rem; color:#1e40af; font-weight:bold;">سرداور</span>
+                    {% else %}
+                    <span style="font-size:0.75rem; color:#64748b;">داور</span>
+                    {% endif %}
+                    {% if staff.status == 'pending' %}
+                    <span style="font-size:0.8rem; color: #d97706;">در انتظار پاسخ</span>
+                    {% elif staff.status == 'accepted' %}
+                    <span style="font-size:0.8rem; color: #059669;">تایید شده</span>
+                    {% elif staff.status == 'rejected' %}
+                    <span style="font-size:0.8rem; color: #dc2626;">رد شده</span>
+                    {% endif %}
+                </div>
                     <form action="{{ url_for('dashboard.remove_staff', public_id=tournament.public_id, user_id=staff.user_id) }}" method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger btn-sm">حذف</button>
@@ -143,9 +160,16 @@ function searchArbiters() {
                         idInput.type = 'hidden';
                         idInput.name = 'user_id';
                         idInput.value = user.id;
-                        
+
+                        const roleInput = document.createElement('input');
+                        roleInput.type = 'hidden';
+                        roleInput.name = 'staff_role';
+                        const roleSel = document.getElementById('staff-role');
+                        roleInput.value = roleSel ? roleSel.value : 'arbiter';
+
                         form.appendChild(csrfInput);
                         form.appendChild(idInput);
+                        form.appendChild(roleInput);
                         document.body.appendChild(form);
                         form.submit();
                     };

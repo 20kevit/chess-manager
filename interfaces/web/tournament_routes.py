@@ -7,7 +7,9 @@ from flask_login import current_user
 from infrastructure.repositories import TournamentRepository, ParticipantRepository, PairingRepository
 from application.tournament_service import TournamentService
 from interfaces.web.helpers import build_cell as _build_cell
-from interfaces.web.admin_auth import require_admin
+from interfaces.web.admin_auth import (
+    require_admin, require_tournament_manager, require_result_editor,
+)
 from domain.tiebreak.calculators import ALL_TIEBREAKS_DISPLAY
 from interfaces.web.decorators import role_required
 import json
@@ -84,17 +86,21 @@ def view(public_id):
     tournament = TournamentRepository.get_by_public_id(public_id)
     if not tournament: abort(404)
 
-    # Detect if current user has management access (organizer, staff, admin)
-    is_admin = False
+    # P1-B capability flags (server-computed; UI is cosmetic only).
+    can_manage = False
+    can_edit_results = False
     if current_user.is_authenticated:
-        if require_admin(public_id) is not None:
-            is_admin = True
-    
+        can_edit_results = require_result_editor(public_id) is not None
+        can_manage = require_tournament_manager(public_id) is not None
+
     standings = TournamentService.get_standings(tournament)
     return render_template(
         "tournament/view.html",
         tournament=tournament,
-        is_admin=is_admin,
+        # Backward-compatible flag now means the manager tier.
+        is_admin=can_manage,
+        can_manage=can_manage,
+        can_edit_results=can_edit_results,
         **standings
     )
 

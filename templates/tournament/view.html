@@ -3,10 +3,15 @@
 
 {% block content %}
 
-{% if is_admin %}
+{% if can_edit_results %}
 <div style="margin-bottom: 15px; text-align: left;">
+    {% if can_manage %}
     <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-primary" style="font-size: 0.9rem; padding: 8px 15px;">
         ⚙️ ورود به پنل مدیریت تورنمنت
+    </a>
+    {% endif %}
+    <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 8px 15px;">
+        🎛️ کنسول داوری و ثبت نتایج
     </a>
 </div>
 {% endif %}
