@@ -25,7 +25,7 @@ def pricing_settings(public_id):
 
     if request.method == "POST":
         try:
-            TournamentService.update_settings(tournament, request.form)
+            TournamentService.update_pricing_settings(tournament, request.form)
             flash("تنظیمات مالی و ثبت‌نام با موفقیت ذخیره شد.", "success")
             return redirect(url_for("registration.pricing_settings", public_id=public_id))
         except Exception as e:

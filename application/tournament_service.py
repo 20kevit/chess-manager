@@ -103,8 +103,12 @@ class TournamentService:
         return tournament
 
     @staticmethod
-    def update_settings(tournament: TournamentModel, form_data: dict) -> None:
-        """Update tournament settings."""
+    def update_basic_settings(tournament: TournamentModel, form_data: dict) -> None:
+        """Update identity, competition, tiebreak and date fields only.
+
+        Called by the tournament settings page; must never touch pricing,
+        discount, bank/payment or rulebook data.
+        """
         tournament.name = form_data.get("name", "").strip() or tournament.name
         tournament.city = form_data.get("city", "").strip()
         tournament.federation = (
@@ -130,11 +134,12 @@ class TournamentService:
         if new_rounds and new_rounds >= tournament.current_round:
             tournament.total_rounds = new_rounds
 
-        # Handle tiebreaks selection (list from form)
+        # Handle tiebreaks selection (list from form); an absent selection
+        # leaves the current rules untouched.
         selected_tbs = form_data.getlist("tiebreaks") if hasattr(
             form_data, "getlist"
         ) else form_data.get("tiebreaks", [])
-        
+
         if selected_tbs:
             tournament.tiebreak_rules = json.dumps(
                 selected_tbs, ensure_ascii=False
@@ -149,16 +154,26 @@ class TournamentService:
                         datetime.strptime(val, "%Y-%m-%d").date()
                     )
                 except ValueError:
+                    # Invalid format keeps the stored value.
                     pass
             else:
                 setattr(tournament, field_name, None)
 
+        db.session.commit()
+
+    @staticmethod
+    def update_pricing_settings(tournament: TournamentModel, form_data: dict) -> None:
+        """Update pricing, discounts, bank/payment and rulebook fields only.
+
+        Called by the registration/pricing page; must never touch identity,
+        competition, tiebreak or date fields.
+        """
         # ── Phase 3: Pricing & Registration Settings ──
         tournament.base_price = int(form_data.get("base_price", 0) or 0)
-        
+
         max_p = form_data.get("max_players", "").strip()
         tournament.max_players = int(max_p) if max_p else None
-        
+
         reg_deadline_str = form_data.get("registration_deadline", "").strip()
         if reg_deadline_str:
             try:
@@ -166,12 +181,13 @@ class TournamentService:
                 fmt = "%Y-%m-%dT%H:%M" if "T" in reg_deadline_str else "%Y-%m-%d"
                 tournament.registration_deadline = datetime.strptime(reg_deadline_str, fmt)
             except ValueError:
+                # Invalid format keeps the stored value.
                 pass
         else:
             tournament.registration_deadline = None
 
         tournament.women_discount_percent = int(form_data.get("women_discount_percent", 0) or 0)
-        
+
         # Early Bird Config
         eb_percent = int(form_data.get("early_bird_percent", 0) or 0)
         eb_deadline_str = form_data.get("early_bird_deadline", "").strip()
@@ -185,7 +201,7 @@ class TournamentService:
         vet_min_age = int(form_data.get("veteran_min_age", 0) or 0)
         vet_percent = int(form_data.get("veteran_percent", 0) or 0)
         tournament.veteran_config = json.dumps({"min_age": vet_min_age, "percent": vet_percent}, ensure_ascii=False)
-        
+
         # Title Discounts
         title_discounts = {}
         for title in ["GM", "IM", "FM", "WGM", "WIM", "WFM", "CM", "WCM"]:
@@ -194,7 +210,7 @@ class TournamentService:
                 try: title_discounts[title] = int(val)
                 except ValueError: pass
         tournament.title_discounts = json.dumps(title_discounts, ensure_ascii=False)
-        
+
         # ── Phase 5: Bank Card and Rulebook ──
         tournament.bank_card_number = form_data.get("bank_card_number", "").strip()
         tournament.bank_account_name = form_data.get("bank_account_name", "").strip()
@@ -202,7 +218,6 @@ class TournamentService:
         tournament.enable_online_payment = form_data.get("enable_online_payment") == "1"
         tournament.rulebook_text = form_data.get("rulebook_text", "").strip()
 
-        from app.extensions import db
         db.session.commit()
 
     @staticmethod

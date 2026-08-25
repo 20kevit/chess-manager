@@ -29,6 +29,21 @@
         </div>
     </div>
 
+    <!-- 📅 Dates Section -->
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+        <h2 class="section-title">📅 تاریخ‌ها</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>تاریخ شروع</label>
+                <input type="date" name="start_date" value="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}" dir="ltr">
+            </div>
+            <div class="form-group">
+                <label>تاریخ پایان</label>
+                <input type="date" name="end_date" value="{{ tournament.end_date.strftime('%Y-%m-%d') if tournament.end_date else '' }}" dir="ltr">
+            </div>
+        </div>
+    </div>
+
     <!-- 2️⃣ Competition Logic Section -->
     <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
         <h2 class="section-title">♟️ قوانین و کنترل زمان</h2>

@@ -420,7 +420,7 @@ def settings(public_id):
 
     if request.method == "POST":
         try:
-            TournamentService.update_settings(tournament, request.form)
+            TournamentService.update_basic_settings(tournament, request.form)
             flash("تنظیمات با موفقیت ذخیره شد.", "success")
             return redirect(url_for("tournament.view", public_id=public_id))
         except Exception as e:
