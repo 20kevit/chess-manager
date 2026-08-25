@@ -133,6 +133,23 @@ class TestCheckEligibilityOrdering:
             EligibilityProfile(birth_date=None), req, date(2026, 1, 1)
         ) == ["age"]
 
+    def test_active_age_rule_without_start_date_blocks_registration(self):
+        """Owner policy change: NO silent today-fallback. An active age
+        rule with an unknown reference date blocks registration with the
+        dedicated 'start_date' failure."""
+        req = RequirementSet(min_age=10)
+        codes = check_eligibility(
+            EligibilityProfile(birth_date=date(2010, 1, 1)), req, None
+        )
+        assert codes == ["start_date"]
+        assert first_failure_message(codes) == \
+            ELIGIBILITY_FAILURE_MESSAGES["start_date"]
+        # No age rule -> a missing start date is irrelevant.
+        phone_only = RequirementSet(phone_required=True)
+        assert check_eligibility(
+            EligibilityProfile(), phone_only, None
+        ) == ["phone"]
+
     def test_invalid_phone_format_counts_as_missing(self):
         req = RequirementSet(phone_required=True)
         bad = EligibilityProfile(phone="12345")
@@ -318,6 +335,7 @@ class TestRegistrationEligibilityGate:
         tournament = _tournament(
             "04", "Guest Gate Open",
             RequirementSet(phone_required=True, min_age=10),
+            start_date=date(today.year, 7, 1),   # explicit start date required
         )
 
         client = app.test_client()
@@ -378,6 +396,32 @@ class TestRegistrationEligibilityGate:
             resp_after.get_data(as_text=True)
         assert RegistrationModel.query.filter_by(
             tournament_id=after.id, user_id=player.id).count() == 1
+
+
+class TestMissingStartDateBlocksAgeRule:
+    def test_age_requirement_without_start_date_blocks_registration(
+        self, app, player
+    ):
+        """Integration of the owner-policy change: min_age configured but
+        the organizer never set a start date -> registration is blocked
+        with a clear Persian message (never measured against today)."""
+        tournament = _tournament("12", "No Start Date Open",
+                                 RequirementSet(min_age=10))
+        _fresh_profile(player).birth_date = date(2010, 1, 1)
+        db.session.commit()
+
+        client = app.test_client()
+        _login(client, player)
+
+        _reset_cached_login_user()
+        resp = client.post(f"/{tournament.public_id}/register", data={},
+                           follow_redirects=True)
+
+        body = resp.get_data(as_text=True)
+        assert ELIGIBILITY_FAILURE_MESSAGES["start_date"] in body
+        assert RegistrationModel.query.filter_by(
+            tournament_id=tournament.id
+        ).count() == 0
 
 
 class TestApprovalTimeRecheck:

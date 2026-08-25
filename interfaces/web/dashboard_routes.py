@@ -100,10 +100,9 @@ def index():
                 getattr(tournament, "registration_requirements", None)
             )
             if requirements.has_any:
-                reference = (
-                    tournament.start_date
-                    if tournament.start_date else datetime.utcnow().date()
-                )
+                # Age rules without a configured start date yield the
+                # 'start_date' failure -> tournament stays hidden.
+                reference = tournament.start_date
                 if check_eligibility(eligibility_facts, requirements, reference):
                     continue
             available_tournaments.append(tournament)

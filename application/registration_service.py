@@ -93,11 +93,14 @@ class RegistrationService:
         )
 
     @staticmethod
-    def _eligibility_reference_date(tournament: TournamentModel) -> date:
+    def _eligibility_reference_date(tournament: TournamentModel):
         """Product rule: age is measured on the TOURNAMENT START DATE.
-        When no start date exists yet, fall back to today so age rules
-        still gate deterministically."""
-        return tournament.start_date if tournament.start_date else datetime.utcnow().date()
+
+        Returns None when the tournament has no start date; the domain
+        eligibility check then blocks registration with the dedicated
+        'start_date' failure instead of silently using today's date.
+        """
+        return tournament.start_date
 
     @staticmethod
     def _check_eligibility_or_raise(tournament: TournamentModel,

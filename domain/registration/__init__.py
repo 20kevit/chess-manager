@@ -151,6 +151,10 @@ class EligibilityProfile:
 
 # Persian failure reasons with stable machine codes, in CHECK ORDER.
 ELIGIBILITY_FAILURE_MESSAGES = {
+    "start_date": (
+        "برای اعمال شرط سنی این مسابقه، ابتدا باید تاریخ شروع مسابقه "
+        "در تنظیمات مشخص شود."
+    ),
     "age": "سن شما با شرایط سنی این مسابقه همخوانی ندارد.",
     "phone": "برای ثبت‌نام در این مسابقه، شماره موبایل معتبر در پروفایل الزامی است.",
     "photo": "برای ثبت‌نام در این مسابقه، بارگذاری عکس پروفایل الزامی است.",
@@ -161,20 +165,25 @@ ELIGIBILITY_FAILURE_MESSAGES = {
 
 def check_eligibility(profile: EligibilityProfile,
                       requirements: RequirementSet,
-                      reference_date: date) -> List[str]:
+                      reference_date) -> List[str]:
     """Return failure codes in mandatory evaluation order:
-    Age -> Phone -> Photo -> ID document -> FIDE verification.
+    Start-date -> Age -> Phone -> Photo -> ID document -> FIDE verification.
 
     Empty list means eligible. Bounds are inclusive: min_age <= age <= max_age.
     A missing birth date while an age rule is active fails the age rule.
+    An active age rule with NO reference date (tournament without a start
+    date) blocks registration with the 'start_date' failure: ages are never
+    silently measured against today's date.
     """
     failures: List[str] = []
     if not requirements.has_any:
         return failures
 
-    # 1. Age (reference date = tournament start date by product rule).
+    # 1. Age (reference date MUST be the tournament start date).
     if requirements.min_age is not None or requirements.max_age is not None:
-        if profile.birth_date is None:
+        if reference_date is None:
+            failures.append("start_date")
+        elif profile.birth_date is None:
             failures.append("age")
         else:
             age = calculate_age(profile.birth_date, reference_date)
