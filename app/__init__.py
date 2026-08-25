@@ -32,6 +32,14 @@ def create_app(config_class=None) -> Flask:
     flask_app.config["RECEIPT_UPLOAD_DIR"] = os.path.join(
         flask_app.instance_path, "uploads", "receipts"
     )
+    # Private profile media (P0-C): identity documents must never be
+    # web-servable; access goes through authenticated endpoints only.
+    flask_app.config["PROFILE_PHOTO_UPLOAD_DIR"] = os.path.join(
+        flask_app.instance_path, "uploads", "profile_photos"
+    )
+    flask_app.config["ID_DOCUMENT_UPLOAD_DIR"] = os.path.join(
+        flask_app.instance_path, "uploads", "id_documents"
+    )
 
     # FIDE downloads/retention live under the instance path too (Category K):
     # never CWD-dependent.

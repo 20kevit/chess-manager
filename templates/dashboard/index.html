@@ -328,12 +328,64 @@
                     <span class="profile-value" dir="ltr">{{ profile.phone or 'وارد نشده' }}</span>
                 </div>
                 <div class="profile-row">
+                    <span class="profile-label">عکس پروفایل:</span>
+                    <span class="profile-value">
+                        {% if profile.photo_path %}
+                            <a href="{{ url_for('dashboard.serve_profile_photo', profile_id=profile.id) }}" target="_blank">
+                                <img src="{{ url_for('dashboard.serve_profile_photo', profile_id=profile.id) }}" alt="عکس پروفایل" style="width:48px; height:48px; border-radius:50%; object-fit:cover; vertical-align:middle;">
+                            </a>
+                        {% else %}
+                            بارگذاری نشده
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="profile-row">
+                    <span class="profile-label">مدرک هویتی:</span>
+                    <span class="profile-value">
+                        {% if profile.id_document_path %}
+                            <a href="{{ url_for('dashboard.serve_id_document', profile_id=profile.id) }}" target="_blank">مشاهده مدرک</a>
+                        {% else %}
+                            بارگذاری نشده
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="profile-row">
                     <span class="profile-label">شماره کارت بانکی:</span>
                     <span class="profile-value">{{ profile.bank_card_number or 'وارد نشده' }}</span>
                 </div>
                 <div class="profile-row">
                     <span class="profile-label">نام صاحب حساب:</span>
                     <span class="profile-value">{{ profile.bank_account_name or 'وارد نشده' }}</span>
+                </div>
+
+                <!-- Private media uploads (photos/documents are never public) -->
+                <div style="margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 15px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 0.95em;">مدارک خصوصی پروفایل</h4>
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('dashboard.upload_profile_photo') }}" style="margin-bottom: 8px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label style="font-size: 0.85em;">عکس پروفایل (JPG/PNG، حداکثر ۵ مگابایت):</label>
+                        <input type="file" name="photo" accept="image/jpeg,image/png" required style="display:block; margin-bottom:5px;">
+                        <button type="submit" class="btn btn-secondary btn-sm">بارگذاری عکس</button>
+                    </form>
+                    {% if profile.photo_path %}
+                    <form method="POST" action="{{ url_for('dashboard.remove_profile_photo') }}" style="margin-bottom: 12px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm">حذف عکس</button>
+                    </form>
+                    {% endif %}
+
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('dashboard.upload_id_document') }}" style="margin-bottom: 8px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label style="font-size: 0.85em;">تصویر شناسنامه / کارت ملی (JPG/PNG، حداکثر ۵ مگابایت):</label>
+                        <input type="file" name="id_document" accept="image/jpeg,image/png" required style="display:block; margin-bottom:5px;">
+                        <button type="submit" class="btn btn-secondary btn-sm">بارگذاری مدرک</button>
+                    </form>
+                    {% if profile.id_document_path %}
+                    <form method="POST" action="{{ url_for('dashboard.remove_id_document') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm">حذف مدرک</button>
+                    </form>
+                    {% endif %}
                 </div>
 
                 <!-- Phase 7: FIDE Verification Button -->

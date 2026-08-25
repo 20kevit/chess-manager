@@ -91,6 +91,11 @@ class PlayerProfileModel(db.Model):
     # domain.registration.normalize_phone.
     phone = db.Column(db.String(20), nullable=True)
 
+    # Private media (P0-C): bare filenames inside app-owned instance dirs,
+    # served only through authenticated endpoints — never static/.
+    photo_path = db.Column(db.String(255), nullable=True)
+    id_document_path = db.Column(db.String(255), nullable=True)
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"

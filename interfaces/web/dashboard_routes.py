@@ -1,16 +1,22 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, jsonify
+from flask import (Blueprint, render_template, request, redirect, url_for,
+                   flash, abort, jsonify, current_app, send_file)
 from flask_login import current_user, login_required
 from application.auth_service import AuthService
 from infrastructure.db_models import (
-    PlayerProfileModel, TournamentModel, RegistrationModel, 
+    PlayerProfileModel, TournamentModel, RegistrationModel,
     TournamentStaffModel, UserModel, TournamentParticipantModel
 )
 from datetime import datetime
+import os
 from app.extensions import db
 from interfaces.web.admin_auth import require_admin
 from application.verification_service import VerificationService
 from application.fide_search_service import FideSearchService
 from infrastructure.repositories import PlayerVerificationRepository
+from infrastructure.file_storage import (
+    FileStorageError, save_image, remove_image, resolve_private_file,
+    IMAGE_MIMETYPES,
+)
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -230,6 +236,186 @@ def update_profile():
     db.session.commit()
     flash("پروفایل با موفقیت بروزرسانی شد.", "success")
     return redirect(url_for("dashboard.index"))
+
+
+# --- Private Profile Media (P0-C) -------------------------------------
+#
+# Photos and ID documents are stored under instance-anchored private
+# directories (never static/) and served exclusively through these
+# authenticated endpoints. Stored values are bare filenames resolved with
+# basename-only logic, so path traversal is impossible.
+
+_MEDIA_ERROR_MESSAGES = {
+    "empty": "فایلی انتخاب نشده است.",
+    "size": "حجم فایل نباید بیشتر از ۵ مگابایت باشد.",
+    "type": "فرمت تصویر مجاز نیست (فقط JPG و PNG).",
+}
+
+
+def _shared_tournaments(profile):
+    """Tournaments where this player appears (registration or participation)."""
+    tournament_ids = {r.tournament_id for r in profile.registrations}
+    tournament_ids.update(
+        p.tournament_id for p in TournamentParticipantModel.query.filter_by(
+            player_profile_id=profile.id
+        ).all()
+    )
+    if not tournament_ids:
+        return []
+    return TournamentModel.query.filter(
+        TournamentModel.id.in_(tournament_ids)
+    ).all()
+
+
+def _may_view_photo(profile) -> bool:
+    """Photo visibility: owner, system admin, or any tournament admin of a
+    shared tournament (the current require_admin model; P1-B will introduce
+    finer-grained arbiter roles)."""
+    if current_user.is_admin:
+        return True
+    if profile.user_id == current_user.id:
+        return True
+    for tournament in _shared_tournaments(profile):
+        if require_admin(tournament.public_id) is not None:
+            return True
+    return False
+
+
+def _may_view_id_document(profile) -> bool:
+    """ID-document visibility is stricter: owner, system admin, or the
+    organizer of a shared tournament (identity-review need). Ordinary
+    arbiters stay excluded until P1-B defines the chief-arbiter role and
+    re-enables access explicitly."""
+    if current_user.is_admin:
+        return True
+    if profile.user_id == current_user.id:
+        return True
+    for tournament in _shared_tournaments(profile):
+        if tournament.organizer_id == current_user.id:
+            return True
+    return False
+
+
+def _serve_profile_media(stored_value: str, config_key: str):
+    absolute_path = resolve_private_file(
+        current_app.config[config_key], stored_value
+    )
+    if not absolute_path:
+        abort(404)
+    ext = (absolute_path.rsplit(".", 1)[-1].lower()
+           if "." in absolute_path else "")
+    mimetype = IMAGE_MIMETYPES.get(ext, "application/octet-stream")
+    return send_file(
+        absolute_path,
+        mimetype=mimetype,
+        download_name=os.path.basename(absolute_path),
+    )
+
+
+@dashboard_bp.route("/dashboard/profile/photo/upload", methods=["POST"])
+@login_required
+def upload_profile_photo():
+    profile = current_user.profile
+    if not profile:
+        flash("ابتدا باید پروفایل شطرنج خود را بسازید.", "error")
+        return redirect(url_for("dashboard.index"))
+
+    try:
+        stored = save_image(
+            request.files.get("photo"),
+            current_app.config["PROFILE_PHOTO_UPLOAD_DIR"],
+            f"profile_{profile.id}",
+        )
+    except FileStorageError as exc:
+        flash(_MEDIA_ERROR_MESSAGES.get(exc.reason, "آپلود فایل ناموفق بود."), "error")
+        return redirect(url_for("dashboard.index"))
+
+    profile.photo_path = stored
+    db.session.commit()
+    flash("عکس پروفایل با موفقیت بروزرسانی شد.", "success")
+    return redirect(url_for("dashboard.index"))
+
+
+@dashboard_bp.route("/dashboard/profile/photo/remove", methods=["POST"])
+@login_required
+def remove_profile_photo():
+    profile = current_user.profile
+    if not profile or not profile.photo_path:
+        return redirect(url_for("dashboard.index"))
+
+    remove_image(
+        current_app.config["PROFILE_PHOTO_UPLOAD_DIR"],
+        f"profile_{profile.id}",
+    )
+    profile.photo_path = None
+    db.session.commit()
+    flash("عکس پروفایل حذف شد.", "success")
+    return redirect(url_for("dashboard.index"))
+
+
+@dashboard_bp.route("/uploads/profile-photo/<int:profile_id>")
+@login_required
+def serve_profile_photo(profile_id):
+    profile = db.session.get(PlayerProfileModel, profile_id)
+    if not profile or not profile.photo_path:
+        abort(404)
+    if not _may_view_photo(profile):
+        abort(403)
+    return _serve_profile_media(profile.photo_path, "PROFILE_PHOTO_UPLOAD_DIR")
+
+
+@dashboard_bp.route("/dashboard/profile/id-document/upload", methods=["POST"])
+@login_required
+def upload_id_document():
+    profile = current_user.profile
+    if not profile:
+        flash("ابتدا باید پروفایل شطرنج خود را بسازید.", "error")
+        return redirect(url_for("dashboard.index"))
+
+    try:
+        stored = save_image(
+            request.files.get("id_document"),
+            current_app.config["ID_DOCUMENT_UPLOAD_DIR"],
+            f"id_document_{profile.id}",
+        )
+    except FileStorageError as exc:
+        flash(_MEDIA_ERROR_MESSAGES.get(exc.reason, "آپلود فایل ناموفق بود."), "error")
+        return redirect(url_for("dashboard.index"))
+
+    profile.id_document_path = stored
+    db.session.commit()
+    flash("تصویر مدرک هویتی با موفقیت بارگذاری شد.", "success")
+    return redirect(url_for("dashboard.index"))
+
+
+@dashboard_bp.route("/dashboard/profile/id-document/remove", methods=["POST"])
+@login_required
+def remove_id_document():
+    profile = current_user.profile
+    if not profile or not profile.id_document_path:
+        return redirect(url_for("dashboard.index"))
+
+    remove_image(
+        current_app.config["ID_DOCUMENT_UPLOAD_DIR"],
+        f"id_document_{profile.id}",
+    )
+    profile.id_document_path = None
+    db.session.commit()
+    flash("تصویر مدرک هویتی حذف شد.", "success")
+    return redirect(url_for("dashboard.index"))
+
+
+@dashboard_bp.route("/uploads/id-document/<int:profile_id>")
+@login_required
+def serve_id_document(profile_id):
+    profile = db.session.get(PlayerProfileModel, profile_id)
+    if not profile or not profile.id_document_path:
+        abort(404)
+    if not _may_view_id_document(profile):
+        abort(403)
+    return _serve_profile_media(profile.id_document_path, "ID_DOCUMENT_UPLOAD_DIR")
+
+# ----------------------------------------------------------------------
 
 # --- Live Search API for Arbiters ---
 @dashboard_bp.route("/dashboard/api/search-users")
