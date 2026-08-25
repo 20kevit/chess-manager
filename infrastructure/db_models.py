@@ -355,7 +355,7 @@ class PaymentModel(db.Model):
     registration_id = db.Column(db.Integer, db.ForeignKey("registrations.id"), nullable=False, index=True)
     
     amount = db.Column(db.Integer, nullable=False)  # مبلغ به تومان
-    status = db.Column(db.String(20), default="pending") # pending, approved, rejected, withdrawn, payment_pending
+    status = db.Column(db.String(20), default="pending") # pending, cancelled, successful, failed
     rejection_reason = db.Column(db.String(255), nullable=True) # New Field    
     gateway = db.Column(db.String(50), default="zarinpal")
     authority = db.Column(db.String(100), nullable=True, index=True)

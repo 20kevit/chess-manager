@@ -47,6 +47,8 @@
                                 <span class="status-badge" style="background: #fef3c7; color: #92400e;">در انتظار</span>
                             {% elif reg.status == 'payment_pending' %}
                                 <span class="status-badge" style="background: #e0e7ff; color: #3730a3;">در حال پرداخت</span>
+                            {% elif reg.status == 'receipt_submitted' %}
+                                <span class="status-badge" style="background: #ffedd5; color: #9a3412;">رسید در انتظار بررسی</span>
                             {% elif reg.status == 'paid' %}
                                 <span class="status-badge" style="background: #dbeafe; color: #1e40af;">پرداخت شده</span>
                             {% elif reg.status == 'approved' %}
@@ -64,15 +66,23 @@
                                 -
                             {% endif %}
                         </td>                        <td>
-                            {% if reg.status in ['pending', 'paid'] %}
-                            <div style="display: flex; gap: 5px;">
+                            {% if reg.status in ['pending', 'paid', 'receipt_submitted'] %}
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                 <form method="POST" action="{{ url_for('registration.approve_registration', public_id=tournament.public_id, reg_id=reg.id) }}">
-                                    <button type="submit" class="btn btn-success btn-sm">تأیید</button>
+                                    <button type="submit" class="btn btn-success btn-sm">{% if reg.status == 'receipt_submitted' %}تأیید رسید{% else %}تأیید{% endif %}</button>
                                 </form>
+                                {% if reg.status == 'receipt_submitted' %}
+                                {# P0-E: rejecting a receipt returns the registration to retryable pending #}
+                                <form method="POST" action="{{ url_for('registration.reject_receipt', public_id=tournament.public_id, reg_id=reg.id) }}" style="display:flex; gap:5px;">
+                                    <input type="text" name="rejection_reason" class="form-control" placeholder="دلیل عدم تأیید رسید..." style="font-size: 0.8rem; padding: 4px;">
+                                    <button type="submit" class="btn btn-warning btn-sm">عدم تأیید رسید</button>
+                                </form>
+                                {% else %}
                                 <form method="POST" action="{{ url_for('registration.reject_registration', public_id=tournament.public_id, reg_id=reg.id) }}" style="display:flex; gap:5px;">
                                     <input type="text" name="rejection_reason" class="form-control" placeholder="دلیل رد..." style="font-size: 0.8rem; padding: 4px;">
                                     <button type="submit" class="btn btn-danger btn-sm">رد</button>
                                 </form>
+                                {% endif %}
                             </div>
                             {% else %}
                                 -

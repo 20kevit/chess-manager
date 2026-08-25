@@ -8,9 +8,11 @@ from werkzeug.utils import secure_filename
 from interfaces.web.admin_auth import require_admin
 from infrastructure.repositories import TournamentRepository, RegistrationRepository, PromoCodeRepository
 from application.tournament_service import TournamentService
-from application.registration_service import RegistrationService
+from application.registration_service import (
+    RegistrationService, BLOCKING_REGISTRATION_STATUSES,
+)
 from flask_login import current_user, login_required
-from infrastructure.db_models import RegistrationModel, PromoCodeModel
+from infrastructure.db_models import RegistrationModel, PromoCodeModel, PaymentModel
 from domain.pricing import calculate_price, PlayerPricingData, PromoCodeData
 from flask import jsonify
 from app.extensions import db
@@ -186,7 +188,7 @@ def register(public_id):
     ).first()
     
     if request.method == "POST":
-        if existing_reg and existing_reg.status in ["pending", "approved", "payment_pending"]:
+        if existing_reg and existing_reg.status in BLOCKING_REGISTRATION_STATUSES:
             flash("شما قبلاً ثبت‌نام کرده‌اید.", "info")
             return redirect(url_for("tournament.view", public_id=public_id))
 
@@ -273,16 +275,24 @@ def upload_receipt(reg_id):
     reg = RegistrationRepository.get_by_id(reg_id)
     if not reg or reg.user_id != current_user.id:
         abort(403)
-        
+
+    # P0-E: receipts may only be submitted while payment is still open.
+    if reg.status == "receipt_submitted":
+        flash("رسید شما قبلاً ثبت شده و در انتظار بررسی برگزارکننده است.", "info")
+        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+    if reg.status not in ["pending", "payment_pending"]:
+        flash("در وضعیت فعلی ثبت‌نام، امکان بارگذاری رسید وجود ندارد.", "error")
+        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+
     if 'receipt' not in request.files:
         flash("فایلی انتخاب نشده است.", "error")
         return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
-        
+
     file = request.files['receipt']
     if file.filename == '':
         flash("فایلی انتخاب نشده است.", "error")
         return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
-        
+
     # Validate extension
     allowed_extensions = {'png', 'jpg', 'jpeg', 'pdf'}
     if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
@@ -315,13 +325,63 @@ def upload_receipt(reg_id):
 
     file.save(file_path)
 
+    # P0-E lifecycle: switch to transfer, enter the review state and cancel
+    # any open online-payment session so it can never complete afterwards.
+    PaymentModel.query.filter_by(
+        registration_id=reg.id, status="pending"
+    ).update({
+        "status": "cancelled",
+        "gateway_metadata": '{"cancelled_reason": "receipt_submitted"}',
+    })
+
     # Store only the bare filename; the physical directory is application-owned.
     reg.payment_method = "transfer"
     reg.receipt_path = filename
+    reg.rejection_reason = None
+    reg.status = "receipt_submitted"
     db.session.commit()
-    
-    flash("رسید شما با موفقیت آپلود شد. در انتظار تایید برگزارکننده.", "success")
+
+    flash("رسید شما با موفقیت ثبت شد و در انتظار تایید برگزارکننده است.", "success")
     return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+
+
+@registration_bp.route("/registration/<int:reg_id>/receipt/discard", methods=["POST"])
+@login_required
+def discard_receipt(reg_id):
+    """Player withdraws a submitted receipt; online payment becomes
+    available again (P0-E)."""
+    try:
+        RegistrationService.discard_receipt(
+            reg_id, current_user.id,
+            current_app.config["RECEIPT_UPLOAD_DIR"],
+        )
+        flash("رسید شما حذف شد؛ اکنون می‌توانید پرداخت را از سر بگیرید.", "success")
+    except ValueError as e:
+        flash(str(e), "error")
+    reg = RegistrationRepository.get_by_id(reg_id)
+    if reg:
+        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+    return redirect(url_for("dashboard.index"))
+
+
+@registration_bp.route("/<public_id>/admin/registrations/<int:reg_id>/reject-receipt", methods=["POST"])
+def reject_receipt(public_id, reg_id):
+    """Arbiter/organizer rejects a transfer receipt: the registration
+    returns to a retryable pending state with the reason recorded (P0-E)."""
+    tournament = require_admin(public_id)
+    if not tournament:
+        return redirect(url_for("auth.login"))
+
+    reason = request.form.get("rejection_reason", "").strip()
+    try:
+        RegistrationService.reject_receipt(
+            reg_id, reason, current_app.config["RECEIPT_UPLOAD_DIR"],
+        )
+        flash("رسید رد شد؛ ثبت‌نام برای پرداخت مجدد به حالت در انتظار بازگشت.", "warning")
+    except ValueError as e:
+        flash(str(e), "error")
+
+    return redirect(url_for("registration.manage_registrations", public_id=public_id))
 
 
 _RECEIPT_MIMETYPES = {

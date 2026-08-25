@@ -144,8 +144,9 @@ class TestG5ActiveVsFutureTypes:
         active_values = {t.value for t in NotificationType}
         future_values = {t.value for t in FutureNotificationType}
 
-        assert "PAYMENT_CONFIRMED" in future_values
-        assert "PAYMENT_CONFIRMED" not in active_values
+        # P0-E promoted PAYMENT_CONFIRMED to an actively dispatched type.
+        assert "PAYMENT_CONFIRMED" in active_values
+        assert "PAYMENT_CONFIRMED" not in future_values
         assert "ROUND_CREATED" in active_values   # actively used since Phase 9H
         assert active_values.isdisjoint(future_values)
 
@@ -156,4 +157,5 @@ class TestG5ActiveVsFutureTypes:
         body = resp.data.decode("utf-8")
 
         assert "Round Created" in body                 # active type shown
-        assert "Payment Confirmed" not in body         # future type hidden
+        assert "Payment Confirmed" in body             # active since P0-E
+        assert "Tournament Started" not in body        # future type hidden

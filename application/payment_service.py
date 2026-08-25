@@ -5,6 +5,7 @@ from app.extensions import db
 from infrastructure.repositories import PaymentRepository, RegistrationRepository, ParticipantRepository
 from infrastructure.db_models import RegistrationModel, PaymentModel
 from infrastructure.gateways.zarinpal_gateway import ZarinpalGateway
+from application.registration_service import OPEN_SLOT_STATUSES
 
 class PaymentService:
     gateway = ZarinpalGateway() # می‌توانیم در آینده این را از یک Registry بخوانیم
@@ -15,10 +16,24 @@ class PaymentService:
         registration = RegistrationRepository.get_by_id(registration_id)
         if not registration:
             raise ValueError("ثبت‌نام یافت نشد.")
-        
+
         if registration.user_id != user_id:
             raise ValueError("دسترسی غیرمجاز به این ثبت‌نام.")
-            
+
+        # P0-E: server-side gateway toggle enforcement (UI hiding is not enough).
+        if not registration.tournament.enable_online_payment:
+            raise ValueError(
+                "پرداخت آنلاین برای این مسابقه غیرفعال است. "
+                "لطفاً از روش کارت به کارت استفاده کنید."
+            )
+
+        # P0-E: a submitted receipt locks online payment until reviewed.
+        if registration.status == "receipt_submitted":
+            raise ValueError(
+                "رسید پرداخت شما در حال بررسی است؛ در این وضعیت امکان "
+                "پرداخت آنلاین وجود ندارد."
+            )
+
         if registration.status not in ["pending", "payment_pending"]:
             raise ValueError("این ثبت‌نام نیاز به پرداخت ندارد یا قبلاً پردازش شده است.")
             
@@ -110,12 +125,15 @@ class PaymentService:
                     .with_for_update()
                 )
                 active_count = len(ParticipantRepository.get_active(tournament.id))
-                # شمارش ثبت‌نام‌های پرداخت شده اما هنوز تأیید نشده
-                paid_count = RegistrationModel.query.filter_by(
-                    tournament_id=tournament.id, status="paid"
+                # P0-E: count EVERY open slot the same way as creation/approval
+                # so capacity accounting is consistent across all entry paths.
+                open_count = RegistrationModel.query.filter(
+                    RegistrationModel.tournament_id == tournament.id,
+                    RegistrationModel.status.in_(OPEN_SLOT_STATUSES),
+                    RegistrationModel.id != registration.id,
                 ).count()
-                
-                if active_count + paid_count >= tournament.max_players:
+
+                if active_count + open_count >= tournament.max_players:
                     # ظرفیت پر شده است! (Overbook)
                     registration.status = "rejected"
                     payment.gateway_metadata = json.dumps({

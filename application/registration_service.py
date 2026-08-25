@@ -22,10 +22,15 @@ from sqlalchemy import select
 
 # Registration statuses that mean the player already occupies a slot or an
 # open request; they block re-registration and hide the tournament from the
-# dashboard "available" list. (receipt_submitted arrives with P0-E.)
+# dashboard "available" list.
 BLOCKING_REGISTRATION_STATUSES = (
     "pending", "payment_pending", "receipt_submitted", "paid", "approved",
 )
+
+# P0-E: statuses that reserve capacity but have NOT yet produced a
+# participant (approved registrations are represented by participant rows,
+# so they must not be double-counted).
+OPEN_SLOT_STATUSES = ("pending", "payment_pending", "receipt_submitted", "paid")
 
 
 class RegistrationService:
@@ -141,10 +146,13 @@ class RegistrationService:
                 .with_for_update()
             )
             active_count = ParticipantRepository.get_active(tournament.id)
-            pending_count = RegistrationModel.query.filter_by(
-                tournament_id=tournament.id, status="pending"
+            # P0-E: count every capacity-reserving status consistently
+            # (same vocabulary as payment callback and approval re-check).
+            open_count = RegistrationModel.query.filter(
+                RegistrationModel.tournament_id == tournament.id,
+                RegistrationModel.status.in_(OPEN_SLOT_STATUSES),
             ).count()
-            if len(active_count) + pending_count >= tournament.max_players:
+            if len(active_count) + open_count >= tournament.max_players:
                 raise ValueError("ظرفیت ثبت‌نام تکمیل شده است.")
 
         # 4. Get or Create PlayerProfile
@@ -197,18 +205,21 @@ class RegistrationService:
                     profile.user_id = user.id
                     db.session.flush()
 
-        # 5. Check Duplicate Registration 
+        # 5. Check Duplicate Registration
         if user:
             existing_reg = RegistrationModel.query.filter_by(
                 tournament_id=tournament.id, user_id=user.id
             ).first()
-            if existing_reg and existing_reg.status in ["pending", "approved", "payment_pending"]:
+            # P0-E: every blocking status (incl. paid/receipt_submitted)
+            # produces a friendly Persian message instead of an
+            # IntegrityError from the DB unique constraint.
+            if existing_reg and existing_reg.status in BLOCKING_REGISTRATION_STATUSES:
                 raise ValueError("شما قبلاً در این مسابقه ثبت‌نام کرده‌اید و درخواست شما در حال بررسی است.")
         else:
             existing_reg = RegistrationModel.query.filter_by(
                 tournament_id=tournament.id, player_profile_id=profile.id
             ).first()
-            if existing_reg and existing_reg.status in ["pending", "approved", "payment_pending"]:
+            if existing_reg and existing_reg.status in BLOCKING_REGISTRATION_STATUSES:
                 raise ValueError("این پروفایل قبلاً در این مسابقه ثبت‌نام کرده است.")
 
         # 5. Validate Promo Code
@@ -283,9 +294,10 @@ class RegistrationService:
         registration = RegistrationRepository.get_by_id(registration_id)
         if not registration:
             raise ValueError("درخواست ثبت‌نام یافت نشد.")
-        # FIX: Allow approval for both 'pending' and 'paid' statuses
-        if registration.status not in ["pending", "paid"]:
+        # P0-E: receipt_submitted approvals confirm the bank-transfer payment.
+        if registration.status not in ["pending", "paid", "receipt_submitted"]:
             raise ValueError("این درخواست قبلاً پردازش شده است یا در حال پرداخت است.")
+        was_transfer_receipt = registration.status == "receipt_submitted"
 
         tournament = registration.tournament
         profile = registration.profile
@@ -304,6 +316,23 @@ class RegistrationService:
             if failures:
                 raise ValueError(first_failure_message(failures))
 
+        # P0-E: capacity re-check at approval time (row-locked, consistent
+        # open-slot vocabulary; this very registration is excluded).
+        if tournament.max_players:
+            db.session.execute(
+                select(TournamentModel.id)
+                .where(TournamentModel.id == tournament.id)
+                .with_for_update()
+            )
+            active_count = ParticipantRepository.get_active(tournament.id)
+            open_count = RegistrationModel.query.filter(
+                RegistrationModel.tournament_id == tournament.id,
+                RegistrationModel.status.in_(OPEN_SLOT_STATUSES),
+                RegistrationModel.id != registration.id,
+            ).count()
+            if len(active_count) + open_count >= tournament.max_players:
+                raise ValueError("ظرفیت ثبت‌نام تکمیل شده است.")
+
         # Use existing PlayerService to create the actual participant
         form_data = {
             "first_name": profile.first_name,
@@ -315,11 +344,11 @@ class RegistrationService:
             "fide_title": profile.fide_title or "",
             "rating": "0", # Rating will be updated by arbiter manually or via FIDE sync later
         }
-        
+
         participant = PlayerService.create(tournament, form_data)
 
         registration.status = "approved"
-        
+
         if registration.promo_code:
             # Re-read the row under lock so concurrent approvals cannot
             # overshoot max_uses (no-op on SQLite; FOR UPDATE on MySQL).
@@ -328,29 +357,103 @@ class RegistrationService:
             ).with_for_update().first()
             if promo:
                 promo.used_count += 1
-            
+
         db.session.commit()
-        
-        # ── Phase 9C: Notify User about Registration Approval ──
+
+        # ── Phase 9C / P0-E: Notify User ──
         try:
             from application.notification_service import NotificationService
             from application.notification_types import NotificationType
             recipient_id = registration.user_id if registration.user_id else (registration.profile.user_id if registration.profile else None)
             if recipient_id:
-                NotificationService.create_notification(
-                    user_id=recipient_id,
-                    type=NotificationType.REGISTRATION_APPROVED,
-                    title="ثبت‌نام تأیید شد",
-                    message=f"درخواست شما برای مسابقه '{tournament.name}' توسط داور تأیید شد.",
-                    link_url=f"/{tournament.public_id}"
-                )
+                if was_transfer_receipt:
+                    NotificationService.create_notification(
+                        user_id=recipient_id,
+                        type=NotificationType.PAYMENT_CONFIRMED,
+                        title="رسید پرداخت تأیید شد",
+                        message=f"رسید پرداخت شما برای مسابقه '{tournament.name}' تأیید شد و ثبت‌نام شما نهایی گردید.",
+                        link_url=f"/{tournament.public_id}"
+                    )
+                else:
+                    NotificationService.create_notification(
+                        user_id=recipient_id,
+                        type=NotificationType.REGISTRATION_APPROVED,
+                        title="ثبت‌نام تأیید شد",
+                        message=f"درخواست شما برای مسابقه '{tournament.name}' توسط داور تأیید شد.",
+                        link_url=f"/{tournament.public_id}"
+                    )
                 db.session.commit()
         except Exception as e:
             import logging
             logging.error(f"Failed to send approval notification: {str(e)}")
         # ──────────────────────────────────────────
-        
+
         return participant
+
+    # ── P0-E: receipt lifecycle ───────────────────────────────────────
+
+    _RECEIPT_FILE_EXTENSIONS = ("pdf", "png", "jpg", "jpeg")
+
+    @staticmethod
+    def discard_receipt(registration_id: int, user_id: int, receipt_dir: str) -> None:
+        """Player withdraws a submitted transfer receipt.
+
+        Deletes the stored file, restores the online payment method and
+        returns the registration to a retryable 'pending' state."""
+        import os
+        from werkzeug.utils import secure_filename
+
+        registration = RegistrationRepository.get_by_id(registration_id)
+        if not registration:
+            raise ValueError("ثبت‌نام یافت نشد.")
+        if registration.user_id != user_id:
+            raise ValueError("دسترسی غیرمجاز به این ثبت‌نام.")
+        if registration.status != "receipt_submitted":
+            raise ValueError("رسیدی برای انصراف وجود ندارد.")
+
+        if registration.receipt_path:
+            base = secure_filename(f"receipt_{registration.id}")
+            for ext in RegistrationService._RECEIPT_FILE_EXTENSIONS:
+                candidate = os.path.join(receipt_dir, f"{base}.{ext}")
+                if os.path.exists(candidate):
+                    os.remove(candidate)
+
+        registration.receipt_path = None
+        registration.payment_method = "online"
+        registration.rejection_reason = None
+        registration.status = "pending"
+        db.session.commit()
+
+    @staticmethod
+    def reject_receipt(registration_id: int, reason: str, receipt_dir: str) -> None:
+        """Arbiter/organizer rejects a submitted transfer receipt.
+
+        Per product decision the registration returns to a RETRYABLE
+        'pending' state with the reason recorded, so the player can submit
+        a new receipt or pay online instead of being terminally rejected."""
+        import os
+        from werkzeug.utils import secure_filename
+
+        registration = RegistrationRepository.get_by_id(registration_id)
+        if not registration:
+            raise ValueError("درخواست ثبت‌نام یافت نشد.")
+        if registration.status != "receipt_submitted":
+            raise ValueError("این درخواست رسیدی برای بررسی ندارد.")
+
+        if registration.receipt_path:
+            base = secure_filename(f"receipt_{registration.id}")
+            for ext in RegistrationService._RECEIPT_FILE_EXTENSIONS:
+                candidate = os.path.join(receipt_dir, f"{base}.{ext}")
+                if os.path.exists(candidate):
+                    os.remove(candidate)
+
+        registration.receipt_path = None
+        registration.payment_method = "online"
+        registration.rejection_reason = (reason or "").strip() or None
+        registration.status = "pending"
+        db.session.commit()
+
+    # ──────────────────────────────────────────────────────────────────
 
     @staticmethod
     def reject_registration(registration_id: int, reason: str = "") -> None:

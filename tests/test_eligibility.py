@@ -498,11 +498,17 @@ class TestDashboardAvailableFiltering:
         _reset_cached_login_user()
         body = client.get("/dashboard").get_data(as_text=True)
 
-        # Assert on the availability-card register links (the player's own
-        # registrations legitimately show tournament names elsewhere).
-        assert f"/{visible.public_id}/register" in body
-        assert f"/{registered.public_id}/register" not in body
-        assert f"/{ineligible.public_id}/register" not in body
+        # Scope to the AVAILABLE-tournaments card: since P0-E the "my
+        # tournaments" card may legitimately link to /register as a payment
+        # entry point for the player's own pending registrations.
+        start = body.find("تورنمنت‌های باز برای ثبت‌نام")
+        end = body.find("تورنمنت‌های من", start)
+        assert start != -1 and end != -1
+        available_section = body[start:end]
+
+        assert f"/{visible.public_id}/register" in available_section
+        assert f"/{registered.public_id}/register" not in available_section
+        assert f"/{ineligible.public_id}/register" not in available_section
 
     def test_paid_registration_also_blocks_dashboard_entry(self, app, player):
         paid = _tournament("11", "Dash Paid Open")

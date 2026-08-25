@@ -26,19 +26,35 @@
                     در انتظار پرداخت
                 {% elif existing_reg.status == 'payment_pending' %}
                     در حال فرآیند پرداخت
+                {% elif existing_reg.status == 'receipt_submitted' %}
+                    رسید پرداخت ارسال شده و در انتظار بررسی برگزارکننده است
                 {% elif existing_reg.status == 'paid' %}
                     پرداخت موفق بود (منتظر تأیید نهایی برگزارکننده)
                 {% elif existing_reg.status == 'approved' %}
                     تأیید شده
                 {% elif existing_reg.status == 'rejected' %}
-                    رد شده
+                    رد شده{% if existing_reg.rejection_reason %} — دلیل: {{ existing_reg.rejection_reason }}{% endif %}
                 {% endif %}
                 </p>
-                
+
+                {% if existing_reg.status == 'receipt_submitted' and existing_reg.receipt_path %}
+                    <!-- P0-E: receipt under review — preview + optional withdrawal -->
+                    <div style="margin-top: 20px; padding: 15px; background: #fffbeb; border-radius: 8px; border: 1px solid #fcd34d;">
+                        <h5 style="margin-top:0;">رسید پرداخت شما</h5>
+                        <p style="font-size: 0.9rem; color: #6b7280;">پس از بررسی برگزارکننده، وضعیت ثبت‌نام شما بروزرسانی می‌شود.</p>
+                        <a href="{{ url_for('registration.download_receipt', reg_id=existing_reg.id) }}" target="_blank" class="btn btn-info" style="margin-bottom: 10px;">مشاهده رسید ارسالی</a>
+                        <form action="{{ url_for('registration.discard_receipt', reg_id=existing_reg.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-secondary" onclick="return confirm('آیا از حذف رسید و بازگشت به حالت پرداخت مطمئن هستید؟')">حذف رسید و بازگشت به پرداخت</button>
+                        </form>
+                    </div>
+                {% endif %}
+
                 {% if existing_reg.final_price > 0 and existing_reg.status in ['pending', 'payment_pending'] %}
                     <div style="margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
-                        
-                        <!-- Option 1: Online Payment -->
+
+                        <!-- Option 1: Online Payment (server-side toggle enforced) -->
+                        {% if tournament.enable_online_payment %}
                         <h5 style="margin-top:0;">روش ۱: پرداخت آنلاین</h5>
                         <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 10px;">مبلغ: <strong>{{ existing_reg.final_price }} تومان</strong></p>
                         <form action="{{ url_for('payment.initiate_payment', reg_id=existing_reg.id) }}" method="POST">
@@ -47,6 +63,9 @@
                         </form>
 
                         <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #ccc;">
+                        {% else %}
+                        <p style="color: #b45309; font-size: 0.9rem;">پرداخت آنلاین برای این مسابقه غیرفعال است؛ لطفاً از روش کارت به کارت استفاده کنید.</p>
+                        {% endif %}
 
                         <!-- Option 2: Bank Transfer -->
                         {% if tournament.bank_card_number %}
