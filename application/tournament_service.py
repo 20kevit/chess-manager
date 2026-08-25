@@ -221,6 +221,42 @@ class TournamentService:
         db.session.commit()
 
     @staticmethod
+    def update_registration_requirements(tournament: TournamentModel,
+                                         form_data: dict) -> None:
+        """Update the organizer-configured entry requirements only (P0-D).
+
+        Persisted as canonical JSON via domain.registration; an all-empty
+        set means no restrictions.
+        """
+        from domain.registration import (
+            RequirementSet, serialize_requirements,
+        )
+
+        def _opt_int(key: str):
+            raw = (form_data.get(key) or "").strip()
+            if not raw:
+                return None
+            try:
+                return int(raw)
+            except ValueError:
+                return None
+
+        requirements = RequirementSet(
+            phone_required=form_data.get("phone_required") == "1",
+            photo_required=form_data.get("photo_required") == "1",
+            id_document_required=form_data.get("id_document_required") == "1",
+            fide_verification_required=(
+                form_data.get("fide_verification_required") == "1"
+            ),
+            min_age=_opt_int("min_age"),
+            max_age=_opt_int("max_age"),
+        )
+        tournament.registration_requirements = serialize_requirements(
+            requirements
+        )
+        db.session.commit()
+
+    @staticmethod
     def get_standings(tournament: TournamentModel) -> dict:
         """
         Calculate full standings with tiebreaks and rating changes.

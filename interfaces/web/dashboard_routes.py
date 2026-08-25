@@ -17,6 +17,12 @@ from infrastructure.file_storage import (
     FileStorageError, save_image, remove_image, resolve_private_file,
     IMAGE_MIMETYPES,
 )
+from application.registration_service import (
+    BLOCKING_REGISTRATION_STATUSES, RegistrationService,
+)
+from domain.registration import (
+    check_eligibility, parse_requirements, EligibilityProfile,
+)
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -58,16 +64,51 @@ def index():
     else:
         my_participations = []
 
-    # Fetch available tournaments for registration
+    # Fetch available tournaments for registration.
+    # P0-D: hide tournaments where the player already holds an open/successful
+    # registration or fails the configured entry requirements. This filter is
+    # ONLY a UX optimization — RegistrationService re-enforces everything
+    # server-side on direct POSTs.
     available_tournaments = []
     if is_player:
-        available_tournaments = TournamentModel.query.filter(
+        blocked_tournament_ids = {
+            reg.tournament_id
+            for reg in RegistrationModel.query.filter(
+                RegistrationModel.user_id == current_user.id,
+                RegistrationModel.status.in_(BLOCKING_REGISTRATION_STATUSES),
+            ).all()
+        }
+
+        eligibility_facts = (
+            RegistrationService._map_profile_to_eligibility(profile)
+            if profile is not None
+            else EligibilityProfile()
+        )
+
+        candidates = TournamentModel.query.filter(
             TournamentModel.status != "finished",
             db.or_(
                 TournamentModel.registration_deadline.is_(None),
                 TournamentModel.registration_deadline >= datetime.utcnow()
             )
-        ).order_by(TournamentModel.created_at.desc()).limit(10).all()
+        ).order_by(TournamentModel.created_at.desc()).all()
+
+        for tournament in candidates:
+            if tournament.id in blocked_tournament_ids:
+                continue
+            requirements = parse_requirements(
+                getattr(tournament, "registration_requirements", None)
+            )
+            if requirements.has_any:
+                reference = (
+                    tournament.start_date
+                    if tournament.start_date else datetime.utcnow().date()
+                )
+                if check_eligibility(eligibility_facts, requirements, reference):
+                    continue
+            available_tournaments.append(tournament)
+            if len(available_tournaments) >= 10:
+                break
 
     return render_template(
         "dashboard/index.html", 

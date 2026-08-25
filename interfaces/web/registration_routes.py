@@ -26,6 +26,7 @@ def pricing_settings(public_id):
     if request.method == "POST":
         try:
             TournamentService.update_pricing_settings(tournament, request.form)
+            TournamentService.update_registration_requirements(tournament, request.form)
             flash("تنظیمات مالی و ثبت‌نام با موفقیت ذخیره شد.", "success")
             return redirect(url_for("registration.pricing_settings", public_id=public_id))
         except Exception as e:
@@ -35,16 +36,22 @@ def pricing_settings(public_id):
     early_bird = json.loads(tournament.early_bird_config or "{}")
     veteran = json.loads(tournament.veteran_config or "{}")
     titles = json.loads(tournament.title_discounts or "{}")
-    
+
+    from domain.registration import parse_requirements
+    req_set = parse_requirements(
+        getattr(tournament, "registration_requirements", None)
+    )
+
     # Fetch existing promo codes for this tournament
     promo_codes = PromoCodeModel.query.filter_by(tournament_id=tournament.id).all()
-    
+
     return render_template(
         "tournament/pricing.html",
         tournament=tournament,
         early_bird=early_bird,
         veteran=veteran,
         titles=titles,
+        req_set=req_set,
         promo_codes=promo_codes, # <--- این خط اضافه شود
         is_admin=True
     )

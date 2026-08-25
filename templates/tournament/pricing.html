@@ -49,6 +49,37 @@
                 </div>
             </div>
 
+            <h4 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">شرایط ثبت‌نام (شرط شرکت)</h4>
+            <p style="font-size: 0.85em; color: #6b7280;">اگر هیچ شرطی فعال نباشد، همه می‌توانند ثبت‌نام کنند. محدوده سنی بر اساس تاریخ شروع مسابقه و به صورت بازه بسته (شامل مرزها) اعمال می‌شود.</p>
+            <div class="form-row" style="display:flex; flex-wrap:wrap; gap:15px;">
+                <label style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" name="phone_required" value="1" {% if req_set.phone_required %}checked{% endif %}>
+                    <span>شماره موبایل الزامی</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" name="photo_required" value="1" {% if req_set.photo_required %}checked{% endif %}>
+                    <span>عکس پروفایل الزامی</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" name="id_document_required" value="1" {% if req_set.id_document_required %}checked{% endif %}>
+                    <span>مدرک هویتی الزامی</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" name="fide_verification_required" value="1" {% if req_set.fide_verification_required %}checked{% endif %}>
+                    <span>تأیید هویت فیده الزامی</span>
+                </label>
+            </div>
+            <div class="form-row" style="margin-top:10px;">
+                <div class="form-group col-md-3">
+                    <label>حداقل سن</label>
+                    <input type="number" name="min_age" min="1" max="120" value="{{ req_set.min_age if req_set.min_age is not none else '' }}" placeholder="بدون محدودیت">
+                </div>
+                <div class="form-group col-md-3">
+                    <label>حداکثر سن</label>
+                    <input type="number" name="max_age" min="1" max="120" value="{{ req_set.max_age if req_set.max_age is not none else '' }}" placeholder="بدون محدودیت">
+                </div>
+            </div>
+
             <h4 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">قوانین تخفیف</h4>
             
             <div class="form-row">

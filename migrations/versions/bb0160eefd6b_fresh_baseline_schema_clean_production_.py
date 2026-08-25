@@ -194,6 +194,7 @@ def upgrade():
     sa.Column('veteran_config', sa.Text(), nullable=True),
     sa.Column('women_discount_percent', sa.Integer(), nullable=True),
     sa.Column('title_discounts', sa.Text(), nullable=True),
+    sa.Column('registration_requirements', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['organizer_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
     mysql_charset='utf8mb4',

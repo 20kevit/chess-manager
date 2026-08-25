@@ -13,7 +13,20 @@ from infrastructure.db_models import (
 )
 from application.player_service import PlayerService
 from domain.pricing import calculate_price, TournamentPricingData, PlayerPricingData, PromoCodeData
+from domain.registration import (
+    EligibilityProfile, check_eligibility, first_failure_message,
+    normalize_phone, parse_requirements,
+)
 from sqlalchemy import select
+
+
+# Registration statuses that mean the player already occupies a slot or an
+# open request; they block re-registration and hide the tournament from the
+# dashboard "available" list. (receipt_submitted arrives with P0-E.)
+BLOCKING_REGISTRATION_STATUSES = (
+    "pending", "payment_pending", "receipt_submitted", "paid", "approved",
+)
+
 
 class RegistrationService:
 
@@ -39,6 +52,71 @@ class RegistrationService:
             birth_date=profile.birth_date
         )
 
+    # ── P0-D: eligibility ─────────────────────────────────────────────
+
+    @staticmethod
+    def _build_eligibility_profile(user, form_data: dict) -> EligibilityProfile:
+        """Map the effective player facts for eligibility.
+
+        Existing linked profile wins; the registration form is only the
+        source for players whose profile is created by this very request
+        (guests / first-time players).
+        """
+        profile = user.profile if user else None
+        if profile is not None:
+            return RegistrationService._map_profile_to_eligibility(profile)
+
+        birth_date = None
+        birth_str = (form_data.get("birth_date") or "").strip()
+        if birth_str:
+            try:
+                birth_date = datetime.strptime(birth_str, "%Y-%m-%d").date()
+            except ValueError:
+                birth_date = None
+
+        return EligibilityProfile(
+            birth_date=birth_date,
+            phone=normalize_phone(form_data.get("phone", "")) or "",
+            has_photo=False,
+            has_id_document=False,
+            fide_verified=False,
+        )
+
+    @staticmethod
+    def _map_profile_to_eligibility(profile: PlayerProfileModel) -> EligibilityProfile:
+        return EligibilityProfile(
+            birth_date=profile.birth_date,
+            phone=profile.phone or "",
+            has_photo=bool(profile.photo_path),
+            has_id_document=bool(profile.id_document_path),
+            fide_verified=(profile.fide_verification_status == "verified"),
+        )
+
+    @staticmethod
+    def _eligibility_reference_date(tournament: TournamentModel) -> date:
+        """Product rule: age is measured on the TOURNAMENT START DATE.
+        When no start date exists yet, fall back to today so age rules
+        still gate deterministically."""
+        return tournament.start_date if tournament.start_date else datetime.utcnow().date()
+
+    @staticmethod
+    def _check_eligibility_or_raise(tournament: TournamentModel,
+                                    user, form_data: dict) -> None:
+        """Raise ValueError with a Persian reason when the player violates
+        the tournament's configured requirements."""
+        requirements = parse_requirements(
+            getattr(tournament, "registration_requirements", None)
+        )
+        if not requirements.has_any:
+            return
+        profile = RegistrationService._build_eligibility_profile(user, form_data)
+        reference = RegistrationService._eligibility_reference_date(tournament)
+        failures = check_eligibility(profile, requirements, reference)
+        if failures:
+            raise ValueError(first_failure_message(failures))
+
+    # ──────────────────────────────────────────────────────────────────
+
     @staticmethod
     def create_registration(tournament: TournamentModel, user: UserModel, form_data: dict) -> RegistrationModel:
         # 1. Check Deadline
@@ -46,7 +124,11 @@ class RegistrationService:
             if datetime.utcnow() > tournament.registration_deadline:
                 raise ValueError("مهلت ثبت‌نام به پایان رسیده است.")
 
-        # 2. Check Capacity
+        # 2. Check Eligibility (P0-D): ordered requirement enforcement.
+        # Server-side authority — dashboard filtering is only an optimization.
+        RegistrationService._check_eligibility_or_raise(tournament, user, form_data)
+
+        # 3. Check Capacity
         # Row-lock the tournament so concurrent registrations serialize on the
         # count-then-insert check (no-op lock on SQLite; FOR UPDATE on MySQL).
         if tournament.max_players:
@@ -62,7 +144,7 @@ class RegistrationService:
             if len(active_count) + pending_count >= tournament.max_players:
                 raise ValueError("ظرفیت ثبت‌نام تکمیل شده است.")
 
-        # 3. Get or Create PlayerProfile
+        # 4. Get or Create PlayerProfile
         profile = None
         
         if user and user.profile:
@@ -112,7 +194,7 @@ class RegistrationService:
                     profile.user_id = user.id
                     db.session.flush()
 
-        # 4. Check Duplicate Registration 
+        # 5. Check Duplicate Registration 
         if user:
             existing_reg = RegistrationModel.query.filter_by(
                 tournament_id=tournament.id, user_id=user.id
@@ -204,6 +286,20 @@ class RegistrationService:
 
         tournament = registration.tournament
         profile = registration.profile
+
+        # P0-D defense in depth: re-validate requirements at approval time
+        # (requirements may have been tightened after the request was made).
+        requirements = parse_requirements(
+            getattr(tournament, "registration_requirements", None)
+        )
+        if requirements.has_any:
+            eligibility = RegistrationService._map_profile_to_eligibility(profile)
+            failures = check_eligibility(
+                eligibility, requirements,
+                RegistrationService._eligibility_reference_date(tournament),
+            )
+            if failures:
+                raise ValueError(first_failure_message(failures))
 
         # Use existing PlayerService to create the actual participant
         form_data = {

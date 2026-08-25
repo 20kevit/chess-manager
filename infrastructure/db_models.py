@@ -163,6 +163,10 @@ class TournamentModel(db.Model):
     women_discount_percent = db.Column(db.Integer, default=0)
     title_discounts = db.Column(db.Text, default='{"GM": 100, "IM": 50, "FM": 25, "WGM": 100, "WIM": 50, "WFM": 25}')
 
+    # P0-D: organizer-configured entry requirements; JSON parsed by
+    # domain.registration.parse_requirements ('{}' = no requirements).
+    registration_requirements = db.Column(db.Text, default="{}")
+
     rounds = db.relationship("RoundModel", backref="tournament", lazy="select")
 
 
