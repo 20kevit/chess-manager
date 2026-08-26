@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}جوایز | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>🏆 جوایز مسابقه</h1>
+        <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
+    </div>
+    <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
+        ترتیب نمایش، ترتیب تخصیص است: اگر یک بازیکن واجد چند جایزه باشد فقط نخستین (بالاترین اولویت) به او تعلق می‌گیرد. مبالغ به تومان است و پس از اتمام هر دور به‌صورت خودکار تخصیص می‌یابند.
+    </p>
+</div>
+
+<form method="POST" action="{{ url_for('tournament.prize_settings', public_id=tournament.public_id) }}"
+      class="form-container" style="max-width: 980px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
+    <input type="hidden" name="prizes_json" id="prizes_json">
+
+    <!-- Quick-add category templates -->
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+        <h2 class="section-title">➕ افزودن سریع دسته</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-secondary btn-sm add-cat" data-cat="open">کلی</button>
+            <button type="button" class="btn btn-secondary btn-sm add-cat" data-cat="women">بانوان</button>
+            <button type="button" class="btn btn-secondary btn-sm add-cat" data-cat="age_group">رده سنی</button>
+            <button type="button" class="btn btn-secondary btn-sm add-cat" data-cat="rating_band">بازه ریتینگ</button>
+            <button type="button" class="btn btn-secondary btn-sm add-cat" data-cat="unrated">بدون ریتینگ</button>
+            <button type="button" class="btn btn-secondary btn-sm add-cat" data-cat="custom">سایر (دستی)</button>
+        </div>
+        <p style="font-size:0.78rem; color:#94a3b8; margin-top:8px;">دسته «سایر» فاقد منطق خودکار است و صرفاً برای نمایش دستی استفاده می‌شود.</p>
+    </div>
+
+    <!-- Definition rows -->
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+        <h2 class="section-title">📋 جوایز تعریف‌شده (به ترتیب اولویت)</h2>
+        <div id="prizes-container">
+            {% for r in rows %}
+            <div class="prize-row" data-cat="{{ r.category_type }}"
+                 style="border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:10px; background:#fff;">
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                    <button type="button" class="btn btn-light btn-sm move-up">▲</button>
+                    <button type="button" class="btn btn-light btn-sm move-down">▼</button>
+                    <span class="cat-label" style="font-weight:bold;">{{ category_titles[r.category_type] or r.category_type }}</span>
+                    <label style="font-size:0.8rem;">رده:
+                        <select class="prize-rank" style="width:70px;">
+                            {% for i in range(1, 11) %}<option value="{{ i }}" {% if r.rank == i %}selected{% endif %}>{{ i }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label style="font-size:0.8rem;">مبلغ (تومان):
+                        <input type="number" class="prize-amount" min="0" value="{{ r.amount }}" style="width:140px;">
+                    </label>
+                    <input type="text" class="prize-desc" placeholder="توضیح (اختیاری)" value="{{ r.description }}" style="flex:1; min-width:160px;">
+                    <button type="button" class="btn btn-danger btn-sm remove-prize">حذف</button>
+                </div>
+                <div class="cat-params" style="display:flex; gap:14px; font-size:0.85rem;">
+                    <label class="p-age {% if r.category_type != 'age_group' %}hidden-param{% endif %}">حداقل سن:
+                        <input type="number" class="pp-min_age" min="1" max="120" value="{{ r.params.min_age if r.params.min_age is defined else '' }}" style="width:80px;"></label>
+                    <label class="p-age {% if r.category_type != 'age_group' %}hidden-param{% endif %}">حداکثر سن:
+                        <input type="number" class="pp-max_age" min="1" max="120" value="{{ r.params.max_age if r.params.max_age is defined else '' }}" style="width:80px;"></label>
+                    <label class="p-band {% if r.category_type != 'rating_band' %}hidden-param{% endif %}">از ریتینگ:
+                        <input type="number" class="pp-min_rating" min="0" value="{{ r.params.min_rating if r.params.min_rating is defined else '' }}" style="width:90px;"></label>
+                    <label class="p-band {% if r.category_type != 'rating_band' %}hidden-param{% endif %}">تا ریتینگ:
+                        <input type="number" class="pp-max_rating" min="0" value="{{ r.params.max_rating if r.params.max_rating is defined else '' }}" style="width:90px;"></label>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <p id="empty-prizes" style="color:#6b7280; text-align:center;" {% if rows %}hidden{% endif %}>هنوز جایزه‌ای تعریف نشده است.</p>
+    </div>
+
+    <div class="form-actions" style="margin-top:25px; display:flex; gap:15px;">
+        <button type="submit" class="btn btn-primary" style="padding:12px 35px;">💾 ذخیره جوایز</button>
+    </div>
+</form>
+
+<form method="POST" action="{{ url_for('tournament.prizes_recompute', public_id=tournament.public_id) }}" style="max-width:980px; margin-top:-5px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-info">🔄 بروزرسانی تخصیص جوایز</button>
+</form>
+
+<style>.hidden-param{display:none;}</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var container = document.getElementById('prizes-container');
+    var titles = {{ category_titles | tojson }};
+
+    function refreshEmpty() {
+        var empty = !container.querySelector('.prize-row');
+        document.getElementById('empty-prizes').hidden = !empty;
+    }
+
+    function toggleParams(row) {
+        var cat = row.getAttribute('data-cat');
+        row.querySelector('.p-age').classList.toggle('hidden-param', cat !== 'age_group');
+        row.querySelectorAll('.p-band').forEach(function (el) {
+            el.classList.toggle('hidden-param', cat !== 'rating_band');
+        });
+    }
+
+    function bindRow(row) {
+        row.querySelector('.move-up').onclick = function () {
+            var prev = row.previousElementSibling;
+            if (prev) container.insertBefore(row, prev);
+        };
+        row.querySelector('.move-down').onclick = function () {
+            var next = row.nextElementSibling;
+            if (next) container.insertBefore(next, row);
+        };
+        row.querySelector('.remove-prize').onclick = function () {
+            row.remove(); refreshEmpty();
+        };
+        toggleParams(row);
+    }
+
+    document.querySelectorAll('#prizes-container .prize-row').forEach(bindRow);
+
+    document.querySelectorAll('.add-cat').forEach(function (btn) {
+        btn.onclick = function () {
+            var cat = btn.getAttribute('data-cat');
+            var row = document.createElement('div');
+            row.className = 'prize-row';
+            row.setAttribute('data-cat', cat);
+            row.style.cssText = 'border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:10px;background:#fff;';
+            var rankOptions = '';
+            for (var i = 1; i <= 10; i++) rankOptions += '<option value="' + i + '">' + i + '</option>';
+            row.innerHTML =
+                '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">' +
+                '<button type="button" class="btn btn-light btn-sm move-up">▲</button>' +
+                '<button type="button" class="btn btn-light btn-sm move-down">▼</button>' +
+                '<span class="cat-label" style="font-weight:bold;">' + (titles[cat] || cat) + '</span>' +
+                '<label style="font-size:0.8rem;">رده:<select class="prize-rank" style="width:70px;">' + rankOptions + '</select></label>' +
+                '<label style="font-size:0.8rem;">مبلغ (تومان):<input type="number" class="prize-amount" min="0" value="0" style="width:140px;"></label>' +
+                '<input type="text" class="prize-desc" placeholder="توضیح (اختیاری)" style="flex:1;min-width:160px;">' +
+                '<button type="button" class="btn btn-danger btn-sm remove-prize">حذف</button></div>' +
+                '<div class="cat-params" style="display:flex;gap:14px;font-size:0.85rem;">' +
+                '<label class="p-age">حداقل سن:<input type="number" class="pp-min_age" min="1" style="width:80px;"></label>' +
+                '<label class="p-age">حداکثر سن:<input type="number" class="pp-max_age" min="1" style="width:80px;"></label>' +
+                '<label class="p-band">از ریتینگ:<input type="number" class="pp-min_rating" min="0" style="width:90px;"></label>' +
+                '<label class="p-band">تا ریتینگ:<input type="number" class="pp-max_rating" min="0" style="width:90px;"></label></div>';
+            container.appendChild(row);
+            bindRow(row);
+            refreshEmpty();
+        };
+    });
+
+    // DOM order -> priority; serialize payload right before submit.
+    document.querySelector('form').addEventListener('submit', function () {
+        var out = [];
+        container.querySelectorAll('.prize-row').forEach(function (row) {
+            function num(cls) {
+                var v = row.querySelector(cls).value;
+                return v === '' ? null : parseInt(v, 10);
+            }
+            var entry = {
+                category_type: row.getAttribute('data-cat'),
+                params: {},
+                rank: parseInt(row.querySelector('.prize-rank').value, 10) || 1,
+                amount: parseInt(row.querySelector('.prize-amount').value, 10) || 0,
+                description: row.querySelector('.prize-desc').value.trim()
+            };
+            ['min_age', 'max_age', 'min_rating', 'max_rating'].forEach(function (k) {
+                var v = num('.pp-' + k);
+                if (v !== null) entry.params[k] = v;
+            });
+            out.push(entry);
+        });
+        document.getElementById('prizes_json').value = JSON.stringify(out);
+    });
+
+    refreshEmpty();
+});
+</script>
+{% endblock %}

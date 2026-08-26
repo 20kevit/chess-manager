@@ -23,6 +23,8 @@ from infrastructure.file_storage import (
     FileStorageError, save_pdf, remove_pdf, resolve_private_file,
     PDF_MIMETYPE,
 )
+from application.prize_service import PrizeService
+from domain.prizes import CATEGORY_TITLES_FA
 
 tournament_bp = Blueprint("tournament", __name__)
 
@@ -112,6 +114,7 @@ def view(public_id):
         can_manage=can_manage,
         can_edit_results=can_edit_results,
         rulebook_sections=parse_sections(tournament.rulebook_sections),
+        prize_summary=PrizeService.get_public_prize_summary(tournament),
         **standings
     )
 
@@ -411,6 +414,7 @@ def summary(public_id):
         most_wins=most_wins,
         age_winners=age_winners,
         custom_winners=custom_winners,
+        prize_summary=PrizeService.get_public_prize_summary(tournament),
     )
 
 @tournament_bp.route("/search")
@@ -453,6 +457,49 @@ def settings(public_id):
         is_admin=True
     )
 
+
+# ── P1-C: Advanced Prize System ───────────────────────────────────────
+
+@tournament_bp.route("/<public_id>/admin/prizes", methods=["GET", "POST"])
+def prize_settings(public_id):
+    """Manager-tier prize definition editor (replace-all payload)."""
+    tournament = require_admin(public_id)
+    if not tournament:
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        try:
+            count = PrizeService.save_prizes(
+                tournament, request.form.get("prizes_json", "[]"))
+            flash(f"جوایز ذخیره شد ({count} جایزه).", "success")
+        except ValueError as e:
+            flash(str(e), "error")
+        return redirect(url_for("tournament.prize_settings",
+                                public_id=public_id))
+
+    return render_template(
+        "tournament/prize_settings.html",
+        tournament=tournament,
+        rows=PrizeService.get_editor_rows(tournament),
+        category_titles=CATEGORY_TITLES_FA,
+        is_admin=True,
+    )
+
+
+@tournament_bp.route("/<public_id>/admin/prizes/recompute", methods=["POST"])
+def prizes_recompute(public_id):
+    """Manager-side recompute/publish of the allocation cache."""
+    tournament = require_admin(public_id)
+    if not tournament:
+        abort(403)
+
+    summary = PrizeService.allocate_for_tournament(tournament)
+    flash(f"تخصیص جوایز بروزرسانی شد: "
+          f"{summary['awarded']} از {summary['definitions']} جایزه تخصیص یافت.",
+          "success")
+    return redirect(url_for("tournament.prize_settings", public_id=public_id))
+
+# ─────────────────────────────────────────────────────────────────────
 
 # ── P1-D: Rulebook system ─────────────────────────────────────────────
 

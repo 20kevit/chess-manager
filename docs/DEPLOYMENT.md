@@ -139,8 +139,8 @@ updates with 403s visible only in `<instance>/telegram_debug.log`.
 ## 14. Database schema: the three paths (Phase-8 checkpoint)
 
 The schema is maintained by ONE squashed baseline revision
-(`bb0160eefd6b`, `down_revision = None`, 20 tables). P0-A…P0-G added four
-nullable columns to that same baseline in place:
+(`bb0160eefd6b`, `down_revision = None`, 22 tables). Post-launch changes
+folded into that same baseline in place:
 
 | Table | Added columns |
 |---|---|
@@ -154,7 +154,7 @@ pre-P0 database from a post-P0 one — both are stamped
 ### Path A — Fresh installation (empty MySQL database)
 1. Create empty DB + user; fill `.env` (`DB_*`, `SECRET_KEY`,
    `FLASK_ENV=production`).
-2. `flask --app run.py db upgrade` → creates all 20 tables at current shape.
+2. `flask --app run.py db upgrade` → creates all 22 tables at current shape.
 3. Verify: `flask --app run.py db check` reports no pending operations;
    log in and create a tournament.
 
@@ -220,6 +220,37 @@ SET @ddl := IF(@col_exists = 0,
   'ALTER TABLE tournaments ADD COLUMN rulebook_pdf_path VARCHAR(255) NULL',
   'SELECT ''tournaments.rulebook_pdf_path already present''');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- P1-C prize tables (brand-new; CREATE ... IF NOT EXISTS is idempotent):
+CREATE TABLE IF NOT EXISTS tournament_prizes (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    tournament_id INT NOT NULL,
+    category_type VARCHAR(20) NULL,
+    category_params TEXT NULL,
+    rank INT NULL,
+    amount INT NULL,
+    description VARCHAR(255) NULL,
+    priority INT NULL,
+    CONSTRAINT fk_prizes_tournament FOREIGN KEY (tournament_id)
+        REFERENCES tournaments (id),
+    KEY ix_tournament_prizes_tournament_id (tournament_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS prize_allocations (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    tournament_id INT NOT NULL,
+    prize_id INT NOT NULL,
+    participant_id INT NOT NULL,
+    awarded_at DATETIME NULL,
+    UNIQUE KEY uq_prize_allocation_prize_participant (prize_id, participant_id),
+    CONSTRAINT fk_alloc_tournament FOREIGN KEY (tournament_id)
+        REFERENCES tournaments (id),
+    CONSTRAINT fk_alloc_prize FOREIGN KEY (prize_id)
+        REFERENCES tournament_prizes (id),
+    CONSTRAINT fk_alloc_participant FOREIGN KEY (participant_id)
+        REFERENCES tournament_participants (id),
+    KEY ix_prize_allocations_tournament_id (tournament_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
 Post-checks:

@@ -156,13 +156,15 @@ class TestMySQLDialectRender:
     def test_mysql_ddl_is_complete(self):
         ddl = self._render_mysql_ddl()
 
-        assert ddl.count("CREATE TABLE") == 20
+        assert ddl.count("CREATE TABLE") == 22
         # Every previously-missing structure is present in MySQL DDL form.
         for probe in ("telegram_chat_id", "bank_transfer_notes",
                       "enable_online_payment", "rejection_reason",
                       "fide_verification_status",
                       "CREATE TABLE notifications", "CREATE TABLE fide_ratings",
                       "CREATE TABLE player_verifications",
-                      "CREATE TABLE temp_import_data"):
+                      "CREATE TABLE temp_import_data",
+                      "CREATE TABLE tournament_prizes",
+                      "CREATE TABLE prize_allocations"):
             assert probe in ddl, f"MySQL DDL missing: {probe}"
         assert "admin_code" not in ddl

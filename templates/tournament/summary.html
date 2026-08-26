@@ -8,6 +8,28 @@
     <p>{{ tournament.name }}</p>
 </div>
 
+{% if prize_summary and prize_summary.winners %}
+<!-- P1-C: compact public prize winners (priority order, Toman amounts) -->
+<div class="card" style="padding: 18px; margin-bottom: 25px;">
+    <h3 style="margin-top:0; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">🏆 برندگان جوایز</h3>
+    <table class="standings-table" style="width:100%; margin-top:8px;">
+        <tbody>
+        {% for w in prize_summary.winners %}
+            <tr>
+                <td>{{ w.rank_medal }}</td>
+                <td><strong>{{ w.category_title }}</strong>{% if w.description %} <span style="font-size:0.8rem;color:#64748b;">({{ w.description }})</span>{% endif %}</td>
+                <td>{{ w.winner_name }}</td>
+                <td style="text-align:left; white-space:nowrap;">{{ w.amount | toman_formatter }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <p style="text-align:left; font-size:0.85rem; color:#64748b; margin-bottom:0;">
+        جمع جوایز: {{ prize_summary.total_awarded_amount | toman_formatter }}
+    </p>
+</div>
+{% endif %}
+
 <!-- اطلاعات کلی -->
 <div class="summary-info">
     <div class="summary-grid">

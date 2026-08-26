@@ -48,6 +48,61 @@ MYSQL_UPGRADE_ALTERS = [
     "ALTER TABLE tournaments ADD COLUMN rulebook_pdf_path VARCHAR(255) NULL",
 ]
 
+# P1-C: brand-new tables added post-launch; existing databases create them
+# via these documented statements (mirrors DEPLOYMENT.md Path B exactly).
+MYSQL_UPGRADE_NEW_TABLES = [
+    """CREATE TABLE IF NOT EXISTS tournament_prizes (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        tournament_id INT NOT NULL,
+        category_type VARCHAR(20) NULL,
+        category_params TEXT NULL,
+        rank INT NULL,
+        amount INT NULL,
+        description VARCHAR(255) NULL,
+        priority INT NULL,
+        CONSTRAINT fk_prizes_tournament FOREIGN KEY (tournament_id) REFERENCES tournaments (id),
+        KEY ix_tournament_prizes_tournament_id (tournament_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+    """CREATE TABLE IF NOT EXISTS prize_allocations (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        tournament_id INT NOT NULL,
+        prize_id INT NOT NULL,
+        participant_id INT NOT NULL,
+        awarded_at DATETIME NULL,
+        UNIQUE KEY uq_prize_allocation_prize_participant (prize_id, participant_id),
+        CONSTRAINT fk_alloc_tournament FOREIGN KEY (tournament_id) REFERENCES tournaments (id),
+        CONSTRAINT fk_alloc_prize FOREIGN KEY (prize_id) REFERENCES tournament_prizes (id),
+        CONSTRAINT fk_alloc_participant FOREIGN KEY (participant_id) REFERENCES tournament_participants (id),
+        KEY ix_prize_allocations_tournament_id (tournament_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
+]
+
+# SQLite equivalents for the scratch-DB upgrade-path test (same shape).
+SQLITE_UPGRADE_NEW_TABLES = [
+    """CREATE TABLE IF NOT EXISTS tournament_prizes (
+        id INTEGER NOT NULL PRIMARY KEY,
+        tournament_id INTEGER NOT NULL,
+        category_type VARCHAR(20),
+        category_params TEXT,
+        rank INTEGER,
+        amount INTEGER,
+        description VARCHAR(255),
+        priority INTEGER,
+        FOREIGN KEY(tournament_id) REFERENCES tournaments (id)
+    )""",
+    """CREATE TABLE IF NOT EXISTS prize_allocations (
+        id INTEGER NOT NULL PRIMARY KEY,
+        tournament_id INTEGER NOT NULL,
+        prize_id INTEGER NOT NULL,
+        participant_id INTEGER NOT NULL,
+        awarded_at DATETIME,
+        UNIQUE (prize_id, participant_id),
+        FOREIGN KEY(tournament_id) REFERENCES tournaments (id),
+        FOREIGN KEY(prize_id) REFERENCES tournament_prizes (id),
+        FOREIGN KEY(participant_id) REFERENCES tournament_participants (id)
+    )""",
+]
+
 
 def test_single_baseline_contains_all_p0_columns():
     """Every folded column must appear in the correct table block of the
@@ -73,7 +128,7 @@ def test_no_schema_drift_beyond_p0_columns():
     contains no destructive operations (drops belong to downgrade only)."""
     with open(BASELINE, encoding="utf-8") as f:
         source = f.read()
-    assert source.count("op.create_table(") == 20
+    assert source.count("op.create_table(") == 22
 
     upgrade_start = source.index("def upgrade")
     downgrade_start = source.index("def downgrade")
@@ -188,6 +243,16 @@ def test_existing_db_upgrade_adds_p0_columns_without_data_loss(tmp_path):
             women_discount_percent INTEGER,
             title_discounts TEXT
         );
+
+        -- Pre-existing core table every production DB already has
+        -- (prize_allocations FK target).
+        CREATE TABLE tournament_participants (
+            id INTEGER NOT NULL PRIMARY KEY,
+            tournament_id INTEGER NOT NULL,
+            player_profile_id INTEGER NOT NULL,
+            start_number INTEGER NOT NULL,
+            status VARCHAR(20)
+        );
     """)
     cur.execute(
         "INSERT INTO player_profiles (first_name, last_name, national_id)"
@@ -201,12 +266,16 @@ def test_existing_db_upgrade_adds_p0_columns_without_data_loss(tmp_path):
     )
     conn.commit()
 
-    # 2. Apply the documented upgrade ALTERs.
+    # 2. Apply the documented upgrade ALTERs + new-table CREATEs.
     for statement in MYSQL_UPGRADE_ALTERS:
+        cur.execute(statement)
+    # MySQL-flavoured DDL is not valid SQLite; use the shape-equivalent
+    # statements documented alongside them.
+    for statement in SQLITE_UPGRADE_NEW_TABLES:
         cur.execute(statement)
     conn.commit()
 
-    # 3. Populate the new columns exactly as the application would.
+    # 3. Populate new columns/tables exactly as the application would.
     cur.execute(
         "UPDATE player_profiles SET phone=?, photo_path=? WHERE id=1",
         ("09121112233", "profile_1.png"),
@@ -214,6 +283,10 @@ def test_existing_db_upgrade_adds_p0_columns_without_data_loss(tmp_path):
     cur.execute(
         "UPDATE tournaments SET registration_requirements=? WHERE id=1",
         ('{"min_age": 18}',),
+    )
+    cur.execute(
+        "INSERT INTO tournament_prizes (tournament_id, category_type,"
+        " rank, amount, priority) VALUES (1, 'open', 1, 10000000, 0)"
     )
     conn.commit()
 
@@ -232,18 +305,26 @@ def test_existing_db_upgrade_adds_p0_columns_without_data_loss(tmp_path):
         "SELECT phone FROM player_profiles").fetchone()[0] == "09121112233"
     assert 'min_age' in cur.execute(
         "SELECT registration_requirements FROM tournaments").fetchone()[0]
+    assert cur.execute(
+        "SELECT amount FROM tournament_prizes").fetchone()[0] == 10000000
     conn.close()
 
-    # 6. Final column sets must equal the CURRENT models exactly.
+    # 6. Final column sets must equal the CURRENT models exactly
+    #    (including the P1-C tables created by Path B).
     from sqlalchemy import create_engine
     from sqlalchemy.schema import MetaData
     engine = create_engine(f"sqlite:///{db_file.as_posix()}")
     reflected = MetaData()
-    reflected.reflect(bind=engine, only=["player_profiles", "tournaments"])
+    reflected.reflect(
+        bind=engine,
+        only=["player_profiles", "tournaments",
+              "tournament_prizes", "prize_allocations"],
+    )
 
     app = create_app(TestConfig)
     with app.app_context():
-        for table in ("player_profiles", "tournaments"):
+        for table in ("player_profiles", "tournaments",
+                      "tournament_prizes", "prize_allocations"):
             model_cols = {c.name for c in _db.metadata.tables[table].columns}
             upgraded_cols = set(reflected.tables[table].columns.keys())
             assert model_cols == upgraded_cols, table

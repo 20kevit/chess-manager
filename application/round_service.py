@@ -251,6 +251,10 @@ class RoundService:
 
         db.session.commit()
 
+        # P1-C: refresh the prize allocation cache (fire-safe).
+        from application.prize_service import PrizeService
+        PrizeService.refresh_for_tournament(tournament.id)
+
     @staticmethod
     def save_results(round_obj, form_data) -> None:
         pairings = PairingRepository.get_all_for_round(round_obj.id)
@@ -444,6 +448,11 @@ class RoundService:
         RoundService._initialize_pairing_numbers(tournament_id)
 
         db.session.commit()
+
+        # P1-C: keep the prize report cache consistent after any full
+        # Swiss-state rebuild (imports/restores/round deletion).
+        from application.prize_service import PrizeService
+        PrizeService.refresh_for_tournament(tournament_id)
 
     # ═════════════════════════════════════════════════════════
     #  5. Internal Utilities (Private)
