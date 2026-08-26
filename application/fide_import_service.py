@@ -1,79 +1,163 @@
 """
 FIDE Import Orchestration Service.
-Downloads, parses, and stores FIDE rating data into the database.
+Downloads (or picks up a server-placed ZIP/XML), parses, and stores FIDE
+rating data into the database.
+
+P1-G: honest stage/percent progress persisted on the import row, a
+row-locked concurrency claim, retained stale-run recovery, and a
+background-thread launcher so the HTTP request returns immediately.
+The synchronous core remains callable directly (tests / CLI).
 """
+import logging
+import threading
 from datetime import datetime, timedelta
-from typing import List, Optional
+
 from app.extensions import db
-from infrastructure.repositories import FidePlayerRepository, FideRatingRepository, FideImportRepository
+from infrastructure.repositories import (
+    FidePlayerRepository, FideRatingRepository, FideImportRepository,
+)
 from infrastructure.db_models import FidePlayerModel, FideRatingModel, FideImportModel
-from infrastructure.fide.storage import FideStorageManager
+from infrastructure.fide.storage import (
+    FideStorageManager, FideStorageError, count_players_in_xml,
+    get_period_string,
+)
+from infrastructure.fide import storage as _fide_storage
 from domain.fide.parser import parse_fide_xml
 from flask import current_app
 
+STALE_RUN_MINUTES = 15
+BATCH_SIZE = 500
+
+
 class FideImportService:
+
+    # ── Public entries ────────────────────────────────────────────────
 
     @staticmethod
     def run_import() -> dict:
-        """
-        Main entry point for importing FIDE data.
-        Returns a dictionary with import results.
-        """
-        period = FideStorageManager.get_period_string()
-        allowed_feds = current_app.config.get("FIDE_ALLOWED_FEDERATIONS")
-        
-        # 1. Check if already imported
-        existing_import = FideImportRepository.get_by_period(period)
-        if existing_import and existing_import.status == "success":
-            return {
-                "status": "skipped",
-                "message": f"Period {period} already imported successfully."
-            }
+        """Synchronous entry point (kept for tests/CLI compatibility)."""
+        return FideImportService.execute_import()
 
-        # 1b. Guard against concurrent/double-triggered imports: a fresh
-        # 'pending' record means an import is currently running.
+    @staticmethod
+    def start_async() -> str:
+        """Spawn the import on a background thread bound to this app.
+
+        Returns one of: 'started' | 'skipped' | 'already_running'.
+        The claiming itself happens inside execute_import under lock, so
+        'started' means the thread was launched; the dashboard polls the
+        status endpoint for the real outcome.
+        """
+        app = current_app._get_current_object()
+        period = get_period_string()
+        latest = FideImportRepository.get_by_period(period)
+        if latest and latest.status == "success":
+            return "skipped"
         if (
-            existing_import
-            and existing_import.status == "pending"
-            and existing_import.downloaded_at
-            and (datetime.utcnow() - existing_import.downloaded_at) < timedelta(minutes=15)
+            latest and latest.status == "pending"
+            and latest.downloaded_at
+            and (datetime.utcnow() - latest.downloaded_at)
+            < timedelta(minutes=STALE_RUN_MINUTES)
         ):
-            return {
-                "status": "already_running",
-                "message": f"An import for period {period} is already in progress."
-            }
+            return "already_running"
 
-        # 1c. A stale 'pending' record means a previous run was killed before
-        # completing (e.g. request timeout). Mark it failed so the dashboard
-        # reflects reality; retries remain safe (existence-checked upserts).
-        if existing_import and existing_import.status == "pending":
-            existing_import.status = "failed"
-            existing_import.error_message = "Marked failed: previous run did not complete."
+        def _runner():
+            with app.app_context():
+                FideImportService.execute_import()
 
-        # 2. Get or create import record
-        import_record = existing_import or FideImportModel(period=period)
-        import_record.status = "pending"
-        import_record.downloaded_at = datetime.utcnow()
-        FideImportRepository.save(import_record)
+        threading.Thread(target=_runner, name="fide-import",
+                         daemon=True).start()
+        return "started"
+
+    @staticmethod
+    def execute_import(source_label: str = "auto_download") -> dict:
+        """Full pipeline. Safe to call from a background thread that holds
+        an application context."""
+        period = get_period_string()
+        allowed_feds = current_app.config.get("FIDE_ALLOWED_FEDERATIONS")
+
+        # 1-1b/1c: locked claim of the period record (closes the old
+        # advisory race) with identical skip/stale semantics as before.
+        existing = FideImportModel.query.filter_by(period=period) \
+            .with_for_update().first()
+        if existing and existing.status == "success":
+            db.session.rollback()
+            return {"status": "skipped",
+                    "message": f"Period {period} already imported."}
+        if (
+            existing and existing.status == "pending"
+            and existing.downloaded_at
+            and (datetime.utcnow() - existing.downloaded_at)
+            < timedelta(minutes=STALE_RUN_MINUTES)
+        ):
+            db.session.rollback()
+            return {"status": "already_running",
+                    "message": "An import for this period is in progress."}
+        if existing and existing.status == "pending":
+            existing.status = "failed"
+            existing.error_message = \
+                "Marked failed: previous run did not complete."
+
+        record = existing or FideImportModel(period=period)
+        record.status = "pending"
+        record.stage = None
+        record.progress_percent = 0
+        record.source_url = source_label
+        record.error_message = None
+        record.records_processed = 0
+        record.records_imported = 0
+        record.downloaded_at = datetime.utcnow()
+        FideImportRepository.save(record)
         db.session.commit()
 
         try:
-            # 3. Download and extract XML
-            xml_path = FideStorageManager.download_and_extract_xml()
-            if not xml_path:
-                raise Exception("Failed to download or extract FIDE XML file.")
+            # ── Stage: acquire XML (download OR server-placed file) ──
+            record.stage = "download"
+            db.session.commit()
 
-            # 4. Parse and store data
+            def _download_progress(fraction):
+                if fraction is not None:
+                    record.progress_percent = max(
+                        record.progress_percent or 0,
+                        min(30, int(5 + fraction * 25)),
+                    )
+                    db.session.commit()
+                elif (record.progress_percent or 0) < 25:
+                    record.progress_percent = \
+                        min(25, (record.progress_percent or 0) + 10)
+                    db.session.commit()
+
+            # Late-bound module call so tests (and future callers) can
+            # patch acquisition at the storage-module level.
+            provenance, xml_path = _fide_storage.ensure_players_xml(
+                progress_cb=_download_progress)
+
+            # ── Stage: extract (no-op when XML was already present) ──
+            record.stage = "extract"
+            record.progress_percent = 35
+            db.session.commit()
+
+            if source_label == "auto_download" and provenance != "downloaded":
+                # Keep provenance truthful for server-placed files even
+                # when the trigger came from the admin UI button.
+                record.source_url = f"server_file:{provenance}"
+
+            total_players = count_players_in_xml(xml_path)
+
+            # ── Stage: parse/persist ──
+            record.stage = "parse"
+            record.progress_percent = 40 if total_players else None
+            db.session.commit()
+
             processed = 0
             imported = 0
-            
-            for player_data in parse_fide_xml(xml_path, allowed_federations=allowed_feds):
+
+            for player_data in parse_fide_xml(
+                    xml_path, allowed_federations=allowed_feds):
                 processed += 1
-                
-                # Update or create player identity
-                player = FidePlayerRepository.get_by_fide_id(player_data.fide_id)
+
+                player = FidePlayerRepository.get_by_fide_id(
+                    player_data.fide_id)
                 if player:
-                    # Update existing record
                     player.name = player_data.name
                     player.sex = player_data.sex
                     player.federation = player_data.federation
@@ -84,7 +168,6 @@ class FideImportService:
                     player.birth_year = player_data.birth_year or ""
                     player.inactive = player_data.inactive
                 else:
-                    # Create new record
                     player = FidePlayerModel(
                         fide_id=player_data.fide_id,
                         name=player_data.name,
@@ -100,72 +183,90 @@ class FideImportService:
                     FidePlayerRepository.save(player)
                     imported += 1
 
-                # Save ratings (Standard, Rapid, Blitz)
-                # We save all three types as they appear in the XML
                 FideImportService._save_rating(
-                    fide_id=player_data.fide_id,
-                    period=period,
+                    fide_id=player_data.fide_id, period=period,
                     rating_type="standard",
                     rating=player_data.rating_standard,
                     games=player_data.games_standard,
-                    k_factor=player_data.k_standard
-                )
+                    k_factor=player_data.k_standard)
                 FideImportService._save_rating(
-                    fide_id=player_data.fide_id,
-                    period=period,
+                    fide_id=player_data.fide_id, period=period,
                     rating_type="rapid",
                     rating=player_data.rating_rapid,
                     games=player_data.games_rapid,
-                    k_factor=player_data.k_rapid
-                )
+                    k_factor=player_data.k_rapid)
                 FideImportService._save_rating(
-                    fide_id=player_data.fide_id,
-                    period=period,
+                    fide_id=player_data.fide_id, period=period,
                     rating_type="blitz",
                     rating=player_data.rating_blitz,
                     games=player_data.games_blitz,
-                    k_factor=player_data.k_blitz
-                )
+                    k_factor=player_data.k_blitz)
 
-                # Commit in batches to avoid huge transactions
-                if processed % 500 == 0:
+                if processed % BATCH_SIZE == 0:
                     db.session.commit()
-                    current_app.logger.info(f"FIDE Import Progress: {processed} processed...")
+                    record.records_processed = processed
+                    if total_players:
+                        pct = 40 + int(55 * processed / total_players)
+                        record.progress_percent = min(95, pct)
+                    else:
+                        record.progress_percent = min(
+                            95, (record.progress_percent or 40) + 5)
+                    db.session.commit()
+                    current_app.logger.info(
+                        "FIDE Import Progress (%s): %s processed",
+                        period, processed)
 
-            # 5. Final commit and update record
+            # ── Stage: finalize ──
             db.session.commit()
-            
-            import_record.status = "success"
-            import_record.imported_at = datetime.utcnow()
-            import_record.records_processed = processed
-            import_record.records_imported = imported
-            FideImportRepository.save(import_record)
+            record.stage = "finalize"
+            record.progress_percent = 98
             db.session.commit()
 
-            # 6. Cleanup old files
+            record.status = "success"
+            record.imported_at = datetime.utcnow()
+            record.records_processed = processed
+            record.records_imported = imported
+            record.progress_percent = 100
+            FideImportRepository.save(record)
+            db.session.commit()
+
             deleted_files = FideStorageManager.cleanup_old_files()
-            
             return {
                 "status": "success",
                 "processed": processed,
                 "imported": imported,
-                "deleted_old_files": deleted_files
+                "source": provenance,
+                "deleted_old_files": deleted_files,
             }
 
         except Exception as e:
             db.session.rollback()
-            import_record.status = "failed"
-            import_record.error_message = str(e)
-            FideImportRepository.save(import_record)
+            record.status = "failed"
+            record.error_message = str(e)
+            FideImportRepository.save(record)
             db.session.commit()
             current_app.logger.error(f"FIDE Import failed: {str(e)}")
-            return {
-                "status": "error",
-                "message": str(e)
-            }
+            return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def _save_rating(fide_id: str, period: str, rating_type: str, rating: int, games: int, k_factor: int):
+    def latest_status() -> dict:
+        """Payload for the admin status polling endpoint."""
+        latest = FideImportModel.query.order_by(
+            FideImportModel.id.desc()).first()
+        if not latest:
+            return {"status": "idle"}
+        return {
+            "status": latest.status,
+            "stage": latest.stage,
+            "progress_percent": latest.progress_percent,
+            "records_processed": latest.records_processed or 0,
+            "records_imported": latest.records_imported or 0,
+            "error_message": latest.error_message,
+        }
+
+    @staticmethod
+    def _save_rating(fide_id: str, period: str, rating_type: str,
+                     rating: int, games: int, k_factor: int):
         """Saves a rating record if it doesn't already exist for this period."""
         existing = FideRatingRepository.get(fide_id, period, rating_type)
         if not existing:
@@ -178,3 +279,7 @@ class FideImportService:
                 k_factor=k_factor
             )
             FideRatingRepository.save(rating_record)
+
+
+# Module-level logger convenience for the fire-safe hooks above.
+logger = logging.getLogger(__name__)

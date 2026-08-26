@@ -504,6 +504,9 @@ class FideImportModel(db.Model):
     records_processed = db.Column(db.Integer, default=0)
     records_imported = db.Column(db.Integer, default=0)
     error_message = db.Column(db.Text, nullable=True)
+    # P1-G: honest progress reporting.
+    stage = db.Column(db.String(20), nullable=True)           # download|extract|parse|finalize
+    progress_percent = db.Column(db.Integer, nullable=True)   # 0..100; NULL = indeterminate
 
 
 class PlayerVerificationModel(db.Model):

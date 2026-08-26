@@ -33,21 +33,28 @@ def fide_dashboard():
 @login_required
 @role_required('admin')
 def trigger_import():
-    """Triggers the FIDE XML import process."""
+    """Spawns the FIDE import on a background thread; the dashboard polls
+    /admin/fide/import/status for live stage/percent progress (P1-G)."""
     try:
-        result = FideImportService.run_import()
-        if result.get("status") == "success":
-            flash(f"ایمپورت با موفقیت انجام شد. (پردازش شده: {result.get('processed')})", "success")
-        elif result.get("status") == "skipped":
+        outcome = FideImportService.start_async()
+        if outcome == "started":
+            flash("ایمپورت در پس‌زمینه آغاز شد؛ پیشرفت در همین صفحه نمایش داده می‌شود.", "success")
+        elif outcome == "skipped":
             flash("این ماه قبلاً ایمپورت شده است.", "info")
-        elif result.get("status") == "already_running":
-            flash("ایمپورت این ماه در حال حاضر در جریان است. لطفاً چند دقیقه بعد بررسی کنید.", "info")
         else:
-            flash(f"خطا در ایمپورت: {result.get('message')}", "error")
+            flash("ایمپورت این ماه در حال حاضر در جریان است.", "info")
     except Exception as e:
         flash(f"خطای غیرمنتظره: {str(e)}", "error")
-        
+
     return redirect(url_for("fide.fide_dashboard"))
+
+
+@fide_bp.route("/admin/fide/import/status")
+@login_required
+@role_required('admin')
+def import_status():
+    """JSON progress payload for the dashboard poller."""
+    return jsonify(FideImportService.latest_status())
 
 @fide_bp.route("/admin/fide/search")
 @login_required

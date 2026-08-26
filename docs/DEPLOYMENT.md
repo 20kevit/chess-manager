@@ -146,6 +146,7 @@ folded into that same baseline in place:
 |---|---|
 | `player_profiles` | `phone VARCHAR(20) NULL`, `photo_path VARCHAR(255) NULL`, `id_document_path VARCHAR(255) NULL` |
 | `tournaments` | `registration_requirements TEXT NULL`, `rulebook_sections TEXT NULL`, `rulebook_pdf_path VARCHAR(255) NULL`, `notification_prefs TEXT NULL` |
+| `fide_imports` | `stage VARCHAR(20) NULL`, `progress_percent INT NULL` |
 
 Because the revision ID was preserved, Alembic cannot distinguish a
 pre-P0 database from a post-P0 one — both are stamped
@@ -231,6 +232,25 @@ SET @ddl := IF(@col_exists = 0,
   'SELECT ''tournaments.notification_prefs already present''');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- P1-G FIDE import progress columns:
+SET @col_exists := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'fide_imports' AND COLUMN_NAME = 'stage');
+SET @ddl := IF(@col_exists = 0,
+  'ALTER TABLE fide_imports ADD COLUMN stage VARCHAR(20) NULL',
+  'SELECT ''fide_imports.stage already present''');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'fide_imports' AND COLUMN_NAME = 'progress_percent');
+SET @ddl := IF(@col_exists = 0,
+  'ALTER TABLE fide_imports ADD COLUMN progress_percent INT NULL',
+  'SELECT ''fide_imports.progress_percent already present''');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 -- P1-C prize tables (brand-new; CREATE ... IF NOT EXISTS is idempotent):
 CREATE TABLE IF NOT EXISTS tournament_prizes (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -277,6 +297,25 @@ directly (no migration involved). Local SQLite/throwaway environments only.
 > Rule of thumb for future schema work: additive nullable columns may keep
 > being folded into the baseline WITH their ALTER statements added to this
 > section. Anything destructive requires a NEW alembic revision instead.
+
+## 15. Manual FIDE update via cPanel (no web upload by design)
+
+When the official server is unreachable, push the file manually:
+
+1. Download `players_list_xml.zip` from
+   `http://ratings.fide.com/download/players_list_xml.zip` on your PC.
+2. In cPanel File Manager upload it to:
+   `<instance>/data/fide/<YYYY-MM>/players_list_xml.zip`
+   (create the `<YYYY-MM>` folder for the CURRENT month if missing;
+   the exact path also appears in the admin FIDE dashboard).
+3. Press the import button in `/admin/fide` — the system detects the
+   pre-placed ZIP, extracts, and processes it; progress/stage is shown on
+   the dashboard. An already-extracted `players_list_xml.xml` in the same
+   folder is used directly.
+
+There is deliberately NO web upload endpoint for this file (size limits,
+weak-link reliability). The automatic monthly download remains the
+primary path and runs unchanged when no file is present.
 
 ## Writable directories (Passenger user)
 | Path | Purpose |

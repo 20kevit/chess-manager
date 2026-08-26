@@ -35,6 +35,7 @@ FOLDED_COLUMNS = {
         "rulebook_pdf_path",
         "notification_prefs",
     ),
+    "fide_imports": ("stage", "progress_percent"),
 }
 
 # Documented, idempotent-in-intent MySQL ALTER statements (ADD COLUMN of
@@ -48,6 +49,8 @@ MYSQL_UPGRADE_ALTERS = [
     "ALTER TABLE tournaments ADD COLUMN rulebook_sections TEXT NULL",
     "ALTER TABLE tournaments ADD COLUMN rulebook_pdf_path VARCHAR(255) NULL",
     "ALTER TABLE tournaments ADD COLUMN notification_prefs TEXT NULL",
+    "ALTER TABLE fide_imports ADD COLUMN stage VARCHAR(20) NULL",
+    "ALTER TABLE fide_imports ADD COLUMN progress_percent INT NULL",
 ]
 
 # P1-C: brand-new tables added post-launch; existing databases create them
@@ -255,6 +258,19 @@ def test_existing_db_upgrade_adds_p0_columns_without_data_loss(tmp_path):
             start_number INTEGER NOT NULL,
             status VARCHAR(20)
         );
+
+        -- Pre-P1-G shape of fide_imports (stage/progress added by ALTERs).
+        CREATE TABLE fide_imports (
+            id INTEGER NOT NULL PRIMARY KEY,
+            period VARCHAR(7) NOT NULL,
+            source_url VARCHAR(255),
+            downloaded_at DATETIME,
+            imported_at DATETIME,
+            status VARCHAR(20),
+            records_processed INTEGER,
+            records_imported INTEGER,
+            error_message TEXT
+        );
     """)
     cur.execute(
         "INSERT INTO player_profiles (first_name, last_name, national_id)"
@@ -320,13 +336,15 @@ def test_existing_db_upgrade_adds_p0_columns_without_data_loss(tmp_path):
     reflected.reflect(
         bind=engine,
         only=["player_profiles", "tournaments",
-              "tournament_prizes", "prize_allocations"],
+              "tournament_prizes", "prize_allocations",
+              "fide_imports"],
     )
 
     app = create_app(TestConfig)
     with app.app_context():
         for table in ("player_profiles", "tournaments",
-                      "tournament_prizes", "prize_allocations"):
+                      "tournament_prizes", "prize_allocations",
+                      "fide_imports"):
             model_cols = {c.name for c in _db.metadata.tables[table].columns}
             upgraded_cols = set(reflected.tables[table].columns.keys())
             assert model_cols == upgraded_cols, table

@@ -53,13 +53,34 @@
                 <div class="dash-card-title">
                     ایمپورت لیست ماهانه
                 </div>
-                <p class="text-muted">با کلیک روی دکمه زیر، آخرین لیست فیده دانلود و در دیتابیس محلی ذخیره می‌شود. این عملیات ممکن است چند دقیقه طول بکشد.</p>
+                <p class="text-muted">با کلیک روی دکمه زیر، آخرین لیست فیده دانلود و در دیتابیس محلی ذخیره می‌شود. ایمپورت در پس‌زمینه اجرا شده و پیشرفت آن همین‌جا نمایش داده می‌شود.</p>
                 <form action="{{ url_for('fide.trigger_import') }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-primary btn-block">
                         <i class="fas fa-download"></i> شروع ایمپورت
                     </button>
                 </form>
+
+                <!-- P1-G: live progress -->
+                <div id="fide-progress-box" style="display:none; margin-top:15px;">
+                    <div style="background:#e2e8f0; border-radius:8px; height:22px; overflow:hidden;">
+                        <div id="fide-progress-bar" style="height:100%; width:0%; background:#2563eb; transition:width .4s;"></div>
+                    </div>
+                    <p style="font-size:0.85rem; color:#64748b; margin-top:6px;">
+                        مرحله: <span id="fide-stage">-</span>
+                        · درصد: <span id="fide-percent">0</span>٪
+                        · پردازش‌شده: <span id="fide-processed">0</span>
+                    </p>
+                </div>
+
+                <!-- P1-G: server-placed manual fallback (cPanel) -->
+                <div style="margin-top:18px; border-top:1px dashed #e2e8f0; padding-top:12px;">
+                    <h5 style="font-size:0.9rem; margin-bottom:6px;">به‌روزرسانی دستی (از طریق cPanel)</h5>
+                    <p style="font-size:0.8rem; color:#6b7280;">
+                        اگر سرور فیده در دسترس نیست، فایل رسمی <code dir="ltr">players_list_xml.zip</code> را از cPanel در مسیر زیر قرار دهید و سپس «شروع ایمپورت» را بزنید:
+                        <br><code dir="ltr">{{ config.FIDE_DATA_DIR }}/&lt;YYYY-MM&gt;/players_list_xml.zip</code>
+                    </p>
+                </div>
             </div>
         </div>
         <div class="col-md-6">
@@ -122,4 +143,40 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+// P1-G: poll import status while a run is active.
+(function () {
+    var box = document.getElementById('fide-progress-box');
+    if (!box) return;
+    var bar = document.getElementById('fide-progress-bar');
+    var stageEl = document.getElementById('fide-stage');
+    var pctEl = document.getElementById('fide-percent');
+    var procEl = document.getElementById('fide-processed');
+    var stageNames = { download: 'دانلود', extract: 'استخراج', parse: 'پردازش', finalize: 'نهایی‌سازی' };
+    var timer = null;
+
+    function tick() {
+        fetch('{{ url_for("fide.import_status") }}')
+            .then(function (r) { return r.json(); })
+            .then(function (s) {
+                var running = s.status === 'pending';
+                box.style.display = (running || s.status === 'success' || s.status === 'failed') ? 'block' : 'none';
+                var pct = s.progress_percent;
+                if (running && pct === null) pct = 50;   // indeterminate visual
+                bar.style.width = (pct === null ? 0 : pct) + '%';
+                bar.style.background = s.status === 'failed' ? '#dc2626' : (s.status === 'success' ? '#059669' : '#2563eb');
+                stageEl.textContent = stageNames[s.stage] || '-';
+                pctEl.textContent = (pct === null ? '-' : pct);
+                procEl.textContent = s.records_processed || 0;
+                if (!running && timer) { clearInterval(timer); timer = null; }
+            })
+            .catch(function () { /* transient network errors ignored */ });
+    }
+
+    tick();
+    timer = setInterval(tick, 2000);
+})();
+</script>
 {% endblock %}

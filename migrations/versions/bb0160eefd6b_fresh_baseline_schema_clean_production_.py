@@ -32,6 +32,8 @@ def upgrade():
     sa.Column('records_processed', sa.Integer(), nullable=True),
     sa.Column('records_imported', sa.Integer(), nullable=True),
     sa.Column('error_message', sa.Text(), nullable=True),
+    sa.Column('stage', sa.String(length=20), nullable=True),
+    sa.Column('progress_percent', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     mysql_charset='utf8mb4',
     mysql_collate='utf8mb4_unicode_ci'

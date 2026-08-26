@@ -117,10 +117,16 @@ class TestF3ImportGuard:
 
     @pytest.fixture
     def no_download(self, monkeypatch):
-        """Fail loudly if anything tries to download during guard tests."""
+        """Fail loudly if anything tries to acquire files during guard tests.
+
+        P1-G: acquisition now goes through ensure_players_xml (which may
+        pick a server-placed ZIP/XML or download); patch THAT so no real
+        network call can ever be attempted here."""
+        from infrastructure.fide import storage as fide_storage
         monkeypatch.setattr(
-            FideStorageManager, "download_and_extract_xml",
-            staticmethod(lambda: (_ for _ in ()).throw(AssertionError("network!"))),
+            fide_storage, "ensure_players_xml",
+            staticmethod(lambda *a, **kw: (_ for _ in ()).throw(
+                AssertionError("network!"))),
         )
 
     def _period(self):
