@@ -28,11 +28,8 @@
                         <input type="text" name="bank_account_name" value="{{ tournament.bank_account_name or '' }}" class="form-control">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>آیین‌نامه مسابقه (قوانین طولانی)</label>
-                    <textarea name="rulebook_text" class="form-control" rows="5" placeholder="قوانین کامل مسابقه...">{{ tournament.rulebook_text or '' }}</textarea>
-                </div>
-                
+                <!-- P1-D: rulebook editing moved to the dedicated rulebook
+                     settings page; pricing saves never touch the rulebook. -->
                 <div class="form-group">
                     <label>توضیحات کارت به کارت (کوتاه)</label>
                     <textarea name="bank_transfer_notes" class="form-control" rows="2" placeholder="مثال: لطفا پس از واریز، رسید را تا ۲۴ ساعت آینده آپلود کنید.">{{ tournament.bank_transfer_notes or '' }}</textarea>

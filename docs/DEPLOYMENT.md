@@ -145,7 +145,7 @@ nullable columns to that same baseline in place:
 | Table | Added columns |
 |---|---|
 | `player_profiles` | `phone VARCHAR(20) NULL`, `photo_path VARCHAR(255) NULL`, `id_document_path VARCHAR(255) NULL` |
-| `tournaments` | `registration_requirements TEXT NULL` |
+| `tournaments` | `registration_requirements TEXT NULL`, `rulebook_sections TEXT NULL`, `rulebook_pdf_path VARCHAR(255) NULL` |
 
 Because the revision ID was preserved, Alembic cannot distinguish a
 pre-P0 database from a post-P0 one — both are stamped
@@ -200,6 +200,25 @@ SET @col_exists := (
 SET @ddl := IF(@col_exists = 0,
   'ALTER TABLE tournaments ADD COLUMN registration_requirements TEXT NULL',
   'SELECT ''tournaments.registration_requirements already present''');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- P1-D rulebook columns:
+SET @col_exists := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'tournaments' AND COLUMN_NAME = 'rulebook_sections');
+SET @ddl := IF(@col_exists = 0,
+  'ALTER TABLE tournaments ADD COLUMN rulebook_sections TEXT NULL',
+  'SELECT ''tournaments.rulebook_sections already present''');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'tournaments' AND COLUMN_NAME = 'rulebook_pdf_path');
+SET @ddl := IF(@col_exists = 0,
+  'ALTER TABLE tournaments ADD COLUMN rulebook_pdf_path VARCHAR(255) NULL',
+  'SELECT ''tournaments.rulebook_pdf_path already present''');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 ```
 

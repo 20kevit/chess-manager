@@ -2,10 +2,12 @@
 Tournament HTTP handlers.
 No business logic here.
 """
-from flask import Blueprint, render_template, request, session, abort, url_for, flash, redirect
+from flask import (Blueprint, render_template, request, session, abort,
+                   url_for, flash, redirect, current_app, send_file)
 from flask_login import current_user
 from infrastructure.repositories import TournamentRepository, ParticipantRepository, PairingRepository
 from application.tournament_service import TournamentService
+from app.extensions import db
 from interfaces.web.helpers import build_cell as _build_cell
 from interfaces.web.admin_auth import (
     require_admin, require_tournament_manager, require_result_editor,
@@ -13,6 +15,14 @@ from interfaces.web.admin_auth import (
 from domain.tiebreak.calculators import ALL_TIEBREAKS_DISPLAY
 from interfaces.web.decorators import role_required
 import json
+import os
+from domain.rulebook import (
+    parse_sections, serialize_sections, SECTION_VOCABULARY,
+)
+from infrastructure.file_storage import (
+    FileStorageError, save_pdf, remove_pdf, resolve_private_file,
+    PDF_MIMETYPE,
+)
 
 tournament_bp = Blueprint("tournament", __name__)
 
@@ -101,6 +111,7 @@ def view(public_id):
         is_admin=can_manage,
         can_manage=can_manage,
         can_edit_results=can_edit_results,
+        rulebook_sections=parse_sections(tournament.rulebook_sections),
         **standings
     )
 
@@ -433,7 +444,7 @@ def settings(public_id):
             flash(f"خطا در ذخیره تنظیمات: {str(e)}", "error")
 
     current_tiebreaks = json.loads(tournament.tiebreak_rules or "[]")
-    
+
     return render_template(
         "tournament/settings.html",
         tournament=tournament,
@@ -441,3 +452,107 @@ def settings(public_id):
         all_tiebreaks=ALL_TIEBREAKS_DISPLAY,
         is_admin=True
     )
+
+
+# ── P1-D: Rulebook system ─────────────────────────────────────────────
+
+_RULEBOOK_ERROR_MESSAGES = {
+    "empty": "فایلی انتخاب نشده است.",
+    "size": "حجم فایل PDF نباید بیشتر از ۵ مگابایت باشد.",
+    "type": "فایل ارسالی یک PDF معتبر نیست.",
+}
+
+
+@tournament_bp.route("/<public_id>/settings/rulebook", methods=["GET", "POST"])
+def rulebook_settings(public_id):
+    """Manager-tier editor for the three independent rulebook forms."""
+    tournament = require_admin(public_id)
+    if not tournament:
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        try:
+            TournamentService.update_rulebook_settings(tournament, request.form)
+            flash("آیین‌نامه با موفقیت ذخیره شد.", "success")
+        except Exception as e:
+            flash(f"خطا در ذخیره آیین‌نامه: {str(e)}", "error")
+        return redirect(url_for("tournament.rulebook_settings",
+                                public_id=public_id))
+
+    return render_template(
+        "tournament/rulebook_settings.html",
+        tournament=tournament,
+        sections=parse_sections(tournament.rulebook_sections),
+        vocabulary=SECTION_VOCABULARY,
+        is_admin=True,
+    )
+
+
+@tournament_bp.route("/<public_id>/settings/rulebook/pdf", methods=["POST"])
+def upload_rulebook_pdf(public_id):
+    """Upload/replace the public rulebook PDF (manager tier only)."""
+    tournament = require_admin(public_id)
+    if not tournament:
+        abort(403)
+
+    try:
+        stored = save_pdf(
+            request.files.get("rulebook_pdf"),
+            current_app.config["RULEBOOK_UPLOAD_DIR"],
+            f"rulebook_{tournament.id}",
+        )
+    except FileStorageError as exc:
+        flash(_RULEBOOK_ERROR_MESSAGES.get(
+            exc.reason, "آپلود فایل ناموفق بود."), "error")
+        return redirect(url_for("tournament.rulebook_settings",
+                                public_id=public_id))
+
+    tournament.rulebook_pdf_path = stored
+    db.session.commit()
+    flash("فایل PDF آیین‌نامه با موفقیت بارگذاری شد.", "success")
+    return redirect(url_for("tournament.rulebook_settings",
+                            public_id=public_id))
+
+
+@tournament_bp.route("/<public_id>/settings/rulebook/pdf/remove", methods=["POST"])
+def remove_rulebook_pdf(public_id):
+    tournament = require_admin(public_id)
+    if not tournament:
+        abort(403)
+
+    if tournament.rulebook_pdf_path:
+        remove_pdf(current_app.config["RULEBOOK_UPLOAD_DIR"],
+                   f"rulebook_{tournament.id}")
+        tournament.rulebook_pdf_path = None
+        db.session.commit()
+    flash("فایل PDF آیین‌نامه حذف شد.", "success")
+    return redirect(url_for("tournament.rulebook_settings",
+                            public_id=public_id))
+
+
+@tournament_bp.route("/uploads/rulebook/<public_id>")
+def download_rulebook_pdf(public_id):
+    """PUBLIC access to the configured rulebook PDF.
+
+    Rulebooks are public tournament content: no login required. Storage
+    stays instance-anchored (never under static/) and resolution is
+    basename-only, so traversal is impossible."""
+    _validate_public_id(public_id)
+    tournament = TournamentRepository.get_by_public_id(public_id)
+    if not tournament or not tournament.rulebook_pdf_path:
+        abort(404)
+
+    absolute_path = resolve_private_file(
+        current_app.config["RULEBOOK_UPLOAD_DIR"],
+        tournament.rulebook_pdf_path,
+    )
+    if not absolute_path:
+        abort(404)
+
+    return send_file(
+        absolute_path,
+        mimetype=PDF_MIMETYPE,
+        download_name=f"rulebook_{public_id}.pdf",
+    )
+
+# ─────────────────────────────────────────────────────────────────────

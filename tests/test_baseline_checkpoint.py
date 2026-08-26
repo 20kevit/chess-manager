@@ -25,29 +25,37 @@ BASELINE = os.path.join(
     "bb0160eefd6b_fresh_baseline_schema_clean_production_.py",
 )
 
-# The complete set of P0-era additive columns and their home tables.
-P0_COLUMNS = {
+# Every additive column folded into the baseline since launch (P0 + P1-D),
+# with their home tables.
+FOLDED_COLUMNS = {
     "player_profiles": ("phone", "photo_path", "id_document_path"),
-    "tournaments": ("registration_requirements",),
+    "tournaments": (
+        "registration_requirements",
+        "rulebook_sections",
+        "rulebook_pdf_path",
+    ),
 }
 
 # Documented, idempotent-in-intent MySQL ALTER statements (ADD COLUMN of
-# NULLable columns only — never drops, never narrows).
+# NULLable columns only — never drops, never narrows). Mirrors
+# DEPLOYMENT.md section 14 Path B exactly.
 MYSQL_UPGRADE_ALTERS = [
     "ALTER TABLE player_profiles ADD COLUMN phone VARCHAR(20) NULL",
     "ALTER TABLE player_profiles ADD COLUMN photo_path VARCHAR(255) NULL",
     "ALTER TABLE player_profiles ADD COLUMN id_document_path VARCHAR(255) NULL",
     "ALTER TABLE tournaments ADD COLUMN registration_requirements TEXT NULL",
+    "ALTER TABLE tournaments ADD COLUMN rulebook_sections TEXT NULL",
+    "ALTER TABLE tournaments ADD COLUMN rulebook_pdf_path VARCHAR(255) NULL",
 ]
 
 
 def test_single_baseline_contains_all_p0_columns():
-    """Every P0 column must appear in the correct table block of the
+    """Every folded column must appear in the correct table block of the
     squashed baseline."""
     with open(BASELINE, encoding="utf-8") as f:
         source = f.read()
 
-    for table, columns in P0_COLUMNS.items():
+    for table, columns in FOLDED_COLUMNS.items():
         marker = f"op.create_table('{table}'"
         start = source.index(marker)
         end = source.index("op.create_table(", start + len(marker))

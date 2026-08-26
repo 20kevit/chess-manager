@@ -50,7 +50,10 @@
                     💾 خروجی پشتیبان
                 </a>
                 <a href="{{ url_for('registration.pricing_settings', public_id=tournament.public_id) }}" class="action-btn">
-                    📜 آیین‌نامه و قیمت‌گذاری
+                    💰 قیمت‌گذاری و پرداخت
+                </a>
+                <a href="{{ url_for('tournament.rulebook_settings', public_id=tournament.public_id) }}" class="action-btn">
+                    📜 آیین‌نامه مسابقه
                 </a>
             </div>
         </div>

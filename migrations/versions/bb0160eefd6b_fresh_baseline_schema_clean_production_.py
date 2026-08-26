@@ -190,6 +190,8 @@ def upgrade():
     sa.Column('bank_transfer_notes', sa.Text(), nullable=True),
     sa.Column('enable_online_payment', sa.Boolean(), nullable=True),
     sa.Column('rulebook_text', sa.Text(), nullable=True),
+    sa.Column('rulebook_sections', sa.Text(), nullable=True),
+    sa.Column('rulebook_pdf_path', sa.String(length=255), nullable=True),
     sa.Column('early_bird_config', sa.Text(), nullable=True),
     sa.Column('veteran_config', sa.Text(), nullable=True),
     sa.Column('women_discount_percent', sa.Integer(), nullable=True),

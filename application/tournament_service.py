@@ -216,7 +216,8 @@ class TournamentService:
         tournament.bank_account_name = form_data.get("bank_account_name", "").strip()
         tournament.bank_transfer_notes = form_data.get("bank_transfer_notes", "").strip()
         tournament.enable_online_payment = form_data.get("enable_online_payment") == "1"
-        tournament.rulebook_text = form_data.get("rulebook_text", "").strip()
+        # P1-D: rulebook_text is owned by update_rulebook_settings now;
+        # pricing saves must never touch any rulebook representation.
 
         db.session.commit()
 
@@ -254,6 +255,30 @@ class TournamentService:
         tournament.registration_requirements = serialize_requirements(
             requirements
         )
+        db.session.commit()
+
+    @staticmethod
+    def update_rulebook_settings(tournament: TournamentModel,
+                                 form_data: dict) -> None:
+        """Update ONLY the rulebook representations (P1-D).
+
+        Owns all three independent optional forms:
+        - rulebook_text (raw long-form)
+        - rulebook_sections (ordered {key,title,body} JSON posted as
+          sections_json; replace-all semantics — list order is display order)
+        - rulebook_pdf_path is file-based and handled by the route
+        Pricing, dates, basic settings and registration requirements are
+        never touched here.
+        """
+        from domain.rulebook import parse_sections, serialize_sections
+
+        tournament.rulebook_text = form_data.get("rulebook_text", "").strip()
+
+        sections = parse_sections(
+            form_data.get("sections_json", "") or "[]"
+        )
+        tournament.rulebook_sections = serialize_sections(sections)
+
         db.session.commit()
 
     @staticmethod

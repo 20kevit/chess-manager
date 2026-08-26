@@ -126,7 +126,9 @@ class TestSectionIsolation:
         assert t.rulebook_text == "Precious rulebook text"
 
     def test_pricing_save_preserves_all_basic_fields(self, app, organizer, tournament):
-        """Saving the pricing page must not touch identity/dates/tiebreaks."""
+        """Saving the pricing page must not touch identity/dates/tiebreaks.
+        P1-D update: pricing no longer owns the rulebook either — a posted
+        rulebook_text value is IGNORED and any stored text is preserved."""
         t = _fresh(tournament.public_id)
         t.city = "Shiraz"
         t.time_control_description = "90+30"
@@ -134,6 +136,7 @@ class TestSectionIsolation:
         t.start_date = date(2026, 10, 1)
         t.end_date = date(2026, 10, 5)
         t.tiebreak_rules = '["sonneborn_berger", "koya"]'
+        t.rulebook_text = "Precious legacy rulebook"
         db.session.commit()
 
         client = app.test_client()
@@ -165,7 +168,7 @@ class TestSectionIsolation:
         # Pricing section WAS applied:
         assert t.base_price == 150000
         assert t.max_players == 64
-        assert t.rulebook_text == "rulebook v1"
+        assert t.rulebook_text == "Precious legacy rulebook"
         assert t.enable_online_payment is True
         assert t.women_discount_percent == 10
         assert json.loads(t.early_bird_config)["percent"] == 5

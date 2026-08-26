@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}آیین‌نامه | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>📜 آیین‌نامه مسابقه</h1>
+        <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
+    </div>
+    <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
+        سه حالت مستقل: متن آزاد، بخش‌های ساختاریافته (مرتب‌شونده) و فایل PDF عمومی. می‌توانید از یک، دو یا هر سه حالت همزمان استفاده کنید.
+    </p>
+</div>
+
+<form method="POST" action="{{ url_for('tournament.rulebook_settings', public_id=tournament.public_id) }}"
+      class="form-container" style="max-width: 900px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
+    <input type="hidden" name="sections_json" id="sections_json">
+
+    <!-- ۱) Raw long-form text -->
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+        <h2 class="section-title">📝 متن آزاد آیین‌نامه</h2>
+        <div class="form-group">
+            <textarea name="rulebook_text" rows="7" style="width:100%;" placeholder="متن کامل قوانین مسابقه...">{{ tournament.rulebook_text or '' }}</textarea>
+        </div>
+    </div>
+
+    <!-- ۲) Structured sections -->
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+        <h2 class="section-title">🧱 بخش‌های ساختاریافته</h2>
+        <p style="font-size:0.85em; color:#64748b;">ترتیب نمایش با دکمه‌های ▲▼ کنترل می‌شود. عنوان و متن هر بخش قابل ویرایش است.</p>
+
+        <div id="sections-container">
+            {% for s in sections %}
+            <div class="section-row" data-key="{{ s.key }}" style="border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:10px; background:#fff;">
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                    <button type="button" class="btn btn-light btn-sm move-up" title="بالا">▲</button>
+                    <button type="button" class="btn btn-light btn-sm move-down" title="پایین">▼</button>
+                    <input type="text" class="sec-title" value="{{ s.title }}" placeholder="عنوان بخش" style="flex:1;">
+                    <span dir="ltr" style="font-size:0.75rem; color:#94a3b8;">{{ s.key }}</span>
+                    <button type="button" class="btn btn-danger btn-sm remove-sec">حذف</button>
+                </div>
+                <textarea class="sec-body" rows="3" style="width:100%;" placeholder="متن این بخش...">{{ s.body }}</textarea>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+            <select id="vocab-select" class="form-control" style="max-width:280px;">
+                {% for key, title in vocabulary %}
+                <option value="{{ key }}">{{ title }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" id="add-section" class="btn btn-secondary btn-sm">＋ افزودن بخش</button>
+        </div>
+    </div>
+
+    <div class="form-actions" style="margin-top:25px;">
+        <button type="submit" class="btn btn-primary" style="padding:12px 35px;">💾 ذخیره متن و بخش‌ها</button>
+    </div>
+</form>
+
+<!-- ۳) Public PDF -->
+<div class="form-container" style="max-width: 900px; margin-top:20px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
+    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+        <h2 class="section-title">📎 فایل PDF عمومی</h2>
+        <p style="font-size:0.85em; color:#64748b;">این فایل برای عموم بازدیدکنندگان بدون نیاز به ورود قابل مشاهده است (حداکثر ۵ مگابایت).</p>
+
+        {% if tournament.rulebook_pdf_path %}
+        <p style="margin-bottom:10px;">
+            فایل فعلی:
+            <a href="{{ url_for('tournament.download_rulebook_pdf', public_id=tournament.public_id) }}" target="_blank">مشاهده / دانلود PDF</a>
+        </p>
+        <form method="POST" action="{{ url_for('tournament.remove_rulebook_pdf', public_id=tournament.public_id) }}" style="margin-bottom:15px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger btn-sm">حذف PDF</button>
+        </form>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('tournament.upload_rulebook_pdf', public_id=tournament.public_id) }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="file" name="rulebook_pdf" accept="application/pdf" required style="display:block; margin-bottom:10px;">
+            <button type="submit" class="btn btn-primary btn-sm">{% if tournament.rulebook_pdf_path %}جایگزینی PDF{% else %}بارگذاری PDF{% endif %}</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var container = document.getElementById('sections-container');
+    var vocabTitles = {
+        {% for key, title in vocabulary %}
+        "{{ key }}": "{{ title }}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+    };
+
+    function bindRow(row) {
+        row.querySelector('.move-up').onclick = function () {
+            var prev = row.previousElementSibling;
+            if (prev) container.insertBefore(row, prev);
+        };
+        row.querySelector('.move-down').onclick = function () {
+            var next = row.nextElementSibling;
+            if (next) container.insertBefore(next, row);
+        };
+        row.querySelector('.remove-sec').onclick = function () { row.remove(); };
+    }
+
+    document.querySelectorAll('#sections-container .section-row')
+        .forEach(bindRow);
+
+    document.getElementById('add-section').onclick = function () {
+        var key = document.getElementById('vocab-select').value;
+        var row = document.createElement('div');
+        row.className = 'section-row';
+        row.setAttribute('data-key', key);
+        row.style.cssText = 'border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:10px;background:#fff;';
+        row.innerHTML =
+            '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+            '<button type="button" class="btn btn-light btn-sm move-up">▲</button>' +
+            '<button type="button" class="btn btn-light btn-sm move-down">▼</button>' +
+            '<input type="text" class="sec-title" value="' + (vocabTitles[key] || key) + '" placeholder="عنوان بخش" style="flex:1;">' +
+            '<span dir="ltr" style="font-size:0.75rem;color:#94a3b8;">' + key + '</span>' +
+            '<button type="button" class="btn btn-danger btn-sm remove-sec">حذف</button></div>' +
+            '<textarea class="sec-body" rows="3" style="width:100%;" placeholder="متن این بخش..."></textarea>';
+        container.appendChild(row);
+        bindRow(row);
+    };
+
+    // Serialize DOM order -> JSON payload right before submit.
+    document.querySelector('form').addEventListener('submit', function () {
+        var out = [];
+        document.querySelectorAll('#sections-container .section-row').forEach(function (row) {
+            out.push({
+                key: row.getAttribute('data-key') || 'other',
+                title: row.querySelector('.sec-title').value.trim(),
+                body: row.querySelector('.sec-body').value.trim()
+            });
+        });
+        document.getElementById('sections_json').value = JSON.stringify(out);
+    });
+});
+</script>
+{% endblock %}

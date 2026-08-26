@@ -179,11 +179,35 @@
 </div>
 
 <div id="tab-rulebook" class="tab-content" style="box-shadow:none; padding: 20px 0;">
-    {% if tournament.rulebook_text %}
-        <div class="card" style="padding: 20px; white-space: pre-wrap; line-height: 1.8; font-family: Vazirmatn, sans-serif;">
+    {% set has_text = tournament.rulebook_text %}
+    {% set sections_list = rulebook_sections or [] %}
+    {% set has_sections = sections_list|length > 0 %}
+    {% set has_pdf = tournament.rulebook_pdf_path %}
+
+    {% if has_pdf %}
+        <div style="margin-bottom: 20px; text-align:center;">
+            <a href="{{ url_for('tournament.download_rulebook_pdf', public_id=tournament.public_id) }}" target="_blank" class="btn btn-primary">
+                📎 مشاهده / دانلود فایل PDF آیین‌نامه
+            </a>
+        </div>
+    {% endif %}
+
+    {% if has_sections %}
+        {% for s in sections_list %}
+        <div class="card" style="padding: 18px; margin-bottom: 12px;">
+            <h3 style="margin-top:0; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">{{ s.title }}</h3>
+            <div style="white-space: pre-wrap; line-height: 1.8;">{{ s.body }}</div>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if has_text %}
+        <div class="card" style="padding: 20px; white-space: pre-wrap; line-height: 1.8; font-family: Vazirmatn, sans-serif; {% if has_sections %}margin-top:15px;{% endif %}">
             {{ tournament.rulebook_text }}
         </div>
-    {% else %}
+    {% endif %}
+
+    {% if not (has_pdf or has_sections or has_text) %}
         <p style="text-align: center; color: #6b7280; padding: 40px;">آیین‌نامه‌ای برای این مسابقه ثبت نشده است.</p>
     {% endif %}
 </div>

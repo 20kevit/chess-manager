@@ -156,6 +156,12 @@ class TournamentModel(db.Model):
     bank_transfer_notes = db.Column(db.Text, nullable=True)
     enable_online_payment = db.Column(db.Boolean, default=True)
     rulebook_text = db.Column(db.Text, nullable=True)
+    # P1-D: independent optional rulebook representations.
+    # sections JSON: ordered list of {key,title,body} (domain/rulebook.py);
+    # pdf_path: bare filename inside instance/uploads/rulebooks (public
+    # content served through an unauthenticated endpoint — never static/).
+    rulebook_sections = db.Column(db.Text, default="[]")
+    rulebook_pdf_path = db.Column(db.String(255), nullable=True)
 
     # JSON fields for flexible discount rules
     early_bird_config = db.Column(db.Text, default='{"deadline": null, "percent": 0}')
