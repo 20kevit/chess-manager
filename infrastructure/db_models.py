@@ -163,6 +163,10 @@ class TournamentModel(db.Model):
     rulebook_sections = db.Column(db.Text, default="[]")
     rulebook_pdf_path = db.Column(db.String(255), nullable=True)
 
+    # P1-F: per-tournament event-notification gates (JSON; absent key =
+    # enabled). Semantics in application/notification_policy.py.
+    notification_prefs = db.Column(db.Text, default="{}")
+
     # JSON fields for flexible discount rules
     early_bird_config = db.Column(db.Text, default='{"deadline": null, "percent": 0}')
     veteran_config = db.Column(db.Text, default='{"min_age": 0, "percent": 0}')

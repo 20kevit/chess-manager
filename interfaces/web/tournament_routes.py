@@ -6,6 +6,7 @@ from flask import (Blueprint, render_template, request, session, abort,
                    url_for, flash, redirect, current_app, send_file)
 from flask_login import current_user
 from infrastructure.repositories import TournamentRepository, ParticipantRepository, PairingRepository
+from infrastructure.db_models import TournamentParticipantModel
 from application.tournament_service import TournamentService
 from app.extensions import db
 from interfaces.web.helpers import build_cell as _build_cell
@@ -25,6 +26,11 @@ from infrastructure.file_storage import (
 )
 from application.prize_service import PrizeService
 from domain.prizes import CATEGORY_TITLES_FA
+from application.notification_policy import (
+    TOURNAMENT_EVENT_TYPES, load_tournament_prefs,
+    tournament_allows, serialize_tournament_prefs,
+)
+from application.notification_types import NOTIFICATION_TYPE_NAMES_FA
 
 tournament_bp = Blueprint("tournament", __name__)
 
@@ -455,6 +461,109 @@ def settings(public_id):
         current_tiebreaks=current_tiebreaks,
         all_tiebreaks=ALL_TIEBREAKS_DISPLAY,
         is_admin=True
+    )
+
+
+# ── P1-E: Tournament announcements ────────────────────────────────────
+
+
+def _announcement_recipient_ids(tournament) -> list:
+    """Distinct linked user ids across participants AND registrations."""
+    from infrastructure.db_models import RegistrationModel
+    ids = set()
+    for part in TournamentParticipantModel.query.filter_by(
+            tournament_id=tournament.id).all():
+        if part.profile and part.profile.user_id:
+            ids.add(part.profile.user_id)
+    for reg in RegistrationModel.query.filter(
+            RegistrationModel.tournament_id == tournament.id,
+            RegistrationModel.user_id.isnot(None)).all():
+        ids.add(reg.user_id)
+    return sorted(ids)
+
+
+@tournament_bp.route("/<public_id>/admin/announcements", methods=["GET", "POST"])
+def announcements(public_id):
+    """Manager-tier broadcast to all registered participants (free)."""
+    tournament = require_admin(public_id)
+    if not tournament:
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        message = request.form.get("message", "").strip()
+        if not message:
+            flash("متن اعلان نمی‌تواند خالی باشد.", "error")
+        elif not tournament_allows(tournament.notification_prefs,
+                                   "TOURNAMENT_ANNOUNCEMENT"):
+            flash("ارسال اعلان برای این مسابقه در تنظیمات اعلان‌ها غیرفعال است.",
+                  "error")
+        else:
+            from application.notification_service import NotificationService
+            from application.notification_types import NotificationType
+            recipient_ids = _announcement_recipient_ids(tournament)
+            sent = 0
+            for uid in recipient_ids:
+                try:
+                    NotificationService.create_notification(
+                        user_id=uid,
+                        type=NotificationType.TOURNAMENT_ANNOUNCEMENT,
+                        title=f"اعلان مسابقه {tournament.name}",
+                        message=message,
+                        link_url=f"/{tournament.public_id}",
+                    )
+                    sent += 1
+                except Exception as e:
+                    import logging
+                    logging.error(
+                        "Announcement delivery failed for user %s: %s",
+                        uid, str(e))
+            db.session.commit()
+            flash(f"اعلان برای {sent} شرکت‌کننده ارسال شد.", "success")
+        return redirect(url_for("tournament.announcements",
+                                public_id=public_id))
+
+    return render_template(
+        "tournament/announcements.html",
+        tournament=tournament,
+        recipient_count=len(_announcement_recipient_ids(tournament)),
+        is_admin=True,
+    )
+
+
+# ── P1-F: tournament notification preferences ─────────────────────────
+
+
+@tournament_bp.route("/<public_id>/admin/notification-prefs",
+                     methods=["GET", "POST"])
+def notification_prefs(public_id):
+    """Organizer toggles for which tournament events generate notifications."""
+    tournament = require_admin(public_id)
+    if not tournament:
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        prefs = {
+            event: request.form.get(event) == "on"
+            for event in TOURNAMENT_EVENT_TYPES
+        }
+        tournament.notification_prefs = serialize_tournament_prefs(prefs)
+        db.session.commit()
+        flash("تنظیمات اعلان‌های تورنمنت ذخیره شد.", "success")
+        return redirect(url_for("tournament.notification_prefs",
+                                public_id=public_id))
+
+    current = load_tournament_prefs(tournament.notification_prefs)
+    events = [{
+        "key": event,
+        "name": NOTIFICATION_TYPE_NAMES_FA.get(event, event),
+        "enabled": bool(current.get(event, True)),
+    } for event in TOURNAMENT_EVENT_TYPES]
+
+    return render_template(
+        "tournament/notification_prefs.html",
+        tournament=tournament,
+        events=events,
+        is_admin=True,
     )
 
 

@@ -156,6 +156,10 @@ class TestG5ActiveVsFutureTypes:
         resp = client.get("/dashboard/notifications/settings")
         body = resp.data.decode("utf-8")
 
-        assert "Round Created" in body                 # active type shown
-        assert "Payment Confirmed" in body             # active since P0-E
-        assert "Tournament Started" not in body        # future type hidden
+        # P1-F: user-facing names are Persian now.
+        assert "انتشار جفت‌گذاری دور" in body          # active type shown
+        assert "تأیید پرداخت" in body                   # active since P0-E
+        assert "Round Created" not in body              # English keys gone
+        assert "Payment Confirmed" not in body
+        # Future types stay hidden under their reserved English values.
+        assert "Tournament Started" not in body

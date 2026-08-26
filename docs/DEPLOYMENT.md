@@ -145,7 +145,7 @@ folded into that same baseline in place:
 | Table | Added columns |
 |---|---|
 | `player_profiles` | `phone VARCHAR(20) NULL`, `photo_path VARCHAR(255) NULL`, `id_document_path VARCHAR(255) NULL` |
-| `tournaments` | `registration_requirements TEXT NULL`, `rulebook_sections TEXT NULL`, `rulebook_pdf_path VARCHAR(255) NULL` |
+| `tournaments` | `registration_requirements TEXT NULL`, `rulebook_sections TEXT NULL`, `rulebook_pdf_path VARCHAR(255) NULL`, `notification_prefs TEXT NULL` |
 
 Because the revision ID was preserved, Alembic cannot distinguish a
 pre-P0 database from a post-P0 one — both are stamped
@@ -219,6 +219,16 @@ SET @col_exists := (
 SET @ddl := IF(@col_exists = 0,
   'ALTER TABLE tournaments ADD COLUMN rulebook_pdf_path VARCHAR(255) NULL',
   'SELECT ''tournaments.rulebook_pdf_path already present''');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- P1-F tournament notification gates:
+SET @col_exists := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'tournaments' AND COLUMN_NAME = 'notification_prefs');
+SET @ddl := IF(@col_exists = 0,
+  'ALTER TABLE tournaments ADD COLUMN notification_prefs TEXT NULL',
+  'SELECT ''tournaments.notification_prefs already present''');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- P1-C prize tables (brand-new; CREATE ... IF NOT EXISTS is idempotent):

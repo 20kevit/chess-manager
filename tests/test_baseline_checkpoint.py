@@ -33,6 +33,7 @@ FOLDED_COLUMNS = {
         "registration_requirements",
         "rulebook_sections",
         "rulebook_pdf_path",
+        "notification_prefs",
     ),
 }
 
@@ -46,6 +47,7 @@ MYSQL_UPGRADE_ALTERS = [
     "ALTER TABLE tournaments ADD COLUMN registration_requirements TEXT NULL",
     "ALTER TABLE tournaments ADD COLUMN rulebook_sections TEXT NULL",
     "ALTER TABLE tournaments ADD COLUMN rulebook_pdf_path VARCHAR(255) NULL",
+    "ALTER TABLE tournaments ADD COLUMN notification_prefs TEXT NULL",
 ]
 
 # P1-C: brand-new tables added post-launch; existing databases create them

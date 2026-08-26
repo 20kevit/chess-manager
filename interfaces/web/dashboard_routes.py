@@ -738,12 +738,16 @@ def notification_settings():
     current_prefs = json.loads(pref_model.preferences_json or "{}")
     
     # Prepare data for template
+    from application.notification_types import NOTIFICATION_TYPE_NAMES_FA
     notif_types = []
     for n_type in NotificationType:
         settings = current_prefs.get(n_type.value, {})
         notif_types.append({
             "value": n_type.value,
-            "name": n_type.value.replace("_", " ").title(),
+            # P1-F: Persian display names (was English title-cased keys).
+            "name": NOTIFICATION_TYPE_NAMES_FA.get(
+                n_type.value,
+                n_type.value.replace("_", " ").title()),
             "web_enabled": settings.get("web", True),
             "telegram_enabled": settings.get("telegram", True), # Default to True
             "bale_enabled": settings.get("bale", True),

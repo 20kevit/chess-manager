@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}اعلان‌های تورنمنت | {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>🔔 اعلان‌های تورنمنت</h1>
+        <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
+    </div>
+    <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
+        انتخاب کنید کدام رویدادهای این مسابقه برای شرکت‌کنندگان اعلان تولید کند. گزینه‌های بدون علامت کاملاً غیرفعال می‌شوند.
+    </p>
+</div>
+
+<form method="POST" action="{{ url_for('tournament.notification_prefs', public_id=tournament.public_id) }}"
+      class="form-container" style="max-width: 700px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
+    {% for e in events %}
+    <label style="display:flex; align-items:center; gap:10px; padding:12px 15px; background:white; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:10px; cursor:pointer;">
+        <input type="checkbox" name="{{ e.key }}" {% if e.enabled %}checked{% endif %} style="width:20px;height:20px;">
+        <span>{{ e.name }}</span>
+    </label>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary" style="padding:12px 35px; margin-top:15px;">💾 ذخیره</button>
+</form>
+{% endblock %}

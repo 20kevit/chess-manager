@@ -58,6 +58,12 @@
                 <a href="{{ url_for('tournament.prize_settings', public_id=tournament.public_id) }}" class="action-btn">
                     🏆 جوایز مسابقه
                 </a>
+                <a href="{{ url_for('tournament.announcements', public_id=tournament.public_id) }}" class="action-btn">
+                    📣 اعلان‌ها
+                </a>
+                <a href="{{ url_for('tournament.notification_prefs', public_id=tournament.public_id) }}" class="action-btn">
+                    🔔 اعلان‌های تورنمنت
+                </a>
             </div>
         </div>
     </div>

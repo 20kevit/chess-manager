@@ -25,6 +25,10 @@ from infrastructure.db_models import (
 from domain.pairing import SwissEngine, PlayerData
 from domain.pairing.models import compute_color
 
+
+class _RoundNotificationsDisabled(Exception):
+    """P1-F sentinel: tournament-level gate disabled the round fan-out."""
+
 # ── Custom Exceptions ──
 class ManualPairingError(ValueError): pass
 class SwapError(ValueError): pass
@@ -174,6 +178,16 @@ class RoundService:
         # revisit with an async strategy if round sizes grow.
         _fanout_started = time.monotonic()
         try:
+            # P1-F: tournament-level gate (organizer toggle) is consulted
+            # before any per-player dispatch.
+            from application.notification_policy import tournament_allows
+            if not tournament_allows(
+                    tournament.notification_prefs, "ROUND_CREATED"):
+                logging.info(
+                    "Round fan-out skipped for tournament %s: event "
+                    "disabled by organizer", tournament.id)
+                raise _RoundNotificationsDisabled()
+
             from application.notification_service import NotificationService
             from application.notification_types import NotificationType
             
@@ -220,6 +234,8 @@ class RoundService:
                             message=msg_bye,
                             link_url=f"/{tournament.public_id}"
                         )
+        except _RoundNotificationsDisabled:
+            pass  # organizer-disabled event: silent, timed below
         except Exception as e:
             logging.error(f"Failed to send round notifications: {str(e)}")
         finally:
