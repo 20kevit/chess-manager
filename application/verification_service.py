@@ -205,7 +205,7 @@ class VerificationService:
     def _update_overall_status(req: PlayerVerificationModel) -> None:
         """Update overall request status based on per-aspect verifications.
 
-        - If all three aspects are True -> status = 'approved'
+        - If all three aspects are True -> status = 'approved' + update player profile
         - If any aspect is False -> status = 'rejected'
         - If any aspect is None -> status = 'pending'
         """
@@ -215,6 +215,22 @@ class VerificationService:
             req.status = "approved"
             req.reviewed_at = datetime.utcnow()
             req.rejection_reason = None
+
+            # Update player profile to verified (mirror approve_request logic)
+            profile = PlayerProfileRepository.get_by_id(req.player_profile_id)
+            if profile:
+                profile.fide_verification_status = "verified"
+                # fide_id is already set from submit_request
+                # Sync official FIDE title
+                fide_record = FidePlayerRepository.get_by_fide_id(req.requested_fide_id)
+                if fide_record:
+                    official_title = (
+                        fide_record.title or fide_record.wtitle
+                        or fide_record.otitle or fide_record.foatitle or ""
+                    ).strip()
+                    if official_title:
+                        profile.fide_title = official_title
+
         elif any(a is False for a in aspects):
             req.status = "rejected"
             req.reviewed_at = datetime.utcnow()
@@ -227,6 +243,11 @@ class VerificationService:
             if req.photo_verified is False:
                 reasons.append(f"عکس پروفایل/مدرک: {req.photo_notes or 'رد شده'}")
             req.rejection_reason = " | ".join(reasons)
+
+            # Revert profile status on rejection
+            profile = PlayerProfileRepository.get_by_id(req.player_profile_id)
+            if profile:
+                profile.fide_verification_status = "rejected"
         else:
             req.status = "pending"
             req.reviewed_at = None
