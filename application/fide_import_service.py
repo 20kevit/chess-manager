@@ -101,6 +101,8 @@ class FideImportService:
         record.status = "pending"
         record.stage = None
         record.progress_percent = 0
+        record.download_progress = 0
+        record.processing_progress = 0
         record.source_url = source_label
         record.error_message = None
         record.records_processed = 0
@@ -112,18 +114,19 @@ class FideImportService:
         try:
             # ── Stage: acquire XML (download OR server-placed file) ──
             record.stage = "download"
+            record.download_progress = 0
             db.session.commit()
 
             def _download_progress(fraction):
                 if fraction is not None:
-                    record.progress_percent = max(
-                        record.progress_percent or 0,
-                        min(30, int(5 + fraction * 25)),
+                    record.download_progress = max(
+                        record.download_progress or 0,
+                        min(100, int(fraction * 100)),
                     )
                     db.session.commit()
-                elif (record.progress_percent or 0) < 25:
-                    record.progress_percent = \
-                        min(25, (record.progress_percent or 0) + 10)
+                elif (record.download_progress or 0) < 100:
+                    record.download_progress = \
+                        min(100, (record.download_progress or 0) + 10)
                     db.session.commit()
 
             # Late-bound module call so tests (and future callers) can
@@ -131,21 +134,25 @@ class FideImportService:
             provenance, xml_path = _fide_storage.ensure_players_xml(
                 progress_cb=_download_progress)
 
-            # ── Stage: extract (no-op when XML was already present) ──
+            # Download complete - set to 100
+            record.download_progress = 100
             record.stage = "extract"
-            record.progress_percent = 35
+            record.processing_progress = 0
             db.session.commit()
 
             if source_label == "auto_download" and provenance != "downloaded":
                 # Keep provenance truthful for server-placed files even
                 # when the trigger came from the admin UI button.
                 record.source_url = f"server_file:{provenance}"
+                # Manual cPanel file: download is effectively complete
+                record.download_progress = 100
+                db.session.commit()
 
             total_players = count_players_in_xml(xml_path)
 
             # ── Stage: parse/persist ──
             record.stage = "parse"
-            record.progress_percent = 40 if total_players else None
+            record.processing_progress = 0 if total_players else None
             db.session.commit()
 
             processed = 0
@@ -206,11 +213,11 @@ class FideImportService:
                     db.session.commit()
                     record.records_processed = processed
                     if total_players:
-                        pct = 40 + int(55 * processed / total_players)
-                        record.progress_percent = min(95, pct)
+                        pct = int(100 * processed / total_players)
+                        record.processing_progress = min(95, pct)
                     else:
-                        record.progress_percent = min(
-                            95, (record.progress_percent or 40) + 5)
+                        record.processing_progress = min(
+                            95, (record.processing_progress or 0) + 5)
                     db.session.commit()
                     current_app.logger.info(
                         "FIDE Import Progress (%s): %s processed",
@@ -219,7 +226,7 @@ class FideImportService:
             # ── Stage: finalize ──
             db.session.commit()
             record.stage = "finalize"
-            record.progress_percent = 98
+            record.processing_progress = 100
             db.session.commit()
 
             record.status = "success"
@@ -259,6 +266,8 @@ class FideImportService:
             "status": latest.status,
             "stage": latest.stage,
             "progress_percent": latest.progress_percent,
+            "download_progress": latest.download_progress,
+            "processing_progress": latest.processing_progress,
             "records_processed": latest.records_processed or 0,
             "records_imported": latest.records_imported or 0,
             "error_message": latest.error_message,

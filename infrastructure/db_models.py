@@ -507,6 +507,9 @@ class FideImportModel(db.Model):
     # P1-G: honest progress reporting.
     stage = db.Column(db.String(20), nullable=True)           # download|extract|parse|finalize
     progress_percent = db.Column(db.Integer, nullable=True)   # 0..100; NULL = indeterminate
+    # Phase 2: Separate download and processing progress for two-row UI
+    download_progress = db.Column(db.Integer, nullable=True)  # 0..100 for download stage
+    processing_progress = db.Column(db.Integer, nullable=True)  # 0..100 for processing stage
 
 
 class PlayerVerificationModel(db.Model):

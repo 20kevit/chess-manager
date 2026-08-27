@@ -38,6 +38,14 @@
     .badge-success { background: #d1fae5; color: #059669; }
     .badge-pending { background: #fef3c7; color: #d97706; }
     .badge-failed { background: #fee2e2; color: #dc2626; }
+    /* Phase 2: Two-row progress UI */
+    .progress-row { margin-bottom: 15px; }
+    .progress-row-label { font-size: 0.85rem; color: #64748b; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .progress-bar-container { background: #e2e8f0; border-radius: 8px; height: 22px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; background: #2563eb; transition: width .4s; }
+    .progress-bar.complete { background: #059669; }
+    .progress-bar.error { background: #dc2626; }
+    .progress-hidden { display: none; }
 </style>
 {% endblock %}
 
@@ -61,14 +69,30 @@
                     </button>
                 </form>
 
-                <!-- P1-G: live progress -->
+                <!-- Phase 2: Two-row progress UI - Download and Processing -->
                 <div id="fide-progress-box" style="display:none; margin-top:15px;">
-                    <div style="background:#e2e8f0; border-radius:8px; height:22px; overflow:hidden;">
-                        <div id="fide-progress-bar" style="height:100%; width:0%; background:#2563eb; transition:width .4s;"></div>
+                    <!-- Download progress row -->
+                    <div id="download-progress-row" class="progress-row">
+                        <div class="progress-row-label">
+                            <span>دانلود</span>
+                            <span id="download-percent">0</span>٪
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="download-progress-bar" class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <!-- Processing progress row (appears after download completes) -->
+                    <div id="processing-progress-row" class="progress-row progress-hidden">
+                        <div class="progress-row-label">
+                            <span>پردازش</span>
+                            <span id="processing-percent">0</span>٪
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="processing-progress-bar" class="progress-bar"></div>
+                        </div>
                     </div>
                     <p style="font-size:0.85rem; color:#64748b; margin-top:6px;">
                         مرحله: <span id="fide-stage">-</span>
-                        · درصد: <span id="fide-percent">0</span>٪
                         · پردازش‌شده: <span id="fide-processed">0</span>
                     </p>
                 </div>
@@ -146,13 +170,16 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-// P1-G: poll import status while a run is active.
+// Phase 2: Poll import status with two separate progress rows
 (function () {
     var box = document.getElementById('fide-progress-box');
     if (!box) return;
-    var bar = document.getElementById('fide-progress-bar');
+    var downloadBar = document.getElementById('download-progress-bar');
+    var downloadPercent = document.getElementById('download-percent');
+    var processingRow = document.getElementById('processing-progress-row');
+    var processingBar = document.getElementById('processing-progress-bar');
+    var processingPercent = document.getElementById('processing-percent');
     var stageEl = document.getElementById('fide-stage');
-    var pctEl = document.getElementById('fide-percent');
     var procEl = document.getElementById('fide-processed');
     var stageNames = { download: 'دانلود', extract: 'استخراج', parse: 'پردازش', finalize: 'نهایی‌سازی' };
     var timer = null;
@@ -163,13 +190,46 @@
             .then(function (s) {
                 var running = s.status === 'pending';
                 box.style.display = (running || s.status === 'success' || s.status === 'failed') ? 'block' : 'none';
-                var pct = s.progress_percent;
-                if (running && pct === null) pct = 50;   // indeterminate visual
-                bar.style.width = (pct === null ? 0 : pct) + '%';
-                bar.style.background = s.status === 'failed' ? '#dc2626' : (s.status === 'success' ? '#059669' : '#2563eb');
+
+                // Download progress (0-100)
+                var dlPct = s.download_progress;
+                if (dlPct !== null && dlPct !== undefined) {
+                    downloadBar.style.width = dlPct + '%';
+                    downloadPercent.textContent = dlPct;
+                    if (s.status === 'failed') {
+                        downloadBar.classList.add('error');
+                        downloadBar.classList.remove('complete');
+                    } else if (dlPct >= 100) {
+                        downloadBar.classList.add('complete');
+                        downloadBar.classList.remove('error');
+                    } else {
+                        downloadBar.classList.remove('complete', 'error');
+                    }
+                }
+
+                // Processing progress (appears after download completes)
+                var procPct = s.processing_progress;
+                if (procPct !== null && procPct !== undefined) {
+                    processingRow.classList.remove('progress-hidden');
+                    processingBar.style.width = procPct + '%';
+                    processingPercent.textContent = procPct;
+                    if (s.status === 'failed') {
+                        processingBar.classList.add('error');
+                        processingBar.classList.remove('complete');
+                    } else if (procPct >= 100) {
+                        processingBar.classList.add('complete');
+                        processingBar.classList.remove('error');
+                    } else {
+                        processingBar.classList.remove('complete', 'error');
+                    }
+                } else {
+                    processingRow.classList.add('progress-hidden');
+                }
+
+                // Stage and processed count
                 stageEl.textContent = stageNames[s.stage] || '-';
-                pctEl.textContent = (pct === null ? '-' : pct);
                 procEl.textContent = s.records_processed || 0;
+
                 if (!running && timer) { clearInterval(timer); timer = null; }
             })
             .catch(function () { /* transient network errors ignored */ });
