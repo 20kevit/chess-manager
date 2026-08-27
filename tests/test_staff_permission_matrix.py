@@ -269,16 +269,56 @@ class TestRoundGenerationAndDeletion:
 
 
 class TestStaffRoleManagement:
-    def test_organizer_appoints_chief(self, matrix):
-        invitee = _user("mx_invitee@test.com")
+    def test_organizer_appoints_chief(self, app):
+        """Organizer can appoint a chief arbiter when none exists."""
+        with app.app_context():
+            organizer = _user("mx_org2@test.com", "organizer")
+            t = TournamentModel(
+                public_id="66000002", name="Matrix Open 2",
+                total_rounds=5, status="setup",
+                organizer_id=organizer.id,
+            )
+            db.session.add(t)
+            db.session.commit()
+            
+            invitee = _user("mx_invitee@test.com")
+            db.session.commit()
+            
+            client = app.test_client()
+            from flask import g
+            g.pop("_login_user", None)
+            with client.session_transaction() as sess:
+                sess["_user_id"] = str(organizer.id)
+                sess["_fresh"] = True
+            
+            resp = client.post(
+                f"/dashboard/tournament/{t.public_id}/manage/staff/add",
+                data={"user_id": invitee.id, "staff_role": "chief_arbiter"})
+            assert resp.status_code == 302
+            row = TournamentStaffModel.query.filter_by(
+                tournament_id=t.id, user_id=invitee.id).one()
+            assert row.role == "chief_arbiter"
+
+    def test_organizer_cannot_appoint_second_chief(self, matrix):
+        """Organizer cannot appoint a second chief arbiter for the same tournament."""
+        # First chief already exists from fixture (mx_chief@test.com)
+        invitee2 = _user("mx_invitee2@test.com")
         db.session.commit()
-        _as(matrix, "organizer").post(
+        resp = _as(matrix, "organizer").post(
             f"/dashboard/tournament/{PID}/manage/staff/add",
-            data={"user_id": invitee.id, "staff_role": "chief_arbiter"})
-        row = TournamentStaffModel.query.filter_by(
+            data={"user_id": invitee2.id, "staff_role": "chief_arbiter"})
+        # Should redirect back with error flash
+        assert resp.status_code == 302
+        # No new staff row should be created for invitee2
+        assert TournamentStaffModel.query.filter_by(
             tournament_id=matrix["tournament"].id,
-            user_id=invitee.id).one()
-        assert row.role == "chief_arbiter"
+            user_id=invitee2.id).count() == 0
+        # Original chief should still be the only chief
+        chiefs = TournamentStaffModel.query.filter_by(
+            tournament_id=matrix["tournament"].id,
+            role="chief_arbiter", status="accepted").all()
+        assert len(chiefs) == 1
+        assert chiefs[0].user_id == matrix["ids"]["chief"]
 
     def test_chief_cannot_appoint_another_chief(self, matrix):
         invitee = _user("mx_invitee2@test.com")
@@ -330,6 +370,27 @@ class TestStaffRoleManagement:
         rows = TournamentStaffModel.query.filter_by(
             tournament_id=matrix["tournament"].id).all()
         assert {r.role for r in rows} == {"chief_arbiter", "arbiter"}
+
+    def test_database_prevents_second_chief_arbiter(self, matrix):
+        """Application-level check prevents a second chief arbiter."""
+        # First chief already exists from fixture (mx_chief@test.com)
+        invitee = _user("mx_invitee_db@test.com")
+        db.session.commit()
+        # Try to appoint second chief via the route (application-level check)
+        resp = _as(matrix, "organizer").post(
+            f"/dashboard/tournament/{PID}/manage/staff/add",
+            data={"user_id": invitee.id, "staff_role": "chief_arbiter"})
+        # Should redirect back with error flash
+        assert resp.status_code == 302
+        # No new staff row should be created for invitee
+        assert TournamentStaffModel.query.filter_by(
+            tournament_id=matrix["tournament"].id,
+            user_id=invitee.id).count() == 0
+        # Original chief should still be the only chief
+        chiefs = TournamentStaffModel.query.filter_by(
+            tournament_id=matrix["tournament"].id,
+            role="chief_arbiter", status="accepted").all()
+        assert len(chiefs) == 1
 
 
 class TestReceiptVisibilityTier:

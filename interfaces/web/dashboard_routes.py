@@ -548,6 +548,14 @@ def add_staff(public_id):
             flash("تنها برگزارکننده یا مدیر سیستم می‌تواند سرداور تعیین کند.", "error")
             return redirect(url_for("dashboard.manage_tournament",
                                     public_id=public_id))
+        # Enforce single chief arbiter per tournament (application-level check)
+        existing_chief = TournamentStaffModel.query.filter_by(
+            tournament_id=tournament.id, role="chief_arbiter", status="accepted"
+        ).first()
+        if existing_chief:
+            flash("این تورنمنت قبلاً یک سرداور دارد. ابتدا سرداور فعلی را حذف کنید.", "error")
+            return redirect(url_for("dashboard.manage_tournament",
+                                    public_id=public_id))
         role = "chief_arbiter"
     else:
         role = "arbiter"

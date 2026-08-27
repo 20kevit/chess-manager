@@ -381,6 +381,10 @@ class TournamentStaffModel(db.Model):
     __tablename__ = "tournament_staff"
     __table_args__ = (
         db.UniqueConstraint("tournament_id", "user_id", name="uq_tournament_staff"),
+        # NOTE: Production MySQL 8.0+ should add a partial unique index:
+        # CREATE UNIQUE INDEX uq_tournament_chief_arbiter 
+        # ON tournament_staff (tournament_id) WHERE role = 'chief_arbiter';
+        # This enforces exactly one chief_arbiter per tournament.
         {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
 
