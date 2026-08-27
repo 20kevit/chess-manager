@@ -201,14 +201,14 @@
                             <div class="aspect-header">
                                 <span class="aspect-title">۱. تأیید کد فیده</span>
                                 <span class="aspect-status 
-                                    {% if req.fide_id_verified is None %}aspect-pending
+                                    {% if req.fide_id_verified is none %}aspect-pending
                                     {% elif req.fide_id_verified %}aspect-verified
                                     {% else %}aspect-rejected{% endif %}">
                                     {{ {'None': 'بررسی نشده', 'True': 'تأیید', 'False': 'رد'}[req.fide_id_verified|string] }}
                                 </span>
                             </div>
                             <div class="aspect-actions">
-                                {% if req.fide_id_verified is None %}
+                                {% if req.fide_id_verified is none %}
                                 <form action="{{ url_for('fide.verify_fide_id', req_id=req.id) }}" method="POST" style="display:inline;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="verified" value="true">
@@ -234,14 +234,14 @@
                             <div class="aspect-header">
                                 <span class="aspect-title">۲. تأیید تاریخ تولد / سن</span>
                                 <span class="aspect-status 
-                                    {% if req.dob_verified is None %}aspect-pending
+                                    {% if req.dob_verified is none %}aspect-pending
                                     {% elif req.dob_verified %}aspect-verified
                                     {% else %}aspect-rejected{% endif %}">
                                     {{ {'None': 'بررسی نشده', 'True': 'تأیید', 'False': 'رد'}[req.dob_verified|string] }}
                                 </span>
                             </div>
                             <div class="aspect-actions">
-                                {% if req.dob_verified is None %}
+                                {% if req.dob_verified is none %}
                                 <form action="{{ url_for('fide.verify_dob', req_id=req.id) }}" method="POST" style="display:inline;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="verified" value="true">
@@ -267,14 +267,14 @@
                             <div class="aspect-header">
                                 <span class="aspect-title">۳. تطابق عکس پروفایل با مدرک</span>
                                 <span class="aspect-status 
-                                    {% if req.photo_verified is None %}aspect-pending
+                                    {% if req.photo_verified is none %}aspect-pending
                                     {% elif req.photo_verified %}aspect-verified
                                     {% else %}aspect-rejected{% endif %}">
                                     {{ {'None': 'بررسی نشده', 'True': 'تأیید', 'False': 'رد'}[req.photo_verified|string] }}
                                 </span>
                             </div>
                             <div class="aspect-actions">
-                                {% if req.photo_verified is None %}
+                                {% if req.photo_verified is none %}
                                 <form action="{{ url_for('fide.verify_photo', req_id=req.id) }}" method="POST" style="display:inline;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="verified" value="true">
