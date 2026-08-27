@@ -24,37 +24,40 @@
         </div>
     </div>
 
-    <!-- ۲) Structured sections -->
+    <!-- ۲) Structured sections - Accordion style -->
     <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
         <h2 class="section-title">🧱 بخش‌های ساختاریافته</h2>
-        <p style="font-size:0.85em; color:#64748b;">ترتیب نمایش با دکمه‌های ▲▼ کنترل می‌شود. عنوان و متن هر بخش قابل ویرایش است.</p>
+        <p style="font-size:0.85em; color:#64748b;">برای ویرایش محتوای هر بخش، روی عنوان آن کلیک کنید. فقط یک بخش در هر لحظه باز می‌تواند باشد.</p>
 
         <div id="sections-container">
             {% for s in sections %}
-            <div class="section-row" data-key="{{ s.key }}" style="border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:10px; background:#fff;">
-                <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-                    <button type="button" class="btn btn-light btn-sm move-up" title="بالا">▲</button>
-                    <button type="button" class="btn btn-light btn-sm move-down" title="پایین">▼</button>
-                    <input type="text" class="sec-title" value="{{ s.title }}" placeholder="عنوان بخش" style="flex:1;">
-                    <span dir="ltr" style="font-size:0.75rem; color:#94a3b8;">{{ s.key }}</span>
-                    <button type="button" class="btn btn-danger btn-sm remove-sec">حذف</button>
+            <div class="accordion-section" data-key="{{ s.key }}">
+                <div class="accordion-header" style="display:flex; gap:8px; align-items:center; padding:12px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:background 0.2s;">
+                    <button type="button" class="btn btn-light btn-sm move-up" title="بالا" style="flex-shrink:0;">▲</button>
+                    <button type="button" class="btn btn-light btn-sm move-down" title="پایین" style="flex-shrink:0;">▼</button>
+                    <input type="text" class="sec-title" value="{{ s.title }}" placeholder="عنوان بخش" style="flex:1; border:1px solid transparent; background:transparent; font-size:1rem; font-weight:500; padding:4px 8px; border-radius:4px;" readonly>
+                    <span dir="ltr" style="font-size:0.75rem; color:#94a3b8; flex-shrink:0;">{{ s.key }}</span>
+                    <button type="button" class="btn btn-danger btn-sm remove-sec" title="حذف" style="flex-shrink:0;">حذف</button>
+                    <span class="accordion-toggle" style="flex-shrink:0; margin-right:4px; font-size:1.2rem; color:#64748b; transition:transform 0.2s;">▼</span>
                 </div>
-                <textarea class="sec-body" rows="3" style="width:100%;" placeholder="متن این بخش...">{{ s.body }}</textarea>
+                <div class="accordion-content" style="display:none; padding:16px; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 8px 8px; background:#fff;">
+                    <textarea class="sec-body" rows="5" style="width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:10px; font-family:inherit; font-size:0.95rem; line-height:1.6; resize:vertical;" placeholder="متن این بخش...">{{ s.body }}</textarea>
+                </div>
             </div>
             {% endfor %}
         </div>
 
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-            <select id="vocab-select" class="form-control" style="max-width:280px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px; padding-top:15px; border-top:1px dashed #e2e8f0;">
+            <select id="vocab-select" class="form-control" style="max-width:320px; min-height:42px;">
                 {% for key, title in vocabulary %}
                 <option value="{{ key }}">{{ title }}</option>
                 {% endfor %}
             </select>
-            <button type="button" id="add-section" class="btn btn-secondary btn-sm">＋ افزودن بخش</button>
+            <button type="button" id="add-section" class="btn btn-primary btn-sm" style="min-height:42px; align-self:center;">＋ افزودن بخش</button>
         </div>
     </div>
 
-    <div class="form-actions" style="margin-top:25px;">
+    <div class="form-actions" style="margin-top:25px; display:flex; justify-content:flex-end;">
         <button type="submit" class="btn btn-primary" style="padding:12px 35px;">💾 ذخیره متن و بخش‌ها</button>
     </div>
 </form>
@@ -93,43 +96,118 @@ document.addEventListener('DOMContentLoaded', function () {
         {% endfor %}
     };
 
-    function bindRow(row) {
-        row.querySelector('.move-up').onclick = function () {
-            var prev = row.previousElementSibling;
-            if (prev) container.insertBefore(row, prev);
-        };
-        row.querySelector('.move-down').onclick = function () {
-            var next = row.nextElementSibling;
-            if (next) container.insertBefore(next, row);
-        };
-        row.querySelector('.remove-sec').onclick = function () { row.remove(); };
+    // Accordion behavior: only one open at a time
+    function closeAllSections() {
+        document.querySelectorAll('#sections-container .accordion-section').forEach(function(sec) {
+            sec.classList.remove('open');
+            var content = sec.querySelector('.accordion-content');
+            var toggle = sec.querySelector('.accordion-toggle');
+            if (content) content.style.display = 'none';
+            if (toggle) toggle.style.transform = 'rotate(0deg)';
+            // Make title readonly when collapsed
+            var titleInput = sec.querySelector('.sec-title');
+            if (titleInput) titleInput.readOnly = true;
+        });
     }
 
-    document.querySelectorAll('#sections-container .section-row')
+    function bindRow(row) {
+        var header = row.querySelector('.accordion-header');
+        var content = row.querySelector('.accordion-content');
+        var toggle = row.querySelector('.accordion-toggle');
+        var titleInput = row.querySelector('.sec-title');
+
+        // Click header to toggle
+        header.onclick = function(e) {
+            // Ignore clicks on buttons inside header
+            if (e.target.closest('button')) return;
+            
+            var isOpen = row.classList.contains('open');
+            closeAllSections();
+            if (!isOpen) {
+                row.classList.add('open');
+                content.style.display = 'block';
+                toggle.style.transform = 'rotate(180deg)';
+                titleInput.readOnly = false;
+                titleInput.focus();
+            }
+        };
+
+        // Move up
+        row.querySelector('.move-up').onclick = function(e) {
+            e.stopPropagation();
+            var prev = row.previousElementSibling;
+            if (prev && prev.classList.contains('accordion-section')) {
+                container.insertBefore(row, prev);
+            }
+        };
+
+        // Move down
+        row.querySelector('.move-down').onclick = function(e) {
+            e.stopPropagation();
+            var next = row.nextElementSibling;
+            if (next && next.classList.contains('accordion-section')) {
+                container.insertBefore(next, row);
+            }
+        };
+
+        // Remove
+        row.querySelector('.remove-sec').onclick = function(e) {
+            e.stopPropagation();
+            if (confirm('آیا از حذف این بخش مطمئن هستید؟')) {
+                row.remove();
+            }
+        };
+
+        // Title input: allow editing when section is open
+        titleInput.onfocus = function() {
+            if (!row.classList.contains('open')) {
+                closeAllSections();
+                row.classList.add('open');
+                content.style.display = 'block';
+                toggle.style.transform = 'rotate(180deg)';
+            }
+            titleInput.readOnly = false;
+        };
+    }
+
+    // Initialize existing rows
+    document.querySelectorAll('#sections-container .accordion-section')
         .forEach(bindRow);
 
+    // Add new section
     document.getElementById('add-section').onclick = function () {
         var key = document.getElementById('vocab-select').value;
         var row = document.createElement('div');
-        row.className = 'section-row';
+        row.className = 'accordion-section';
         row.setAttribute('data-key', key);
-        row.style.cssText = 'border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:10px;background:#fff;';
         row.innerHTML =
-            '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
-            '<button type="button" class="btn btn-light btn-sm move-up">▲</button>' +
-            '<button type="button" class="btn btn-light btn-sm move-down">▼</button>' +
-            '<input type="text" class="sec-title" value="' + (vocabTitles[key] || key) + '" placeholder="عنوان بخش" style="flex:1;">' +
-            '<span dir="ltr" style="font-size:0.75rem;color:#94a3b8;">' + key + '</span>' +
-            '<button type="button" class="btn btn-danger btn-sm remove-sec">حذف</button></div>' +
-            '<textarea class="sec-body" rows="3" style="width:100%;" placeholder="متن این بخش..."></textarea>';
+            '<div class="accordion-header" style="display:flex; gap:8px; align-items:center; padding:12px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:background 0.2s;">' +
+            '<button type="button" class="btn btn-light btn-sm move-up" title="بالا" style="flex-shrink:0;">▲</button>' +
+            '<button type="button" class="btn btn-light btn-sm move-down" title="پایین" style="flex-shrink:0;">▼</button>' +
+            '<input type="text" class="sec-title" value="' + (vocabTitles[key] || key) + '" placeholder="عنوان بخش" style="flex:1; border:1px solid transparent; background:transparent; font-size:1rem; font-weight:500; padding:4px 8px; border-radius:4px;" readonly>' +
+            '<span dir="ltr" style="font-size:0.75rem; color:#94a3b8; flex-shrink:0;">' + key + '</span>' +
+            '<button type="button" class="btn btn-danger btn-sm remove-sec" title="حذف" style="flex-shrink:0;">حذف</button>' +
+            '<span class="accordion-toggle" style="flex-shrink:0; margin-right:4px; font-size:1.2rem; color:#64748b; transition:transform 0.2s;">▼</span>' +
+            '</div>' +
+            '<div class="accordion-content" style="display:none; padding:16px; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 8px 8px; background:#fff;">' +
+            '<textarea class="sec-body" rows="5" style="width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:10px; font-family:inherit; font-size:0.95rem; line-height:1.6; resize:vertical;" placeholder="متن این بخش..."></textarea>' +
+            '</div>';
         container.appendChild(row);
         bindRow(row);
+        
+        // Auto-open the new section
+        closeAllSections();
+        row.classList.add('open');
+        row.querySelector('.accordion-content').style.display = 'block';
+        row.querySelector('.accordion-toggle').style.transform = 'rotate(180deg)';
+        row.querySelector('.sec-title').readOnly = false;
+        row.querySelector('.sec-title').focus();
     };
 
     // Serialize DOM order -> JSON payload right before submit.
     document.querySelector('form').addEventListener('submit', function () {
         var out = [];
-        document.querySelectorAll('#sections-container .section-row').forEach(function (row) {
+        document.querySelectorAll('#sections-container .accordion-section').forEach(function (row) {
             out.push({
                 key: row.getAttribute('data-key') || 'other',
                 title: row.querySelector('.sec-title').value.trim(),
