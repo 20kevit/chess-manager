@@ -94,11 +94,11 @@ def save_results(public_id, round_number):
     
     try:
         RoundService.save_results(round_obj, request.form)
-        flash("Results saved.", "success")
+        flash("نتایج ذخیره شد.", "success")
     except Exception as e:
-        flash("Error saving results.", "error")
+        flash("خطا در ذخیره نتایج.", "error")
         
-    return redirect(url_for("tournament.view", public_id=public_id))
+    return redirect(url_for("round.round_view", public_id=public_id, round_number=round_number))
 
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/finish", methods=["POST"])

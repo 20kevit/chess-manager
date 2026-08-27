@@ -193,8 +193,12 @@ class TournamentService:
         eb_deadline_str = form_data.get("early_bird_deadline", "").strip()
         eb_deadline_iso = None
         if eb_deadline_str:
-            try: eb_deadline_iso = datetime.strptime(eb_deadline_str, "%Y-%m-%d").date().isoformat()
-            except ValueError: pass
+            try:
+                # Support both datetime-local and date formats
+                fmt = "%Y-%m-%dT%H:%M" if "T" in eb_deadline_str else "%Y-%m-%d"
+                eb_deadline_iso = datetime.strptime(eb_deadline_str, fmt).date().isoformat()
+            except ValueError:
+                pass
         tournament.early_bird_config = json.dumps({"deadline": eb_deadline_iso, "percent": eb_percent}, ensure_ascii=False)
 
         # Veteran Config

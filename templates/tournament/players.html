@@ -13,7 +13,7 @@
        class="btn btn-primary">➕ افزودن بازیکن</a>
     <a href="{{ url_for('player.player_import', public_id=tournament.public_id) }}"
        class="btn btn-primary">📤 ایمپورت از CSV</a>
-    <a href="/{{ tournament.public_id }}/admin/"
+    <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}"
        class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
 </div>
 

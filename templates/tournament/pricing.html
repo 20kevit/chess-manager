@@ -4,7 +4,10 @@
 {% block content %}
 <div class="reg-manage-container" style="max-width: 900px; margin: 20px auto;">
     <div class="reg-card">
-        <h2 style="margin-top: 0; margin-bottom: 20px;">💰 تنظیمات ثبت‌نام و قیمت‌گذاری</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">💰 تنظیمات ثبت‌نام و قیمت‌گذاری</h2>
+            <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
+        </div>
         
         <form method="POST" action="{{ url_for('registration.pricing_settings', public_id=tournament.public_id) }}">
             <h4 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">قوانین کلی</h4>
@@ -42,7 +45,7 @@
                 </div>
                 <div class="form-group col-md-4">
                     <label>مهلت ثبت‌نام</label>
-                    <input type="date" name="registration_deadline" value="{{ tournament.registration_deadline.strftime('%Y-%m-%d') if tournament.registration_deadline else '' }}" class="form-control">
+                    <input type="datetime-local" name="registration_deadline" value="{{ tournament.registration_deadline.strftime('%Y-%m-%dT%H:%M') if tournament.registration_deadline else '' }}" class="form-control">
                 </div>
             </div>
 
@@ -90,7 +93,7 @@
                 </div>
                 <div class="form-group col-md-4">
                     <label>تاریخ انقضای تخفیف زودهنگام</label>
-                    <input type="date" name="early_bird_deadline" value="{{ early_bird.deadline or '' }}" class="form-control">
+                    <input type="datetime-local" name="early_bird_deadline" value="{{ (early_bird.deadline + 'T23:59') if early_bird.deadline else '' }}" class="form-control">
                 </div>
             </div>
 
