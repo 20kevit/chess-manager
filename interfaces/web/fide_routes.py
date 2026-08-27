@@ -94,11 +94,62 @@ def approve_verification(req_id):
 @login_required
 @role_required('admin')
 def reject_verification(req_id):
-    """Reject a verification request."""
+    """Reject a verification request (legacy overall reject)."""
     reason = request.form.get("reason", "")
     try:
         VerificationService.reject_request(req_id, current_user.id, reason)
         flash("درخواست رد شد.", "info")
+    except ValueError as e:
+        flash(str(e), "error")
+    return redirect(url_for("fide.verifications_list"))
+
+@fide_bp.route("/admin/fide/verifications/<int:req_id>/verify_fide_id", methods=["POST"])
+@login_required
+@role_required('admin')
+def verify_fide_id(req_id):
+    """Verify or reject FIDE ID ownership."""
+    verified = request.form.get("verified") == "true"
+    notes = request.form.get("notes", "").strip()
+    if not verified and not notes:
+        flash("برای رد، وارد کردن دلیل الزامی است.", "error")
+        return redirect(url_for("fide.verifications_list"))
+    try:
+        VerificationService.verify_fide_id(req_id, current_user.id, verified, notes or None)
+        flash("تأیید کد فیده " + ("تأیید" if verified else "رد") + " شد.", "success" if verified else "warning")
+    except ValueError as e:
+        flash(str(e), "error")
+    return redirect(url_for("fide.verifications_list"))
+
+@fide_bp.route("/admin/fide/verifications/<int:req_id>/verify_dob", methods=["POST"])
+@login_required
+@role_required('admin')
+def verify_dob(req_id):
+    """Verify or reject date of birth/age."""
+    verified = request.form.get("verified") == "true"
+    notes = request.form.get("notes", "").strip()
+    if not verified and not notes:
+        flash("برای رد، وارد کردن دلیل الزامی است.", "error")
+        return redirect(url_for("fide.verifications_list"))
+    try:
+        VerificationService.verify_dob(req_id, current_user.id, verified, notes or None)
+        flash("تأیید تاریخ تولد " + ("تأیید" if verified else "رد") + " شد.", "success" if verified else "warning")
+    except ValueError as e:
+        flash(str(e), "error")
+    return redirect(url_for("fide.verifications_list"))
+
+@fide_bp.route("/admin/fide/verifications/<int:req_id>/verify_photo", methods=["POST"])
+@login_required
+@role_required('admin')
+def verify_photo(req_id):
+    """Verify or reject profile photo vs ID document match."""
+    verified = request.form.get("verified") == "true"
+    notes = request.form.get("notes", "").strip()
+    if not verified and not notes:
+        flash("برای رد، وارد کردن دلیل الزامی است.", "error")
+        return redirect(url_for("fide.verifications_list"))
+    try:
+        VerificationService.verify_photo(req_id, current_user.id, verified, notes or None)
+        flash("تأیید تطابق عکس " + ("تأیید" if verified else "رد") + " شد.", "success" if verified else "warning")
     except ValueError as e:
         flash(str(e), "error")
     return redirect(url_for("fide.verifications_list"))

@@ -29,14 +29,106 @@
         border-bottom: 2px solid #f3f4f6;
     }
     .req-item {
+        background: #f9fafb;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e5e7eb;
+    }
+    .aspect-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 12px;
+    }
+    .aspect-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 15px;
-        background: #f9fafb;
-        border-radius: 8px;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e7eb;
     }
+    .aspect-title {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 1rem;
+    }
+    .aspect-status {
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .aspect-pending { background: #fef3c7; color: #d97706; }
+    .aspect-verified { background: #d1fae5; color: #059669; }
+    .aspect-rejected { background: #fee2e2; color: #dc2626; }
+    .aspect-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .aspect-notes {
+        margin-top: 12px;
+        padding: 10px;
+        background: #f9fafb;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: #4b5563;
+        white-space: pre-wrap;
+    }
+    .photo-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 15px;
+    }
+    .photo-box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+    }
+    .photo-box img {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .photo-box p {
+        margin-top: 10px;
+        font-size: 0.85rem;
+        color: #6b7280;
+        font-weight: 500;
+    }
+    .photo-box .no-photo {
+        color: #ef4444;
+        font-size: 0.85rem;
+    }
+    .data-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 15px;
+    }
+    .data-column {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    .data-column h6 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .data-column ul { margin: 0; padding-right: 20px; }
+    .data-column li { margin-bottom: 8px; font-size: 0.9rem; }
+    .data-column .label { color: #6b7280; }
+    .data-column .value { font-weight: 600; color: #1f2937; }
     .modal-overlay {
         display: none;
         position: fixed;
@@ -49,10 +141,22 @@
     .modal-overlay.active { display: flex; }
     .modal-box {
         background: white;
-        padding: 30px;
+        padding: 25px;
         border-radius: 12px;
         width: 90%;
-        max-width: 450px;
+        max-width: 500px;
+    }
+    .req-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .btn-aspect { padding: 6px 12px; font-size: 0.8rem; }
+    @media (max-width: 768px) {
+        .photo-comparison, .data-comparison { grid-template-columns: 1fr; }
     }
 </style>
 {% endblock %}
@@ -63,58 +167,194 @@
         <h2>درخواست‌های تأیید هویت فیده</h2>
     </div>
 
-        <div class="dash-card">
+    <div class="dash-card">
         {% if pending %}
         {% for item in pending %}
             {% set req = item.req %}
             {% set profile = item.profile %}
             {% set fide = item.fide_player %}
             
-            <div class="req-item" style="flex-direction: column; align-items: stretch;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+            <div class="req-item">
+                <div class="req-header">
                     <div>
-                        <h5 style="margin: 0; font-weight: 700;">
-                            پروفایل سایت: {{ profile.full_name if profile else 'نامشخص' }}
+                        <h5 style="margin: 0 0 5px 0; font-weight: 700;">
+                            پروفایل: {{ profile.full_name if profile else 'نامشخص' }}
                         </h5>
-                        <small class="text-muted">درخواست کد فیده: <strong>{{ req.requested_fide_id }}</strong> | تاریخ: {{ req.submitted_at.strftime('%Y-%m-%d') }}</small>
+                        <small class="text-muted">کد فیده درخواستی: <strong>{{ req.requested_fide_id }}</strong> | ثبت: {{ req.submitted_at.strftime('%Y-%m-%d %H:%M') }}</small>
                     </div>
                     <div>
-                        <form action="{{ url_for('fide.approve_verification', req_id=req.id) }}" method="POST" style="display:inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-success btn-sm">تأیید درخواست</button>
-                        </form>
-                        <button class="btn btn-danger btn-sm" onclick="rejectRequest({{ req.id }})">رد درخواست</button>
+                        <span class="badge 
+                            {% if req.status == 'approved' %}bg-success
+                            {% elif req.status == 'rejected' %}bg-danger
+                            {% else %}bg-warning{% endif %}"
+                            style="font-size: 0.8rem;">
+                            {{ {'pending': 'در انتظار', 'approved': 'تأیید شده', 'rejected': 'رد شده'}[req.status] }}
+                        </span>
                     </div>
                 </div>
-                
+
+                <!-- Per-Aspect Verification Cards -->
                 <div class="row">
+                    <!-- Aspect 1: FIDE ID Verification -->
+                    <div class="col-md-4">
+                        <div class="aspect-card">
+                            <div class="aspect-header">
+                                <span class="aspect-title">۱. تأیید کد فیده</span>
+                                <span class="aspect-status 
+                                    {% if req.fide_id_verified is None %}aspect-pending
+                                    {% elif req.fide_id_verified %}aspect-verified
+                                    {% else %}aspect-rejected{% endif %}">
+                                    {{ {'None': 'بررسی نشده', 'True': 'تأیید', 'False': 'رد'}[req.fide_id_verified|string] }}
+                                </span>
+                            </div>
+                            <div class="aspect-actions">
+                                {% if req.fide_id_verified is None %}
+                                <form action="{{ url_for('fide.verify_fide_id', req_id=req.id) }}" method="POST" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="verified" value="true">
+                                    <button type="submit" class="btn btn-success btn-sm btn-aspect">تأیید</button>
+                                </form>
+                                <button type="button" class="btn btn-danger btn-sm btn-aspect" onclick="openFideIdRejectModal({{ req.id }})">رد</button>
+                                {% else %}
+                                <span class="text-muted small">
+                                    توسط: {{ req.fide_id_reviewer.email if req.fide_id_reviewer else 'نامشخص' }}
+                                    <br>{{ req.fide_id_reviewed_at.strftime('%Y-%m-%d %H:%M') if req.fide_id_reviewed_at else '' }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% if req.fide_id_notes %}
+                            <div class="aspect-notes"><strong>یادداشت:</strong> {{ req.fide_id_notes }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Aspect 2: DOB Verification -->
+                    <div class="col-md-4">
+                        <div class="aspect-card">
+                            <div class="aspect-header">
+                                <span class="aspect-title">۲. تأیید تاریخ تولد / سن</span>
+                                <span class="aspect-status 
+                                    {% if req.dob_verified is None %}aspect-pending
+                                    {% elif req.dob_verified %}aspect-verified
+                                    {% else %}aspect-rejected{% endif %}">
+                                    {{ {'None': 'بررسی نشده', 'True': 'تأیید', 'False': 'رد'}[req.dob_verified|string] }}
+                                </span>
+                            </div>
+                            <div class="aspect-actions">
+                                {% if req.dob_verified is None %}
+                                <form action="{{ url_for('fide.verify_dob', req_id=req.id) }}" method="POST" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="verified" value="true">
+                                    <button type="submit" class="btn btn-success btn-sm btn-aspect">تأیید</button>
+                                </form>
+                                <button type="button" class="btn btn-danger btn-sm btn-aspect" onclick="openDobRejectModal({{ req.id }})">رد</button>
+                                {% else %}
+                                <span class="text-muted small">
+                                    توسط: {{ req.dob_reviewer.email if req.dob_reviewer else 'نامشخص' }}
+                                    <br>{{ req.dob_reviewed_at.strftime('%Y-%m-%d %H:%M') if req.dob_reviewed_at else '' }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% if req.dob_notes %}
+                            <div class="aspect-notes"><strong>یادداشت:</strong> {{ req.dob_notes }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Aspect 3: Photo Verification -->
+                    <div class="col-md-4">
+                        <div class="aspect-card">
+                            <div class="aspect-header">
+                                <span class="aspect-title">۳. تطابق عکس پروفایل با مدرک</span>
+                                <span class="aspect-status 
+                                    {% if req.photo_verified is None %}aspect-pending
+                                    {% elif req.photo_verified %}aspect-verified
+                                    {% else %}aspect-rejected{% endif %}">
+                                    {{ {'None': 'بررسی نشده', 'True': 'تأیید', 'False': 'رد'}[req.photo_verified|string] }}
+                                </span>
+                            </div>
+                            <div class="aspect-actions">
+                                {% if req.photo_verified is None %}
+                                <form action="{{ url_for('fide.verify_photo', req_id=req.id) }}" method="POST" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="verified" value="true">
+                                    <button type="submit" class="btn btn-success btn-sm btn-aspect">تأیید</button>
+                                </form>
+                                <button type="button" class="btn btn-danger btn-sm btn-aspect" onclick="openPhotoRejectModal({{ req.id }})">رد</button>
+                                {% else %}
+                                <span class="text-muted small">
+                                    توسط: {{ req.photo_reviewer.email if req.photo_reviewer else 'نامشخص' }}
+                                    <br>{{ req.photo_reviewed_at.strftime('%Y-%m-%d %H:%M') if req.photo_reviewed_at else '' }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% if req.photo_notes %}
+                            <div class="aspect-notes"><strong>یادداشت:</strong> {{ req.photo_notes }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Comparison Section -->
+                <div class="data-comparison" style="margin-top: 25px;">
                     <!-- Player's Entered Data -->
-                    <div class="col-md-6">
-                        <h6 class="text-muted mb-2">اطلاعات وارد شده توسط بازیکن:</h6>
-                        <ul class="list-unstyled" style="font-size: 0.9rem;">
-                            <li>نام: {{ profile.first_name if profile else '-' }} {{ profile.last_name if profile else '-' }}</li>
-                            <li>کد ملی: {{ profile.national_id if profile else '-' }}</li>
-                            <li>تاریخ تولد: {{ profile.birth_date.strftime('%Y-%m-%d') if profile and profile.birth_date else '-' }}</li>
-                            <li>فدراسیون وارد شده: {{ profile.federation if profile else '-' }}</li>
+                    <div class="data-column">
+                        <h6 class="text-secondary">اطلاعات وارد شده توسط بازیکن</h6>
+                        <ul class="list-unstyled">
+                            <li><span class="label">نام کامل:</span> <span class="value">{{ profile.first_name if profile else '-' }} {{ profile.last_name if profile else '-' }}</span></li>
+                            <li><span class="label">کد ملی:</span> <span class="value">{{ profile.national_id if profile and profile.national_id else '-' }}</span></li>
+                            <li><span class="label">تاریخ تولد:</span> <span class="value">{{ profile.birth_date.strftime('%Y-%m-%d') if profile and profile.birth_date else '-' }}</span></li>
+                            <li><span class="label">فدراسیون:</span> <span class="value">{{ profile.federation if profile else '-' }}</span></li>
+                            <li><span class="label">کد فیده ارسالی:</span> <span class="value">{{ req.requested_fide_id }}</span></li>
                         </ul>
                     </div>
-                    
+
                     <!-- FIDE Database Data -->
-                    <div class="col-md-6" style="background: #f8fafc; padding: 15px; border-radius: 8px;">
-                        <h6 class="text-primary mb-2">اطلاعات موجود در دیتابیس فیده:</h6>
+                    <div class="data-column" style="background: #f0f9ff; border-color: #bae6fd;">
+                        <h6 class="text-primary">اطلاعات موجود در دیتابیس فیده</h6>
                         {% if fide %}
-                        <ul class="list-unstyled" style="font-size: 0.9rem;">
-                            <li>نام در فیده: <strong>{{ fide.name }}</strong></li>
-                            <li>فدراسیون: {{ fide.federation }}</li>
-                            <li>سال تولد: {{ fide.birth_year or '-' }}</li>
-                            <li>جنسیت: {{ fide.sex }}</li>
-                            <li>عنوان: {{ fide.title or 'بدون عنوان' }}</li>
+                        <ul class="list-unstyled">
+                            <li><span class="label">نام در فیده:</span> <span class="value">{{ fide.name }}</span></li>
+                            <li><span class="label">فدراسیون:</span> <span class="value">{{ fide.federation }}</span></li>
+                            <li><span class="label">سال تولد:</span> <span class="value">{{ fide.birth_year or '-' }}</span></li>
+                            <li><span class="label">جنسیت:</span> <span class="value">{{ fide.sex }}</span></li>
+                            <li><span class="label">عنوان:</span> <span class="value">{{ fide.title or fide.wtitle or fide.otitle or fide.foatitle or 'بدون عنوان' }}</span></li>
                         </ul>
                         {% else %}
                         <p class="text-danger" style="font-size: 0.9rem;">بازیکنی با این کد فیده در دیتابیس یافت نشد!</p>
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- Photo Comparison Section -->
+                <div class="photo-comparison" style="margin-top: 25px;">
+                    <div class="photo-box">
+                        <p>عکس پروفایل بازیکن</p>
+                        {% if profile and profile.photo_path %}
+                        <img src="{{ url_for('dashboard.serve_profile_photo', profile_id=profile.id) }}" alt="Profile Photo">
+                        {% else %}
+                        <p class="no-photo">عکس پروفایل موجود نیست</p>
+                        {% endif %}
+                    </div>
+                    <div class="photo-box">
+                        <p>عکس مدرک هویتی</p>
+                        {% if profile and profile.id_document_path %}
+                        <img src="{{ url_for('dashboard.serve_id_document', profile_id=profile.id) }}" alt="ID Document">
+                        {% else %}
+                        <p class="no-photo">عکس مدرک هویتی موجود نیست</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Overall Actions (if all aspects verified) -->
+                {% if req.fide_id_verified is not none and req.dob_verified is not none and req.photo_verified is not none %}
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                    {% if req.status == 'pending' %}
+                    <span class="text-muted">تمام سه جنبه بررسی شده‌اند. وضعیت کلی: {{ {'approved': 'تأیید شده', 'rejected': 'رد شده'}[req.status] }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+
             </div>
         {% endfor %}
         {% else %}
@@ -123,26 +363,83 @@
     </div>
 </div>
 
-<div id="rejectModal" class="modal-overlay" onclick="if(event.target === this) this.classList.remove('active')">
+<!-- FIDE ID Reject Modal -->
+<div id="fideIdRejectModal" class="modal-overlay" onclick="if(event.target === this) this.classList.remove('active')">
     <div class="modal-box">
-        <h4 style="margin-bottom: 20px;">دلیل رد درخواست</h4>
-        <form id="rejectForm" action="" method="POST">
+        <h4 style="margin-bottom: 20px;">دلیل رد تأیید کد فیده</h4>
+        <form id="fideIdRejectForm" action="" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="verified" value="false">
             <div class="form-group">
-                <textarea name="reason" class="form-control" rows="3" required placeholder="مثلاً: کد فیده متعلق به شما نیست..."></textarea>
+                <textarea name="notes" class="form-control" rows="3" required placeholder="مثلاً: کد فیده متعلق به شما نیست، یا نام در فیده با نام شما همخوانی ندارد..."></textarea>
             </div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="submit" class="btn btn-danger" style="flex: 1;">ثبت رد درخواست</button>
-                <button type="button" onclick="document.getElementById('rejectModal').classList.remove('active')" class="btn btn-light">انصراف</button>
+                <button type="submit" class="btn btn-danger" style="flex: 1;">ثبت رد</button>
+                <button type="button" onclick="document.getElementById('fideIdRejectModal').classList.remove('active')" class="btn btn-light">انصراف</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- DOB Reject Modal -->
+<div id="dobRejectModal" class="modal-overlay" onclick="if(event.target === this) this.classList.remove('active')">
+    <div class="modal-box">
+        <h4 style="margin-bottom: 20px;">دلیل رد تأیید تاریخ تولد</h4>
+        <form id="dobRejectForm" action="" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="verified" value="false">
+            <div class="form-group">
+                <textarea name="notes" class="form-control" rows="3" required placeholder="مثلاً: تاریخ تولد در مدرک با فیده همخوانی ندارد، یا سن وارد شده نادرست است..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-danger" style="flex: 1;">ثبت رد</button>
+                <button type="button" onclick="document.getElementById('dobRejectModal').classList.remove('active')" class="btn btn-light">انصراف</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Photo Reject Modal -->
+<div id="photoRejectModal" class="modal-overlay" onclick="if(event.target === this) this.classList.remove('active')">
+    <div class="modal-box">
+        <h4 style="margin-bottom: 20px;">دلیل رد تطابق عکس پروفایل با مدرک</h4>
+        <form id="photoRejectForm" action="" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="verified" value="false">
+            <div class="form-group">
+                <textarea name="notes" class="form-control" rows="3" required placeholder="مثلاً: عکس پروفایل با عکس مدرک هویتی همخوانی ندارد، یا عکس‌ها مشخص نیستند..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-danger" style="flex: 1;">ثبت رد</button>
+                <button type="button" onclick="document.getElementById('photoRejectModal').classList.remove('active')" class="btn btn-light">انصراف</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-function rejectRequest(reqId) {
-    document.getElementById('rejectForm').action = `/admin/fide/verifications/${reqId}/reject`;
-    document.getElementById('rejectModal').classList.add('active');
+function openFideIdRejectModal(reqId) {
+    document.getElementById('fideIdRejectForm').action = '/admin/fide/verifications/' + reqId + '/verify_fide_id';
+    document.getElementById('fideIdRejectModal').classList.add('active');
 }
+
+function openDobRejectModal(reqId) {
+    document.getElementById('dobRejectForm').action = '/admin/fide/verifications/' + reqId + '/verify_dob';
+    document.getElementById('dobRejectModal').classList.add('active');
+}
+
+function openPhotoRejectModal(reqId) {
+    document.getElementById('photoRejectForm').action = '/admin/fide/verifications/' + reqId + '/verify_photo';
+    document.getElementById('photoRejectModal').classList.add('active');
+}
+
+// Close modals on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.active').forEach(function(m) {
+            m.classList.remove('active');
+        });
+    }
+});
 </script>
 {% endblock %}
