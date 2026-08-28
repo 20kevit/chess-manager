@@ -10,10 +10,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from run import app
 from app.extensions import db
-from infrastructure.db_models import TournamentModel, PlayerModel
-from infrastructure.repositories import TournamentRepository, PlayerRepository
+
 from application.round_service import RoundService
 
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.repositories.tournament import (PairingRepository, TournamentRepository)
 # داده‌های نمونه
 DEMO_PLAYERS = [
     {"first_name": "مگنوس", "last_name": "کارلسن", "rating": 2830, "fide_title": "GM", "gender": "M", "federation": "NOR"},
@@ -39,7 +40,6 @@ DEMO_PLAYERS = [
 ]
 
 DEMO_RESULTS = ["1-0", "0-1", "1/2"]
-
 
 def create_seed_tournament():
     with app.app_context():
@@ -89,7 +89,7 @@ def create_seed_tournament():
                 new_round = RoundService.create_next_round(tournament)
 
                 # ثبت نتایج تصادفی
-                from infrastructure.repositories import PairingRepository
+                
                 pairings = PairingRepository.get_all_for_round(new_round.id)
 
                 for pairing in pairings:
@@ -114,7 +114,6 @@ def create_seed_tournament():
         print(f"   لینک عمومی: https://swiss.20kevit.ir/{tournament.public_id}")
         print(f"   ورود ادمین: https://swiss.20kevit.ir/{tournament.public_id}/admin/login")
         print("=" * 50)
-
 
 if __name__ == "__main__":
     create_seed_tournament()

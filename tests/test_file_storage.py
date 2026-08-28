@@ -18,14 +18,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.extensions import db
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, TournamentModel, PlayerProfileModel,
-    RegistrationModel, TempImportDataModel,
-)
 
-
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import RegistrationModel
+from infrastructure.models.temp import TempImportDataModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 PDF_BYTES = b"%PDF-1.4\n%fake-receipt-for-tests\n"
-
 
 @pytest.fixture
 def setup_receipt(app):
@@ -77,12 +76,10 @@ def setup_receipt(app):
         if os.path.isdir(legacy_dir):
             shutil.rmtree(legacy_dir, ignore_errors=True)
 
-
 def _login(client, user):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
-
 
 def _store_new_format(reg_data, content=PDF_BYTES, ext="pdf"):
     os.makedirs(reg_data["private_dir"], exist_ok=True)
@@ -92,7 +89,6 @@ def _store_new_format(reg_data, content=PDF_BYTES, ext="pdf"):
     reg_data["reg"].receipt_path = filename
     db.session.commit()
     return filename
-
 
 class TestH1PrivateReceiptStorage:
 
@@ -190,7 +186,6 @@ class TestH1PrivateReceiptStorage:
         assert resp.status_code == 200
         assert resp.data == PDF_BYTES
 
-
 class TestH2SizeLimits:
 
     def test_receipt_over_5mb_rejected_before_save(self, app, setup_receipt):
@@ -237,7 +232,6 @@ class TestH2SizeLimits:
             assert "5 مگابایت" in payload["error"]
         else:
             assert "5 مگابایت" in resp.data.decode("utf-8")
-
 
 class TestH5CsvPreviewCleanup:
 

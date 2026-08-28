@@ -9,6 +9,7 @@ from app.extensions import db, login_manager
 from config import Config
 from application.notification_service import NotificationService
 
+from infrastructure.repositories.user import UserRepository
 def create_app(config_class=None) -> Flask:
     flask_app = Flask(
         __name__,
@@ -80,7 +81,7 @@ def create_app(config_class=None) -> Flask:
     
     @login_manager.user_loader
     def load_user(user_id):
-        from infrastructure.repositories import UserRepository
+        
         return UserRepository.get_by_id(int(user_id))
 
     from interfaces.web.tournament_routes import tournament_bp

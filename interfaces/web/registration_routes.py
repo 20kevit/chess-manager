@@ -6,17 +6,20 @@ from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, abort, current_app, send_file)
 from werkzeug.utils import secure_filename
 from interfaces.web.admin_auth import require_admin
-from infrastructure.repositories import TournamentRepository, RegistrationRepository, PromoCodeRepository
+
 from application.tournament_service import TournamentService
 from application.registration_service import (
     RegistrationService, BLOCKING_REGISTRATION_STATUSES,
 )
 from flask_login import current_user, login_required
-from infrastructure.db_models import RegistrationModel, PromoCodeModel, PaymentModel
+
 from domain.pricing import calculate_price, PlayerPricingData, PromoCodeData
 from flask import jsonify
 from app.extensions import db
 
+from infrastructure.models.registration import (PaymentModel, PromoCodeModel, RegistrationModel)
+from infrastructure.repositories.registration import (PromoCodeRepository, RegistrationRepository)
+from infrastructure.repositories.tournament import TournamentRepository
 registration_bp = Blueprint("registration", __name__)
 
 @registration_bp.route("/<public_id>/admin/pricing", methods=["GET", "POST"])
@@ -347,7 +350,6 @@ def upload_receipt(reg_id):
     flash("رسید شما با موفقیت ثبت شد و در انتظار تایید برگزارکننده است.", "success")
     return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
 
-
 @registration_bp.route("/registration/<int:reg_id>/receipt/discard", methods=["POST"])
 @login_required
 def discard_receipt(reg_id):
@@ -365,7 +367,6 @@ def discard_receipt(reg_id):
     if reg:
         return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
     return redirect(url_for("dashboard.index"))
-
 
 @registration_bp.route("/<public_id>/admin/registrations/<int:reg_id>/reject-receipt", methods=["POST"])
 def reject_receipt(public_id, reg_id):
@@ -386,14 +387,12 @@ def reject_receipt(public_id, reg_id):
 
     return redirect(url_for("registration.manage_registrations", public_id=public_id))
 
-
 _RECEIPT_MIMETYPES = {
     "pdf": "application/pdf",
     "png": "image/png",
     "jpg": "image/jpeg",
     "jpeg": "image/jpeg",
 }
-
 
 def _resolve_receipt_absolute_path(receipt_path: str):
     """
@@ -419,7 +418,6 @@ def _resolve_receipt_absolute_path(receipt_path: str):
             return legacy_candidate
 
     return None
-
 
 @registration_bp.route("/registration/<int:reg_id>/receipt")
 @login_required

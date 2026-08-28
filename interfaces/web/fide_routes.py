@@ -7,9 +7,10 @@ from flask_login import current_user, login_required
 from application.fide_import_service import FideImportService
 from application.fide_search_service import FideSearchService
 from application.verification_service import VerificationService
-from infrastructure.repositories import FideImportRepository
+
 from interfaces.web.decorators import role_required
 
+from infrastructure.repositories.fide import FideImportRepository
 fide_bp = Blueprint("fide", __name__)
 
 # ── Admin FIDE Management ──
@@ -47,7 +48,6 @@ def trigger_import():
         flash(f"خطای غیرمنتظره: {str(e)}", "error")
 
     return redirect(url_for("fide.fide_dashboard"))
-
 
 @fide_bp.route("/admin/fide/import/status")
 @login_required

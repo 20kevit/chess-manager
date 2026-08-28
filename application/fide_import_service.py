@@ -13,10 +13,7 @@ import threading
 from datetime import datetime, timedelta
 
 from app.extensions import db
-from infrastructure.repositories import (
-    FidePlayerRepository, FideRatingRepository, FideImportRepository,
-)
-from infrastructure.db_models import FidePlayerModel, FideRatingModel, FideImportModel
+
 from infrastructure.fide.storage import (
     FideStorageManager, FideStorageError, count_players_in_xml,
     get_period_string,
@@ -25,9 +22,10 @@ from infrastructure.fide import storage as _fide_storage
 from domain.fide.parser import parse_fide_xml
 from flask import current_app
 
+from infrastructure.models.fide import (FideImportModel, FidePlayerModel, FideRatingModel)
+from infrastructure.repositories.fide import (FideImportRepository, FidePlayerRepository, FideRatingRepository)
 STALE_RUN_MINUTES = 15
 BATCH_SIZE = 500
-
 
 class FideImportService:
 
@@ -288,7 +286,6 @@ class FideImportService:
                 k_factor=k_factor
             )
             FideRatingRepository.save(rating_record)
-
 
 # Module-level logger convenience for the fire-safe hooks above.
 logger = logging.getLogger(__name__)

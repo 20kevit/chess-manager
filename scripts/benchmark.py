@@ -11,13 +11,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from run import app
 from app.extensions import db
-from infrastructure.db_models import TournamentModel, PlayerModel
-from infrastructure.repositories import TournamentRepository, PlayerRepository
+
 from application.round_service import RoundService
 from application.tournament_service import TournamentService
 
+from infrastructure.models.tournament import (PairingModel, RoundModel, TournamentModel)
+from infrastructure.repositories.tournament import (PairingRepository, TournamentRepository)
 RESULTS = ["1-0", "0-1", "1/2"]
-
 
 def benchmark(num_players, num_rounds):
     with app.app_context():
@@ -58,7 +58,7 @@ def benchmark(num_players, num_rounds):
                 pairing_time = time.time() - start
 
                 # ثبت نتایج
-                from infrastructure.repositories import PairingRepository
+                
                 pairings = PairingRepository.get_all_for_round(new_round.id)
                 for pr in pairings:
                     if pr.result in ("bye", "half-bye", "zero-bye"):
@@ -82,7 +82,7 @@ def benchmark(num_players, num_rounds):
         print(f"  Standings: {time.time()-start:.3f}s ({len(standings['player_standings'])} players)")
 
         # Cleanup
-        from infrastructure.db_models import PairingModel, RoundModel
+        
         PairingModel.query.filter_by(tournament_id=t.id).delete()
         RoundModel.query.filter_by(tournament_id=t.id).delete()
         PlayerModel.query.filter_by(tournament_id=t.id).delete()
@@ -90,7 +90,6 @@ def benchmark(num_players, num_rounds):
         db.session.commit()
 
         print(f"  Cleanup: done")
-
 
 if __name__ == "__main__":
     print("♚ Swiss Tournament Performance Benchmark")

@@ -8,10 +8,9 @@ from app.extensions import csrf
 from application.notification_service import NotificationService
 from application.telegram_service import TelegramService
 from application.bale_service import BaleService
-from infrastructure.db_models import UserModel
 
+from infrastructure.models.user import UserModel
 notification_bp = Blueprint("notification", __name__)
-
 
 def _webhook_secret_valid(config_key, header_name):
     """

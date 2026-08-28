@@ -13,17 +13,16 @@ from datetime import datetime
 from typing import Dict, List
 
 from app.extensions import db
-from infrastructure.db_models import (
-    TournamentModel, TournamentParticipantModel,
-    TournamentPrizeModel, PrizeAllocationModel,
-)
+
 from domain.prizes import (
     PrizeDefinition, Candidate, allocate, category_title, rank_label,
     CATEGORY_TYPES,
 )
 from domain.registration import calculate_age
 
-
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.prize import (PrizeAllocationModel, TournamentPrizeModel)
+from infrastructure.models.tournament import TournamentModel
 def _safe_int(value, default: int, minimum: int = None) -> int:
     try:
         parsed = int(value)
@@ -32,7 +31,6 @@ def _safe_int(value, default: int, minimum: int = None) -> int:
     if minimum is not None and parsed < minimum:
         return default
     return parsed
-
 
 class PrizeService:
 

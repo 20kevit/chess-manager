@@ -9,10 +9,11 @@ from application.notification_service import NotificationService
 from application.notification_dispatcher import NotificationDispatcher
 from application.notification_provider_interface import NotificationProviderInterface
 from application.notification_types import NotificationType
-from infrastructure.db_models import UserModel, UserRoleModel
+
 from app.extensions import db
 import logging
 
+from infrastructure.models.user import (UserModel, UserRoleModel)
 @pytest.fixture
 def setup_users(app):
     with app.app_context():

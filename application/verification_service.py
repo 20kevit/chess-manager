@@ -6,12 +6,13 @@ Phase 5: Per-aspect manual verification (FIDE ID, DOB, Photo).
 from datetime import datetime
 from typing import List, Optional
 from app.extensions import db
-from infrastructure.repositories import (
-    PlayerProfileRepository, FidePlayerRepository, PlayerVerificationRepository
-)
-from infrastructure.db_models import PlayerProfileModel, PlayerVerificationModel
 
-
+from infrastructure.models.fide import FidePlayerModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.verification import PlayerVerificationModel
+from infrastructure.repositories.fide import FidePlayerRepository
+from infrastructure.repositories.profile import PlayerProfileRepository
+from infrastructure.repositories.verification import PlayerVerificationRepository
 class VerificationService:
 
     @staticmethod

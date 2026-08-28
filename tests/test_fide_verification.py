@@ -18,12 +18,12 @@ from app.extensions import db
 from application.fide_import_service import FideImportService
 from application.verification_service import VerificationService
 from domain.fide.models import FidePlayerData  # noqa: F401 (shape reference)
-from infrastructure.db_models import (
-    PlayerProfileModel, FidePlayerModel, FideImportModel, PlayerVerificationModel,
-)
+
 from infrastructure.fide.storage import FideStorageManager
 
-
+from infrastructure.models.fide import (FideImportModel, FidePlayerModel)
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.verification import PlayerVerificationModel
 @pytest.fixture
 def setup_fide(app):
     with app.app_context():
@@ -39,7 +39,6 @@ def setup_fide(app):
 
         yield {"p1": p1, "p2": p2, "gm": gm, "wf": wf, "plain": plain}
 
-
 def _request(profile, fide_id):
     req = PlayerVerificationModel(
         player_profile_id=profile.id, requested_fide_id=fide_id, status="pending"
@@ -47,7 +46,6 @@ def _request(profile, fide_id):
     db.session.add(req)
     db.session.commit()
     return req
-
 
 class TestF1ClaimUniqueness:
 
@@ -78,7 +76,6 @@ class TestF1ClaimUniqueness:
             VerificationService.approve_request(req.id, reviewer_id=1)
 
         assert data["p2"].fide_verification_status != "verified"
-
 
 class TestF2OfficialTitleSync:
 
@@ -111,7 +108,6 @@ class TestF2OfficialTitleSync:
         VerificationService.approve_request(req.id, reviewer_id=1)
 
         assert data["p1"].fide_title == "CM"
-
 
 class TestF3ImportGuard:
 

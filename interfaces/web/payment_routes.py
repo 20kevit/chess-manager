@@ -1,8 +1,8 @@
 from flask import Blueprint, redirect, url_for, flash, request, abort
 from flask_login import current_user, login_required
 from application.payment_service import PaymentService
-from infrastructure.repositories import RegistrationRepository
 
+from infrastructure.repositories.registration import RegistrationRepository
 payment_bp = Blueprint("payment", __name__)
 
 @payment_bp.route("/registration/<int:reg_id>/pay", methods=["POST"])
@@ -27,7 +27,6 @@ def initiate_payment(reg_id):
     except ValueError as e:
         flash(str(e), "error")
         return redirect(url_for("tournament.view", public_id=tournament.public_id))
-
 
 @payment_bp.route("/payment/callback", methods=["GET"])
 def callback():

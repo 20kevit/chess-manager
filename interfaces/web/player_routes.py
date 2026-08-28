@@ -9,20 +9,20 @@ from flask import (
     url_for, flash, jsonify, abort, session, Response
 )
 from interfaces.web.admin_auth import require_admin
-from infrastructure.repositories import TournamentRepository, ParticipantRepository
+
 from application.player_service import PlayerService
 from app.extensions import db
-from infrastructure.db_models import TempImportDataModel
 
+from infrastructure.models.temp import TempImportDataModel
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.tournament import TournamentRepository
 player_bp = Blueprint("player", __name__)
-
 
 def _require_admin_or_redirect(public_id):
     tournament = require_admin(public_id)
     if not tournament:
         return None, redirect(url_for("auth.login"))
     return tournament, None
-
 
 @player_bp.route("/<public_id>/players")
 def player_list(public_id):
@@ -42,7 +42,6 @@ def player_list(public_id):
         is_admin=True
     )
 
-
 @player_bp.route("/<public_id>/players/add", methods=["GET", "POST"])
 def player_add(public_id):
     tournament = require_admin(public_id)
@@ -59,7 +58,6 @@ def player_add(public_id):
 
     return render_template("tournament/player_add.html", tournament=tournament, is_admin=True)
 
-
 @player_bp.route("/<public_id>/players/<int:participant_id>/edit", methods=["GET", "POST"])
 def player_edit(public_id, participant_id):
     tournament = require_admin(public_id)
@@ -74,7 +72,6 @@ def player_edit(public_id, participant_id):
         return redirect(url_for("tournament.view", public_id=public_id))
 
     return render_template("tournament/player_edit.html", tournament=tournament, player=participant, is_admin=True)
-
 
 @player_bp.route("/<public_id>/players/<int:participant_id>/delete", methods=["POST"])
 def player_delete(public_id, participant_id):
@@ -97,7 +94,6 @@ def player_delete(public_id, participant_id):
     PlayerService.delete(participant, tournament.id)
     flash(f"بازیکن {name} با موفقیت حذف شد.", "success")
     return redirect(url_for("player.player_list", public_id=public_id))
-
 
 @player_bp.route("/<public_id>/players/<int:participant_id>/withdraw", methods=["POST"])
 def player_withdraw(public_id, participant_id):
@@ -128,7 +124,6 @@ def player_import(public_id):
         tournament=tournament,
         step="upload",
     )
-
 
 def _handle_csv_preview(tournament, public_id):
     import csv
@@ -221,7 +216,6 @@ def _handle_csv_preview(tournament, public_id):
         flash("فایل خالی است یا فرمت آن اشتباه است", "error")
         return redirect(request.url)
 
-
     # Replace any abandoned previous preview for this session (H-5) so
     # temp_import_data does not accumulate orphan rows.
     old_key = session.get("csv_import_key")
@@ -244,7 +238,6 @@ def _handle_csv_preview(tournament, public_id):
         errors=errors,
         total_count=len(players_data),
     )
-
 
 def _handle_csv_confirm(tournament, public_id):
     import_key = session.get("csv_import_key")
@@ -295,7 +288,6 @@ def _handle_csv_confirm(tournament, public_id):
     flash(f"✅ {added} بازیکن با موفقیت اضافه شد", "success")
 
     return redirect(url_for("player.player_list", public_id=public_id))
-
 
 @player_bp.route("/<public_id>/players/import/template")
 def csv_template(public_id):

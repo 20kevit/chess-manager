@@ -7,9 +7,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from application.notification_service import NotificationService
 from application.notification_types import NotificationType
-from infrastructure.db_models import UserModel, UserRoleModel
+
 from app.extensions import db
 
+from infrastructure.models.user import (UserModel, UserRoleModel)
 @pytest.fixture
 def setup_users(app):
     """Create two users to test isolation."""

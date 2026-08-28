@@ -16,18 +16,18 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, PlayerProfileModel, TournamentModel,
-    TournamentParticipantModel, TournamentStaffModel, RegistrationModel,
-    RoundModel,
-)
 from application.round_service import RoundService
 from interfaces.web.admin_auth import (
     require_tournament_manager, require_result_editor,
 )
 from app.extensions import db
 
-
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import RegistrationModel
+from infrastructure.models.staff import TournamentStaffModel
+from infrastructure.models.tournament import (PairingModel, RoundModel, TournamentModel)
+from infrastructure.models.user import (UserModel, UserRoleModel)
 # ── fixtures ───────────────────────────────────────────────────────────
 
 def _user(email, role=None, is_admin=False):
@@ -39,7 +39,6 @@ def _user(email, role=None, is_admin=False):
     db.session.add(u)
     db.session.flush()
     return u
-
 
 @pytest.fixture
 def matrix(app):
@@ -101,7 +100,6 @@ def matrix(app):
                  "arbiter": arbiter.id, "sysadmin": sysadmin.id}[key]),
         }
 
-
 def _login(client, user):
     from flask import g
     g.pop("_login_user", None)
@@ -109,12 +107,10 @@ def _login(client, user):
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
 
-
 def _as(matrix, who):
     client = matrix["app"].test_client()
     _login(client, matrix["U"](who))
     return client
-
 
 PID = "66000001"
 
@@ -122,14 +118,12 @@ PID = "66000001"
 MANAGERS = ("organizer", "chief", "sysadmin")
 EDITORS = ("organizer", "chief", "arbiter", "sysadmin")
 
-
 class TestTierHelpersUnit:
     def test_helpers_exist(self, matrix):
         """Direct tier semantics are exercised through the route matrix;
         here we only pin the public helper surface."""
         assert callable(require_tournament_manager)
         assert callable(require_result_editor)
-
 
 class TestManagerOnlyRoutes:
     """Arbiter must be rejected; organizer/chief/sysadmin allowed."""
@@ -194,7 +188,6 @@ class TestManagerOnlyRoutes:
             tournament_id=matrix["tournament"].id,
             user_id=outsider.id).count() == 0
 
-
 class TestResultEditorRoutes:
     """All four roles allowed; arbiter positively verified."""
 
@@ -214,7 +207,7 @@ class TestResultEditorRoutes:
         )
         # save_results aborts 403 when unauthorized; authorized path flashes
         assert resp.status_code == 302
-        from infrastructure.db_models import PairingModel
+        
         assert PairingModel.query.get(pairing.id).result == "1-0"
 
     def test_arbiter_can_save_then_finish_round(self, matrix):
@@ -233,7 +226,6 @@ class TestResultEditorRoutes:
     def test_arbiter_can_request_bye_page(self, matrix):
         assert _as(matrix, "arbiter") \
             .get(f"/{PID}/rounds/request-bye").status_code == 200
-
 
 class TestRoundGenerationAndDeletion:
     def test_generate_round_denied_for_arbiter(self, matrix):
@@ -266,7 +258,6 @@ class TestRoundGenerationAndDeletion:
         assert RoundModel.query.filter_by(
             tournament_id=matrix["tournament"].id,
             round_number=1).count() == 1
-
 
 class TestStaffRoleManagement:
     def test_organizer_appoints_chief(self, app):
@@ -392,7 +383,6 @@ class TestStaffRoleManagement:
             role="chief_arbiter", status="accepted").all()
         assert len(chiefs) == 1
 
-
 class TestReceiptVisibilityTier:
     def test_receipt_download_manager_only(self, matrix):
         profile = PlayerProfileModel(first_name="Re", last_name="Cipt")
@@ -414,7 +404,6 @@ class TestReceiptVisibilityTier:
         # authz; arbiter must be refused BEFORE that (403).
         assert arb.status_code == 403
         assert chief.status_code in (200, 404)
-
 
 class TestPublicPageUnchanged:
     def test_public_view_open_to_everyone(self, matrix):

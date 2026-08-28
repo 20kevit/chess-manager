@@ -19,15 +19,14 @@ from datetime import date, datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from infrastructure.db_models import UserModel, UserRoleModel, TournamentModel
 from app.extensions import db
 
-
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 def _login(client, user):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
-
 
 @pytest.fixture
 def organizer(app):
@@ -38,7 +37,6 @@ def organizer(app):
         db.session.add(user)
         db.session.commit()
         yield user
-
 
 @pytest.fixture
 def tournament(app, organizer):
@@ -58,10 +56,8 @@ def tournament(app, organizer):
         db.session.commit()
         yield TournamentModel.query.filter_by(id=t.id).first()
 
-
 def _fresh(public_id):
     return TournamentModel.query.filter_by(public_id=public_id).first()
-
 
 BASIC_FORM = {
     "name": "Section Isolation Open",
@@ -71,7 +67,6 @@ BASIC_FORM = {
     "time_control_description": "15+3",
     "total_rounds": "7",
 }
-
 
 class TestSectionIsolation:
     """Cross-section clobbering must be impossible."""
@@ -186,7 +181,6 @@ class TestSectionIsolation:
         assert t.end_date == date(2026, 10, 5)
         assert json.loads(t.tiebreak_rules) == ["sonneborn_berger", "koya"]
 
-
 class TestDateHandlingOnBasicSave:
     """Dates now live on the settings page; empty clears, invalid keeps."""
 
@@ -239,7 +233,6 @@ class TestDateHandlingOnBasicSave:
         t = _fresh(tournament.public_id)
         assert t.start_date == date(2026, 10, 1)
 
-
 class TestCreatePageCumulativeFlag:
     """The create form previously used the wrong input name so the
     cumulative-age choice was silently dropped."""
@@ -282,7 +275,6 @@ class TestCreatePageCumulativeFlag:
         t = TournamentModel.query.filter_by(name="Flag Off Open").first()
         assert t is not None
         assert t.cumulative_age_category is False
-
 
 class TestCompetitionGuardsPreserved:
     """Existing safety behavior of the competition fields stays intact."""

@@ -3,14 +3,7 @@ import json
 from datetime import datetime, date
 from typing import Optional
 from app.extensions import db
-from infrastructure.repositories import (
-    RegistrationRepository, PromoCodeRepository, 
-    ParticipantRepository, PlayerProfileRepository
-)
-from infrastructure.db_models import (
-    TournamentModel, PlayerProfileModel, RegistrationModel, 
-    PromoCodeModel, UserModel, TournamentParticipantModel
-)
+
 from application.player_service import PlayerService
 from domain.pricing import calculate_price, TournamentPricingData, PlayerPricingData, PromoCodeData
 from domain.registration import (
@@ -19,7 +12,14 @@ from domain.registration import (
 )
 from sqlalchemy import select
 
-
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import (PromoCodeModel, RegistrationModel)
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import UserModel
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.profile import PlayerProfileRepository
+from infrastructure.repositories.registration import (PromoCodeRepository, RegistrationRepository)
 # Registration statuses that mean the player already occupies a slot or an
 # open request; they block re-registration and hide the tournament from the
 # dashboard "available" list.
@@ -31,7 +31,6 @@ BLOCKING_REGISTRATION_STATUSES = (
 # participant (approved registrations are represented by participant rows,
 # so they must not be double-counted).
 OPEN_SLOT_STATUSES = ("pending", "payment_pending", "receipt_submitted", "paid")
-
 
 class RegistrationService:
 

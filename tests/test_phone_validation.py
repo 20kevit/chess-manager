@@ -17,10 +17,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from domain.registration import (
     is_valid_phone, normalize_phone, INVALID_PHONE_MESSAGE,
 )
-from infrastructure.db_models import UserModel, UserRoleModel, PlayerProfileModel, TournamentModel
+
 from app.extensions import db
 
-
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 # ── Pure domain unit tests (no app/database needed) ──
 
 class TestPhoneDomain:
@@ -59,14 +61,12 @@ class TestPhoneDomain:
     def test_persian_error_message_defined(self):
         assert INVALID_PHONE_MESSAGE.strip() != ""
 
-
 # ── Integration tests ──
 
 def _login(client, user):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
-
 
 def _make_user(email, with_profile=False, phone=None):
     user = UserModel(email=email)
@@ -86,12 +86,10 @@ def _make_user(email, with_profile=False, phone=None):
     db.session.commit()
     return user
 
-
 @pytest.fixture
 def user_with_profile(app):
     with app.app_context():
         yield _make_user("phone_owner@test.com", with_profile=True)
-
 
 class TestProfileUpdatePhone:
     def test_valid_phone_persisted_in_canonical_form(self, app, user_with_profile):
@@ -159,7 +157,6 @@ class TestProfileUpdatePhone:
         assert profile.phone is None
         assert profile.first_name == "Ali"
 
-
 class TestCreateProfilePhone:
     def test_valid_phone_persisted(self, app):
         user = _make_user("creator@test.com")
@@ -204,7 +201,6 @@ class TestCreateProfilePhone:
         assert PlayerProfileModel.query.filter_by(
             first_name="Sara", last_name="Karimi"
         ).first() is None
-
 
 class TestRegistrationFallbackPhone:
     @pytest.fixture
@@ -262,7 +258,6 @@ class TestRegistrationFallbackPhone:
         assert PlayerProfileModel.query.filter_by(
             first_name="Reza", last_name="Moradi"
         ).first() is None
-
 
 class TestPublicProfileScrubbing:
     def test_public_profile_never_leaks_phone(self, app, user_with_profile):

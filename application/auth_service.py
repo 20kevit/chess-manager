@@ -1,9 +1,10 @@
 from typing import Optional
 from datetime import datetime
 from app.extensions import db
-from infrastructure.repositories import UserRepository
-from infrastructure.db_models import UserModel, UserRoleModel, PlayerProfileModel
 
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
+from infrastructure.repositories.user import UserRepository
 class AuthService:
 
     @staticmethod
@@ -61,7 +62,7 @@ class AuthService:
         user = UserRepository.get_by_id(user_id)
         if user and not user.profile:
             # آپدیت پروفایل موجود
-            from infrastructure.db_models import PlayerProfileModel
+            
             profile = PlayerProfileModel.query.get(player_profile_id)
             if profile and not profile.user_id:
                 profile.user_id = user.id

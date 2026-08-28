@@ -1,10 +1,11 @@
 # application/providers/web_provider.py
 import logging
 from application.notification_provider_interface import NotificationProviderInterface
-from infrastructure.repositories import NotificationRepository
-from infrastructure.db_models import NotificationModel
+
 from datetime import datetime
 
+from infrastructure.models.notification import NotificationModel
+from infrastructure.repositories.notification import NotificationRepository
 class WebProvider(NotificationProviderInterface):
     """Handles in-app web notifications by saving them to the database."""
     

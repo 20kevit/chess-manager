@@ -20,17 +20,17 @@ MANAGER tier; result-side routes call `require_result_editor` explicitly.
 Server-side enforcement only — UI flags are cosmetic.
 """
 from flask_login import current_user
-from infrastructure.repositories import TournamentRepository
 
-
+from infrastructure.models.staff import TournamentStaffModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.repositories.tournament import TournamentRepository
 def _accepted_staff_role(tournament_id: int, user_id: int):
     """Return the role string of the user's ACCEPTED staff row, or None."""
-    from infrastructure.db_models import TournamentStaffModel
+    
     row = TournamentStaffModel.query.filter_by(
         tournament_id=tournament_id, user_id=user_id, status="accepted"
     ).first()
     return row.role if row else None
-
 
 def _authorize(public_id, chief_only: bool):
     """Shared gate. Returns TournamentModel or None.
@@ -62,16 +62,13 @@ def _authorize(public_id, chief_only: bool):
 
     return None
 
-
 def require_tournament_manager(public_id):
     """Manager tier: system admin, organizer, or accepted CHIEF arbiter."""
     return _authorize(public_id, chief_only=True)
 
-
 def require_result_editor(public_id):
     """Result-editor tier: managers plus every accepted arbiter."""
     return _authorize(public_id, chief_only=False)
-
 
 def require_admin(public_id):
     """

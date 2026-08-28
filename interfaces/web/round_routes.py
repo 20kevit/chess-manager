@@ -10,24 +10,23 @@ P1-B tiered authorization:
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from interfaces.web.admin_auth import require_admin, require_result_editor
-from infrastructure.repositories import (
-    RoundRepository, PairingRepository, ParticipantRepository, ManualPairingRepository
-)
+
 from application.round_service import (
     RoundService, ManualPairingError, SwapError
 )
-from infrastructure.db_models import ByeRequestModel, ManualPairingModel
+
 from app.extensions import db
 
+from infrastructure.models.tournament import (ByeRequestModel, ManualPairingModel)
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.tournament import (ManualPairingRepository, PairingRepository, RoundRepository)
 round_bp = Blueprint("round", __name__)
-
 
 def _require_editor_or_redirect(public_id):
     tournament = require_result_editor(public_id)
     if not tournament:
         return None, redirect(url_for("auth.login"))
     return tournament, None
-
 
 @round_bp.route("/<public_id>/rounds")
 def round_list(public_id):
@@ -41,7 +40,6 @@ def round_list(public_id):
         rounds=rounds,
         is_admin=True,
     )
-
 
 @round_bp.route("/<public_id>/rounds/new", methods=["POST"])
 def round_new(public_id):
@@ -64,7 +62,6 @@ def round_new(public_id):
         
     return redirect(url_for("tournament.view", public_id=public_id))
 
-
 @round_bp.route("/<public_id>/rounds/<int:round_number>")
 def round_view(public_id, round_number):
     tournament, redir = _require_editor_or_redirect(public_id)
@@ -84,7 +81,6 @@ def round_view(public_id, round_number):
         is_admin=True,
     )
 
-
 @round_bp.route("/<public_id>/rounds/<int:round_number>/result", methods=["POST"])
 def save_results(public_id, round_number):
     tournament = require_result_editor(public_id)
@@ -99,7 +95,6 @@ def save_results(public_id, round_number):
         flash("خطا در ذخیره نتایج.", "error")
         
     return redirect(url_for("round.round_view", public_id=public_id, round_number=round_number))
-
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/finish", methods=["POST"])
 def finish_round(public_id, round_number):
@@ -117,7 +112,6 @@ def finish_round(public_id, round_number):
     except Exception as e:
         flash(f"خطا: {str(e)}", "error")
     return redirect(url_for("round.round_list", public_id=public_id))
-
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/delete", methods=["POST"])
 def delete_round(public_id, round_number):
@@ -142,7 +136,6 @@ def delete_round(public_id, round_number):
         traceback.print_exc()
         flash(f"خطا: {str(e)}", "error")
     return redirect(url_for("round.round_list", public_id=public_id))
-
 
 # ── Pre-Pairing Manual Controls (Byes & Locks) ──
 
@@ -229,7 +222,6 @@ def cancel_bye(public_id, bye_id):
     else:
         flash("درخواست استراحت یافت نشد.", "error")
     return redirect(url_for("round.request_bye", public_id=public_id))
-
 
 # ── Post-Pairing Manual Adjustments (Swaps) ──
 

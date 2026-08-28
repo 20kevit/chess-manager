@@ -2,11 +2,14 @@ import json
 from datetime import datetime
 from typing import Optional
 from app.extensions import db
-from infrastructure.repositories import PaymentRepository, RegistrationRepository, ParticipantRepository
-from infrastructure.db_models import RegistrationModel, PaymentModel
+
 from infrastructure.gateways.zarinpal_gateway import ZarinpalGateway
 from application.registration_service import OPEN_SLOT_STATUSES
 
+from infrastructure.models.registration import (PaymentModel, RegistrationModel)
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.registration import (PaymentRepository, RegistrationRepository)
 class PaymentService:
     gateway = ZarinpalGateway() # می‌توانیم در آینده این را از یک Registry بخوانیم
 
@@ -118,7 +121,7 @@ class PaymentService:
                 # Serialize the capacity check against concurrent approvals
                 # (no-op on SQLite; FOR UPDATE on MySQL).
                 from sqlalchemy import select
-                from infrastructure.db_models import TournamentModel as _TournamentModel
+                
                 db.session.execute(
                     select(_TournamentModel.id)
                     .where(_TournamentModel.id == tournament.id)

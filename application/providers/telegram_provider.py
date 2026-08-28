@@ -4,8 +4,8 @@ import logging
 from flask import request
 from application.notification_provider_interface import NotificationProviderInterface
 from application.telegram_service import TelegramService
-from infrastructure.db_models import UserModel
 
+from infrastructure.models.user import UserModel
 class TelegramProvider(NotificationProviderInterface):
     @property
     def channel_name(self) -> str:

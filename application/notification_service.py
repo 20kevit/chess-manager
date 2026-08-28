@@ -3,9 +3,10 @@ from typing import List, Optional
 import json
 from app.extensions import db
 from application.notification_dispatcher import NotificationDispatcher
-from infrastructure.repositories import NotificationRepository, NotificationPreferenceRepository
+
 from application.notification_types import NotificationType
 
+from infrastructure.repositories.notification import (NotificationPreferenceRepository, NotificationRepository)
 class NotificationService:
     """Core service for creating and managing notifications."""
 

@@ -1,8 +1,8 @@
 # interfaces/web/player_profile_routes.py
 from flask import Blueprint, render_template, abort, redirect, url_for
 from application.player_profile_service import PlayerProfileService
-from infrastructure.repositories import PlayerProfileRepository
 
+from infrastructure.repositories.profile import PlayerProfileRepository
 player_profile_bp = Blueprint("player_profile", __name__)
 
 @player_profile_bp.route("/player/<path:identifier>")

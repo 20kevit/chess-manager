@@ -5,8 +5,7 @@ No business logic here.
 from flask import (Blueprint, render_template, request, session, abort,
                    url_for, flash, redirect, current_app, send_file)
 from flask_login import current_user
-from infrastructure.repositories import TournamentRepository, ParticipantRepository, PairingRepository
-from infrastructure.db_models import TournamentParticipantModel
+
 from application.tournament_service import TournamentService
 from app.extensions import db
 from interfaces.web.helpers import build_cell as _build_cell
@@ -32,6 +31,11 @@ from application.notification_policy import (
 )
 from application.notification_types import NOTIFICATION_TYPE_NAMES_FA
 
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.registration import RegistrationModel
+from infrastructure.models.tournament import (RoundModel, TournamentModel)
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.tournament import (PairingRepository, TournamentRepository)
 tournament_bp = Blueprint("tournament", __name__)
 
 def is_current_admin(tournament):
@@ -46,10 +50,9 @@ def _validate_public_id(public_id: str):
     if not public_id.isdigit() or len(public_id) != 8:
         abort(404)
 
-
 @tournament_bp.route("/")
 def index():
-    from infrastructure.db_models import TournamentModel
+    
     recent = TournamentModel.query.filter(
         TournamentModel.status != "setup"
     ).order_by(
@@ -59,7 +62,6 @@ def index():
     stats = TournamentRepository.get_global_stats()
 
     return render_template("index.html", recent_tournaments=recent, stats=stats)
-
 
 @tournament_bp.route("/create", methods=["GET", "POST"])
 @role_required('organizer')
@@ -94,7 +96,6 @@ def create():
             return render_template("tournament/create.html")
             
     return render_template("tournament/create.html")
-
 
 @tournament_bp.route("/<public_id>")
 def view(public_id):
@@ -141,7 +142,7 @@ def player_detail(public_id, participant_id):
     all_pairings = PairingRepository.get_all_for_tournament(tournament.id)
     all_participants = {p.id: p for p in ParticipantRepository.get_all(tournament.id)}
     
-    from infrastructure.db_models import RoundModel
+    
     rounds = {r.id: r for r in RoundModel.query.filter_by(
         tournament_id=tournament.id
     ).all()}
@@ -222,7 +223,6 @@ def player_detail(public_id, participant_id):
         rating_change=rc,
     )
 
-
 def _get_score(result, color):
     scores = {
         "1-0": {"white": 1.0, "black": 0.0},
@@ -251,7 +251,7 @@ def crosstable(public_id):
     participants = ParticipantRepository.get_all(tournament.id)
     all_pairings = PairingRepository.get_all_for_tournament(tournament.id)
 
-    from infrastructure.db_models import RoundModel
+    
     rounds = RoundModel.query.filter_by(
         tournament_id=tournament.id
     ).order_by(RoundModel.round_number).all()
@@ -298,7 +298,6 @@ def crosstable(public_id):
         sorted_players=sorted_players,
         total_rounds=total_rounds,
     )
-
 
 @tournament_bp.route("/<public_id>/summary")
 def summary(public_id):
@@ -429,7 +428,7 @@ def search():
     results = []
 
     if query:
-        from infrastructure.db_models import TournamentModel
+        
         results = TournamentModel.query.filter(
             TournamentModel.name.contains(query)
         ).order_by(
@@ -437,7 +436,6 @@ def search():
         ).limit(20).all()
 
     return render_template("search.html", query=query, results=results)
-
 
 @tournament_bp.route("/<public_id>/settings", methods=["GET", "POST"])
 def settings(public_id):
@@ -463,13 +461,11 @@ def settings(public_id):
         is_admin=True
     )
 
-
 # ── P1-E: Tournament announcements ────────────────────────────────────
-
 
 def _announcement_recipient_ids(tournament) -> list:
     """Distinct linked user ids across participants AND registrations."""
-    from infrastructure.db_models import RegistrationModel
+    
     ids = set()
     for part in TournamentParticipantModel.query.filter_by(
             tournament_id=tournament.id).all():
@@ -480,7 +476,6 @@ def _announcement_recipient_ids(tournament) -> list:
             RegistrationModel.user_id.isnot(None)).all():
         ids.add(reg.user_id)
     return sorted(ids)
-
 
 @tournament_bp.route("/<public_id>/admin/announcements", methods=["GET", "POST"])
 def announcements(public_id):
@@ -529,9 +524,7 @@ def announcements(public_id):
         is_admin=True,
     )
 
-
 # ── P1-F: tournament notification preferences ─────────────────────────
-
 
 @tournament_bp.route("/<public_id>/admin/notification-prefs",
                      methods=["GET", "POST"])
@@ -566,7 +559,6 @@ def notification_prefs(public_id):
         is_admin=True,
     )
 
-
 # ── P1-C: Advanced Prize System ───────────────────────────────────────
 
 @tournament_bp.route("/<public_id>/admin/prizes", methods=["GET", "POST"])
@@ -594,7 +586,6 @@ def prize_settings(public_id):
         is_admin=True,
     )
 
-
 @tournament_bp.route("/<public_id>/admin/prizes/recompute", methods=["POST"])
 def prizes_recompute(public_id):
     """Manager-side recompute/publish of the allocation cache."""
@@ -617,7 +608,6 @@ _RULEBOOK_ERROR_MESSAGES = {
     "size": "حجم فایل PDF نباید بیشتر از ۵ مگابایت باشد.",
     "type": "فایل ارسالی یک PDF معتبر نیست.",
 }
-
 
 @tournament_bp.route("/<public_id>/settings/rulebook", methods=["GET", "POST"])
 def rulebook_settings(public_id):
@@ -642,7 +632,6 @@ def rulebook_settings(public_id):
         vocabulary=SECTION_VOCABULARY,
         is_admin=True,
     )
-
 
 @tournament_bp.route("/<public_id>/settings/rulebook/pdf", methods=["POST"])
 def upload_rulebook_pdf(public_id):
@@ -669,7 +658,6 @@ def upload_rulebook_pdf(public_id):
     return redirect(url_for("tournament.rulebook_settings",
                             public_id=public_id))
 
-
 @tournament_bp.route("/<public_id>/settings/rulebook/pdf/remove", methods=["POST"])
 def remove_rulebook_pdf(public_id):
     tournament = require_admin(public_id)
@@ -684,7 +672,6 @@ def remove_rulebook_pdf(public_id):
     flash("فایل PDF آیین‌نامه حذف شد.", "success")
     return redirect(url_for("tournament.rulebook_settings",
                             public_id=public_id))
-
 
 @tournament_bp.route("/uploads/rulebook/<public_id>")
 def download_rulebook_pdf(public_id):

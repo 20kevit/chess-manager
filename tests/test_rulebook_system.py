@@ -24,19 +24,18 @@ from domain.rulebook import (
     SECTION_VOCABULARY, VOCABULARY_KEYS, parse_sections, serialize_sections,
     Section, default_title,
 )
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, TournamentModel,
-)
+
 from app.extensions import db
 
-
+from infrastructure.models.staff import TournamentStaffModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 PDF_BYTES = b"%PDF-1.7\nfake-but-magic-correct"
 SECTIONS_JSON = json.dumps([
     {"key": "registration", "title": "ثبت‌نام", "body": "مهلت تا ..."},
     {"key": "tie_breaks", "title": "تای‌بریک‌ها", "body": "بوخهولز ..."},
     {"key": "other", "title": "سهمیه", "body": "متن سفارشی"},
 ], ensure_ascii=False)
-
 
 def _login(client, user):
     from flask import g
@@ -45,18 +44,15 @@ def _login(client, user):
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
 
-
 def _get(client, url, **kw):
     from flask import g
     g.pop("_login_user", None)
     return client.get(url, **kw)
 
-
 def _post(client, url, **kw):
     from flask import g
     g.pop("_login_user", None)
     return client.post(url, **kw)
-
 
 @pytest.fixture
 def setup(app):
@@ -87,7 +83,7 @@ def setup(app):
         chief_user.roles.append(UserRoleModel(role="arbiter"))
         db.session.add(chief_user)
         db.session.flush()
-        from infrastructure.db_models import TournamentStaffModel
+        
         db.session.add(TournamentStaffModel(
             tournament_id=t.id, user_id=chief_user.id,
             role="chief_arbiter", status="accepted",
@@ -110,10 +106,8 @@ def setup(app):
             "dir": app.config["RULEBOOK_UPLOAD_DIR"],
         }
 
-
 def T(setup):
     return TournamentModel.query.get(setup["tournament_id"])
-
 
 @pytest.fixture(autouse=True)
 def clean_rulebook_dir(app):
@@ -125,7 +119,6 @@ def clean_rulebook_dir(app):
     yield
     gc.collect()
     shutil.rmtree(app.config["RULEBOOK_UPLOAD_DIR"], ignore_errors=True)
-
 
 # ── Domain unit tests ──────────────────────────────────────────────────
 
@@ -166,7 +159,6 @@ class TestVocabularyAndParsing:
         assert len(parsed) == 2
         assert parsed[0].key == "other" and parsed[0].title == "بدون کلید"
         assert parsed[1].key == "prizes" and parsed[1].title == "جوایز"
-
 
 # ── Manager CRUD + isolation ───────────────────────────────────────────
 
@@ -258,7 +250,6 @@ class TestRulebookCrudAndIsolation:
             f"/{setup['public_id']}").get_data(as_text=True)
         assert "متن قدیمی آیین‌نامه" in body
 
-
 class TestPublicRendering:
     def test_public_page_renders_all_configured_forms_in_order(self, setup):
         client = setup["app"].test_client()
@@ -283,7 +274,6 @@ class TestPublicRendering:
         body = setup["app"].test_client().get(
             f"/{setup['public_id']}").get_data(as_text=True)
         assert "آیین‌نامه‌ای برای این مسابقه ثبت نشده است" in body
-
 
 class TestAuthorization:
     def test_arbiter_cannot_modify_rulebook(self, setup):
@@ -320,7 +310,6 @@ class TestAuthorization:
         _login(client, UserModel.query.get(setup["arbiter"]))
         assert _get(client, f"/{setup['public_id']}/settings/rulebook") \
             .status_code == 302
-
 
 class TestPdfHandling:
     def _upload(self, setup, who="organizer", content=PDF_BYTES,

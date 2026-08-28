@@ -22,13 +22,14 @@ from domain.registration import (
     serialize_requirements, check_eligibility, EligibilityProfile,
     ELIGIBILITY_FAILURE_MESSAGES, first_failure_message,
 )
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, PlayerProfileModel, TournamentModel,
-    RegistrationModel,
-)
+
 from app.extensions import db
 
-
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import RegistrationModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 # ════════════════════════ Pure domain unit tests ════════════════════════
 
 class TestCalculateAge:
@@ -52,7 +53,6 @@ class TestCalculateAge:
 
     def test_year_end_boundary(self):
         assert calculate_age(date(2000, 12, 31), date(2001, 1, 1)) == 0
-
 
 class TestRequirementSetPersistenceShape:
     def test_defaults_from_empty_payloads(self):
@@ -79,7 +79,6 @@ class TestRequirementSetPersistenceShape:
         assert req.phone_required is True
         assert req.min_age == 16
         assert req.max_age is None
-
 
 class TestCheckEligibilityOrdering:
     ALL_RULES = RequirementSet(
@@ -157,7 +156,6 @@ class TestCheckEligibilityOrdering:
         assert check_eligibility(bad, req, date(2026, 1, 1)) == ["phone"]
         assert check_eligibility(good, req, date(2026, 1, 1)) == []
 
-
 # ════════════════════════ Integration tests ═════════════════════════════
 
 def _login(client, user):
@@ -165,13 +163,11 @@ def _login(client, user):
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
 
-
 def _reset_cached_login_user():
     """Single-context harness quirk: drop flask-login's cached user so the
     next request re-evaluates authentication (see test_private_uploads)."""
     from flask import g
     g.pop("_login_user", None)
-
 
 @pytest.fixture
 def organizer(app):
@@ -182,7 +178,6 @@ def organizer(app):
         db.session.add(user)
         db.session.commit()
         yield user
-
 
 def _make_player(email, **profile_kwargs):
     user = UserModel(email=email)
@@ -196,7 +191,6 @@ def _make_player(email, **profile_kwargs):
     db.session.commit()
     return user
 
-
 def _fresh_profile(user):
     """Re-fetch the profile in the CURRENT session before mutating.
 
@@ -204,16 +198,13 @@ def _fresh_profile(user):
     mutating them afterwards silently no-ops on commit."""
     return PlayerProfileModel.query.filter_by(id=user.profile.id).first()
 
-
 def _fresh_tournament(tournament):
     return TournamentModel.query.filter_by(id=tournament.id).first()
-
 
 @pytest.fixture
 def player(app):
     with app.app_context():
         yield _make_player("elig_player@test.com")
-
 
 def _tournament(public_id_suffix, name, requirements=None,
                 start_date=None, organizer_id=None):
@@ -230,9 +221,7 @@ def _tournament(public_id_suffix, name, requirements=None,
     db.session.commit()
     return t
 
-
 PHONE_REQ = RequirementSet(phone_required=True)
-
 
 class TestRequirementsPersistenceViaSettings:
     def test_settings_save_persists_requirements(self, app, organizer):
@@ -278,7 +267,6 @@ class TestRequirementsPersistenceViaSettings:
         row = _fresh_tournament(t)
         assert parse_requirements(row.registration_requirements).has_any is False
         assert row.base_price == 777  # section isolation preserved
-
 
 class TestRegistrationEligibilityGate:
     @pytest.fixture
@@ -397,7 +385,6 @@ class TestRegistrationEligibilityGate:
         assert RegistrationModel.query.filter_by(
             tournament_id=after.id, user_id=player.id).count() == 1
 
-
 class TestMissingStartDateBlocksAgeRule:
     def test_age_requirement_without_start_date_blocks_registration(
         self, app, player
@@ -422,7 +409,6 @@ class TestMissingStartDateBlocksAgeRule:
         assert RegistrationModel.query.filter_by(
             tournament_id=tournament.id
         ).count() == 0
-
 
 class TestApprovalTimeRecheck:
     def test_approval_blocked_when_requirements_tightened_later(
@@ -465,11 +451,10 @@ class TestApprovalTimeRecheck:
         assert reg.status == "pending"
         assert reg.player_profile_id is not None
         # No participant was created for this tournament.
-        from infrastructure.db_models import TournamentParticipantModel
+        
         assert TournamentParticipantModel.query.filter_by(
             tournament_id=tournament.id
         ).count() == 0
-
 
 class TestDashboardAvailableFiltering:
     def test_registered_and_ineligible_tournaments_hidden(

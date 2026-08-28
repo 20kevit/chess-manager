@@ -8,21 +8,16 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from application.player_profile_service import PlayerProfileService
 from application.player_service import PlayerService
-from infrastructure.repositories import (
-    PlayerProfileRepository, 
-    FidePlayerRepository, 
-    FideRatingRepository,
-    ParticipantRepository
-)
-from infrastructure.db_models import (
-    PlayerProfileModel, 
-    FidePlayerModel, 
-    FideRatingModel,
-    TournamentModel
-)
+
 from app.extensions import db
 from datetime import datetime
 
+from infrastructure.models.fide import (FidePlayerModel, FideRatingModel)
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.repositories.fide import (FidePlayerRepository, FideRatingRepository)
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.profile import PlayerProfileRepository
 @pytest.fixture
 def setup_data(app):
     """Setup test data for Phase 8"""

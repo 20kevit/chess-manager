@@ -24,14 +24,15 @@ from app.extensions import db
 from application import payment_service as payment_service_module
 from application.payment_service import PaymentService
 from application.player_service import PlayerService
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, TournamentModel, PlayerProfileModel,
-    RegistrationModel, PaymentModel,
-)
+
 from infrastructure.gateways.zarinpal_gateway import ZarinpalGateway
-from infrastructure.repositories import FidePlayerRepository, PaymentRepository
 
-
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import (PaymentModel, RegistrationModel)
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
+from infrastructure.repositories.fide import FidePlayerRepository
+from infrastructure.repositories.registration import PaymentRepository
 class StubGateway:
     """Configurable in-memory gateway double."""
     base_pay_url = "https://pay.test/StartPay"
@@ -55,14 +56,11 @@ class StubGateway:
             raise result
         return result
 
-
 def _ok(ref_id="REF100"):
     return SimpleNamespace(is_successful=True, ref_id=ref_id, card_mask="6274****1234")
 
-
 def _fail(msg="Verification failed"):
     return SimpleNamespace(is_successful=False, ref_id=None, card_mask=None, error_message=msg)
-
 
 @pytest.fixture
 def setup_payment(app):
@@ -96,13 +94,11 @@ def setup_payment(app):
 
         yield {"user": user, "tournament": t, "profile": profile, "reg": reg}
 
-
 @pytest.fixture
 def stub_gateway(monkeypatch):
     gw = StubGateway()
     monkeypatch.setattr(PaymentService, "gateway", gw)
     return gw
-
 
 def _make_payment(reg, authority="A0000000001", amount=100000, status="pending"):
     p = PaymentModel(
@@ -112,7 +108,6 @@ def _make_payment(reg, authority="A0000000001", amount=100000, status="pending")
     db.session.add(p)
     db.session.commit()
     return p
-
 
 class TestD1VerifyCodesAndRaces:
 
@@ -163,7 +158,6 @@ class TestD1VerifyCodesAndRaces:
     def test_unknown_authority_rejected(self, app, setup_payment, stub_gateway):
         with pytest.raises(ValueError):
             PaymentService.process_callback("DOESNOTEXIST", "OK")
-
 
 class TestD2CurrencyContract:
 
@@ -216,7 +210,6 @@ class TestD2CurrencyContract:
         assert result.is_successful is True
         assert result.ref_id == "R2"
 
-
 class TestD3ProductionGuard:
 
     def test_production_with_sandbox_raises(self, monkeypatch):
@@ -245,7 +238,6 @@ class TestD3ProductionGuard:
         monkeypatch.setenv("ZARINPAL_SANDBOX", "true")  # sandbox OK outside production
         gw = ZarinpalGateway()
         assert "sandbox.zarinpal.com" in gw.base_api_url
-
 
 class TestD5AmountDrift:
 
@@ -280,7 +272,6 @@ class TestD5AmountDrift:
         assert "AREUSE0001" in url
         assert len(stub_gateway.request_calls) == 0  # no new gateway call
         assert PaymentRepository.get_by_id(existing.id).status == "pending"
-
 
 class TestD4FideRatingFallback:
 

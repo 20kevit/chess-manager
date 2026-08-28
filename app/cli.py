@@ -1,8 +1,8 @@
 # app/cli.py
 import click
 from app.extensions import db
-from infrastructure.db_models import UserModel
 
+from infrastructure.models.user import UserModel
 def register_cli(app):
     @app.cli.command("create-admin")
     @click.argument("email")

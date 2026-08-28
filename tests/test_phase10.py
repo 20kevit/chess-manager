@@ -6,9 +6,10 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from application.admin_service import AdminService
-from infrastructure.db_models import UserModel, UserRoleModel
+
 from app.extensions import db
 
+from infrastructure.models.user import (UserModel, UserRoleModel)
 @pytest.fixture
 def setup_admin(app):
     with app.app_context():

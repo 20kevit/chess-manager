@@ -108,7 +108,6 @@ SQLITE_UPGRADE_NEW_TABLES = [
     )""",
 ]
 
-
 def test_single_baseline_contains_all_p0_columns():
     """Every folded column must appear in the correct table block of the
     squashed baseline."""
@@ -124,7 +123,6 @@ def test_single_baseline_contains_all_p0_columns():
             assert f"sa.Column('{column}'" in block, (
                 f"{table}.{column} missing from baseline block"
             )
-
 
 def test_no_schema_drift_beyond_p0_columns():
     """Guard against accidental edits: between the pre-P0 baseline and
@@ -142,12 +140,12 @@ def test_no_schema_drift_beyond_p0_columns():
                       "drop_index(", "drop_constraint"):
         assert dangerous not in upgrade_body, dangerous
 
-
 from tests.conftest import TestConfig
 from app import create_app
 from app.extensions import db as _db
 
-
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.tournament import TournamentModel
 def test_fresh_install_from_baseline_is_usable(tmp_path):
     """Clean-install path: upgrade an empty scratch DB, then exercise the
     new columns through the ORM."""
@@ -161,7 +159,7 @@ def test_fresh_install_from_baseline_is_usable(tmp_path):
         from flask_migrate import upgrade as fm_upgrade
         fm_upgrade()
 
-        from infrastructure.db_models import TournamentModel, PlayerProfileModel
+        
 
         profile = PlayerProfileModel(
             first_name="Fresh", last_name="Install",
@@ -179,7 +177,6 @@ def test_fresh_install_from_baseline_is_usable(tmp_path):
         assert PlayerProfileModel.query.first().phone == "09121112233"
         stored = TournamentModel.query.first()
         assert '"phone_required": true' in stored.registration_requirements
-
 
 def test_existing_db_upgrade_adds_p0_columns_without_data_loss(tmp_path):
     """Upgrade path for a production DB built from the PRE-P0 shape and

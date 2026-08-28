@@ -10,10 +10,11 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from infrastructure.db_models import UserModel, UserRoleModel, TournamentModel
 from app.extensions import db
 
-
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
+from infrastructure.repositories.tournament import TournamentRepository
 VALID_FORM = {
     "name": "Service Created Tournament",
     "city": "Tehran",
@@ -26,7 +27,6 @@ VALID_FORM = {
     "cumulative_age_category": "",
 }
 
-
 @pytest.fixture
 def organizer(app):
     with app.app_context():
@@ -37,12 +37,10 @@ def organizer(app):
         db.session.commit()
         yield user
 
-
 def _login(client, user):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
-
 
 def test_create_route_persists_tournament(app, organizer):
     """The exact arbiter flow: POST /create with valid form data."""
@@ -60,7 +58,6 @@ def test_create_route_persists_tournament(app, organizer):
     assert created.public_id and len(created.public_id) == 8
     assert created.organizer_id == organizer.id
     assert created.status == "setup"
-
 
 def test_public_id_retry_on_collision(monkeypatch, app, organizer):
     """IntegrityError on the random public_id regenerates and retries."""

@@ -1,13 +1,10 @@
 # application/player_profile_service.py
 from typing import Optional, Dict, List
-from infrastructure.repositories import (
-    PlayerProfileRepository,
-    FidePlayerRepository,
-    FideRatingRepository,
-    ParticipantRepository,
-    PairingRepository,
-)
 
+from infrastructure.repositories.fide import (FidePlayerRepository, FideRatingRepository)
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.profile import PlayerProfileRepository
+from infrastructure.repositories.tournament import PairingRepository
 class PlayerProfileService:
     """
     Orchestrates player profile data combined with FIDE information.

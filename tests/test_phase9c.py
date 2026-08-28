@@ -8,10 +8,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from application.auth_service import AuthService
 from application.notification_service import NotificationService
 from application.notification_types import NotificationType
-from infrastructure.db_models import UserModel, UserRoleModel, TournamentModel, RegistrationModel, PlayerProfileModel
+
 from app.extensions import db
 from datetime import datetime
 
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import RegistrationModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 @pytest.fixture
 def setup_data(app):
     with app.app_context():

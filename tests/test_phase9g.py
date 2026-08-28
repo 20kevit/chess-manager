@@ -6,10 +6,11 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from application.bale_service import BaleService
-from infrastructure.db_models import UserModel, UserRoleModel
+
 from app.extensions import db
 from datetime import datetime, timedelta
 
+from infrastructure.models.user import (UserModel, UserRoleModel)
 @pytest.fixture
 def setup_user(app):
     with app.app_context():

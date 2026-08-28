@@ -2,10 +2,7 @@ from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, abort, jsonify, current_app, send_file)
 from flask_login import current_user, login_required
 from application.auth_service import AuthService
-from infrastructure.db_models import (
-    PlayerProfileModel, TournamentModel, RegistrationModel,
-    TournamentStaffModel, UserModel, TournamentParticipantModel
-)
+
 from datetime import datetime
 import os
 from app.extensions import db
@@ -14,7 +11,7 @@ from interfaces.web.admin_auth import (
 )
 from application.verification_service import VerificationService
 from application.fide_search_service import FideSearchService
-from infrastructure.repositories import PlayerVerificationRepository
+
 from infrastructure.file_storage import (
     FileStorageError, save_image, remove_image, resolve_private_file,
     IMAGE_MIMETYPES,
@@ -25,6 +22,14 @@ from application.registration_service import (
 from domain.registration import (
     check_eligibility, parse_requirements, EligibilityProfile,
 )
+
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import RegistrationModel
+from infrastructure.models.staff import TournamentStaffModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import UserModel
+from infrastructure.repositories.verification import PlayerVerificationRepository
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -286,7 +291,6 @@ def update_profile():
     flash("پروفایل با موفقیت بروزرسانی شد.", "success")
     return redirect(url_for("dashboard.index"))
 
-
 # --- Private Profile Media (P0-C) -------------------------------------
 #
 # Photos and ID documents are stored under instance-anchored private
@@ -299,7 +303,6 @@ _MEDIA_ERROR_MESSAGES = {
     "size": "حجم فایل نباید بیشتر از ۵ مگابایت باشد.",
     "type": "فرمت تصویر مجاز نیست (فقط JPG و PNG).",
 }
-
 
 def _shared_tournaments(profile):
     """Tournaments where this player appears (registration or participation)."""
@@ -315,7 +318,6 @@ def _shared_tournaments(profile):
         TournamentModel.id.in_(tournament_ids)
     ).all()
 
-
 def _may_view_photo(profile) -> bool:
     """Photo visibility: owner, system admin, or any shared-tournament
     official of the RESULT-EDITOR tier (organizer/chief/arbiter — the
@@ -328,7 +330,6 @@ def _may_view_photo(profile) -> bool:
         if require_result_editor(tournament.public_id) is not None:
             return True
     return False
-
 
 def _may_view_id_document(profile) -> bool:
     """ID-document visibility is stricter: owner, system admin, or the
@@ -344,7 +345,6 @@ def _may_view_id_document(profile) -> bool:
             return True
     return False
 
-
 def _serve_profile_media(stored_value: str, config_key: str):
     absolute_path = resolve_private_file(
         current_app.config[config_key], stored_value
@@ -359,7 +359,6 @@ def _serve_profile_media(stored_value: str, config_key: str):
         mimetype=mimetype,
         download_name=os.path.basename(absolute_path),
     )
-
 
 @dashboard_bp.route("/dashboard/profile/photo/upload", methods=["POST"])
 @login_required
@@ -384,7 +383,6 @@ def upload_profile_photo():
     flash("عکس پروفایل با موفقیت بروزرسانی شد.", "success")
     return redirect(url_for("dashboard.index"))
 
-
 @dashboard_bp.route("/dashboard/profile/photo/remove", methods=["POST"])
 @login_required
 def remove_profile_photo():
@@ -401,7 +399,6 @@ def remove_profile_photo():
     flash("عکس پروفایل حذف شد.", "success")
     return redirect(url_for("dashboard.index"))
 
-
 @dashboard_bp.route("/uploads/profile-photo/<int:profile_id>")
 @login_required
 def serve_profile_photo(profile_id):
@@ -411,7 +408,6 @@ def serve_profile_photo(profile_id):
     if not _may_view_photo(profile):
         abort(403)
     return _serve_profile_media(profile.photo_path, "PROFILE_PHOTO_UPLOAD_DIR")
-
 
 @dashboard_bp.route("/dashboard/profile/id-document/upload", methods=["POST"])
 @login_required
@@ -436,7 +432,6 @@ def upload_id_document():
     flash("تصویر مدرک هویتی با موفقیت بارگذاری شد.", "success")
     return redirect(url_for("dashboard.index"))
 
-
 @dashboard_bp.route("/dashboard/profile/id-document/remove", methods=["POST"])
 @login_required
 def remove_id_document():
@@ -452,7 +447,6 @@ def remove_id_document():
     db.session.commit()
     flash("تصویر مدرک هویتی حذف شد.", "success")
     return redirect(url_for("dashboard.index"))
-
 
 @dashboard_bp.route("/uploads/id-document/<int:profile_id>")
 @login_required
@@ -510,7 +504,6 @@ def search_users():
         })
         
     return jsonify(results)
-
 
 # --- Arbiter Invitation Management ---
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage/staff/add", methods=["POST"])

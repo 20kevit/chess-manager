@@ -17,36 +17,30 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, PlayerProfileModel, TournamentModel,
-    TournamentParticipantModel,
-)
 from app.extensions import db
 
-
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 BASE = 100000  # tournament base price; GM=100% / WIM=50% by model defaults
-
 
 def _login(client, user):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
 
-
 def _reset_cached_login_user():
     from flask import g
     g.pop("_login_user", None)
-
 
 def _get(client, url, **kw):
     _reset_cached_login_user()
     return client.get(url, **kw)
 
-
 def _post(client, url, **kw):
     _reset_cached_login_user()
     return client.post(url, **kw)
-
 
 def _make_user(email, role="player", with_profile=False, title=None):
     user = UserModel(email=email)
@@ -62,7 +56,6 @@ def _make_user(email, role="player", with_profile=False, title=None):
     db.session.commit()
     return user
 
-
 def _tournament(public_id_suffix, name, organizer=None):
     t = TournamentModel(
         public_id=f"55000{public_id_suffix}",
@@ -74,7 +67,6 @@ def _tournament(public_id_suffix, name, organizer=None):
     db.session.add(t)
     db.session.commit()
     return t
-
 
 class TestProfileUpdateProtection:
     def test_posted_title_is_ignored(self, app):
@@ -110,7 +102,6 @@ class TestProfileUpdateProtection:
                 user_id=user.id).first()
             assert profile.fide_title == "WIM"
 
-
 class TestCreateProfileProtection:
     def test_posted_title_not_stored(self, app):
         user = _make_user("title_u3@test.com")
@@ -128,7 +119,6 @@ class TestCreateProfileProtection:
             first_name="Sara", last_name="Karimi").first()
         assert profile is not None
         assert profile.fide_title == ""
-
 
 class TestRegistrationTitleProtection:
     def _open_tournament(self, suffix, name, organizer=None):
@@ -181,11 +171,9 @@ class TestRegistrationTitleProtection:
         assert "WIM" in (reg.pricing_breakdown or "")
         assert reg.final_price == BASE // 2
 
-
 def RegistrationModel_for(user):
     return PlayerProfileModel.query.filter_by(
         user_id=user.id).first().registrations[0]
-
 
 class TestPriceApiProtection:
     def test_api_ignores_posted_title(self, app):
@@ -216,7 +204,6 @@ class TestPriceApiProtection:
         data = resp.get_json()
         # WIM (50%) applies from the profile regardless of empty client value.
         assert data["final_price"] == BASE // 2
-
 
 class TestTrustedPathsRemainFunctional:
     def test_organizer_can_set_title_when_adding_player(self, app):

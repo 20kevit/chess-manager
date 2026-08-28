@@ -15,9 +15,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import create_app
 from app.extensions import db as _db
 from config import Config
-from infrastructure.db_models import UserModel, UserRoleModel, TournamentModel
 
-
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 @pytest.fixture
 def setup_users(app):
     with app.app_context():
@@ -56,12 +56,10 @@ def setup_users(app):
             "tournament": tournament,
         }
 
-
 def _login(client, user_id):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user_id)
         sess["_fresh"] = True
-
 
 class TestBackupCreateAuthorization:
 
@@ -85,7 +83,6 @@ class TestBackupCreateAuthorization:
         assert resp.status_code == 400
         assert resp.get_json()["success"] is False
 
-
 class TestUserSearchRestriction:
 
     def test_player_cannot_search_users(self, app, setup_users):
@@ -107,7 +104,6 @@ class TestUserSearchRestriction:
         assert resp.status_code == 200
         results = resp.get_json()
         assert any(u["email"] == "findme@test.com" for u in results)
-
 
 class TestWebhookSecretValidation:
 
@@ -180,7 +176,6 @@ class TestWebhookSecretValidation:
             headers={"X-Bale-Bot-Api-Secret-Token": "سِکریت"},
         )
         assert resp.status_code == 403
-
 
 class TestSessionCookieFlags:
 

@@ -29,13 +29,11 @@ from infrastructure.fide.storage import (
     count_players_in_xml, get_period_string,
 )
 from application.fide_import_service import FideImportService
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, FideImportModel, FidePlayerModel,
-    FideRatingModel,
-)
+
 from app.extensions import db
 
-
+from infrastructure.models.fide import (FideImportModel, FidePlayerModel, FideRatingModel)
+from infrastructure.models.user import (UserModel, UserRoleModel)
 PLAYER_XML = """<?xml version="1.0"?>
 <playerslist>
   <player><fideid>12500001</fideid><name>Magi Carlsen</name><country>IRI</country><sex>M</sex>
@@ -50,7 +48,6 @@ PLAYER_XML = """<?xml version="1.0"?>
 </playerslist>
 """
 
-
 def _zip_bytes(member_name="players_list_xml.zip-inner.xml",
                content=PLAYER_XML.encode("utf-8")):
     buf = io.BytesIO()
@@ -58,12 +55,10 @@ def _zip_bytes(member_name="players_list_xml.zip-inner.xml",
         z.writestr(member_name, content)
     return buf.getvalue()
 
-
 def _period_dir(app):
     d = os.path.join(app.config["FIDE_DATA_DIR"], get_period_string())
     os.makedirs(d, exist_ok=True)
     return d
-
 
 def _write_xml(app):
     path = os.path.join(_period_dir(app), "players_list_xml.xml")
@@ -71,13 +66,11 @@ def _write_xml(app):
         f.write(PLAYER_XML)
     return path
 
-
 @pytest.fixture(autouse=True)
 def clean_fide_dir(app):
     yield
     import shutil
     shutil.rmtree(app.config["FIDE_DATA_DIR"], ignore_errors=True)
-
 
 # ── Storage layer ──────────────────────────────────────────────────────
 
@@ -130,7 +123,6 @@ class TestStorageLayer:
             f.write(b"</root>")
         assert count_players_in_xml(str(big)) == 2
 
-
 class TestEnsureFlowBranches:
     def test_existing_xml_short_circuits_without_network(self, app, monkeypatch):
         xml = _write_xml(app)
@@ -164,7 +156,6 @@ class TestEnsureFlowBranches:
         # No partial artifacts left behind.
         assert not os.path.exists(os.path.join(
             _period_dir(app), "players_list_xml.zip"))
-
 
 # ── Service pipeline ───────────────────────────────────────────────────
 
@@ -215,7 +206,6 @@ class TestServicePipeline:
         result = FideImportService.run_import()
         assert result["status"] == "skipped"
 
-
 # ── Routes ─────────────────────────────────────────────────────────────
 
 @pytest.fixture
@@ -231,19 +221,16 @@ def fide_env(app):
         db.session.commit()
         yield {"app": app, "admin": admin.id, "player": player.id}
 
-
 def _login_on(app, client, uid):
     from flask import g
     g.pop("_login_user", None)
     with client.session_transaction() as s:
         s["_user_id"] = str(uid); s["_fresh"] = True
 
-
 def _post(client, url, **kw):
     from flask import g
     g.pop("_login_user", None)
     return client.post(url, **kw)
-
 
 class TestRoutes:
     def test_status_endpoint_authz_matrix(self, fide_env):
@@ -287,7 +274,6 @@ class TestRoutes:
         rec = FideImportModel.query.one()
         assert rec.status == "success"
         assert rec.records_processed == 2
-
 
 # ── True background-thread end-to-end smoke ────────────────────────────
 

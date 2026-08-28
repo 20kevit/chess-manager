@@ -20,9 +20,8 @@ from application import telegram_service as telegram_service_module
 from application.notification_types import NotificationType, FutureNotificationType
 from application.providers.telegram_provider import TelegramProvider
 from application.telegram_service import TelegramService
-from infrastructure.db_models import UserModel, UserRoleModel
 
-
+from infrastructure.models.user import (UserModel, UserRoleModel)
 @pytest.fixture
 def linked_user(app):
     with app.app_context():
@@ -35,12 +34,10 @@ def linked_user(app):
         db.session.commit()
         yield user
 
-
 def _login(client, user_id):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user_id)
         sess["_fresh"] = True
-
 
 class TestG2TelegramEscaping:
 
@@ -67,7 +64,6 @@ class TestG2TelegramEscaping:
         assert "&lt;b&gt;Title &amp; Co&lt;/b&gt;" in text
         assert "&lt;next&gt;" in text
         assert "<next>" not in text
-
 
 class TestG1SecretLogging:
 
@@ -104,7 +100,6 @@ class TestG1SecretLogging:
         assert "ABCDEF…" in caplog.text
         assert "987654321" not in caplog.text    # chat id masked too
 
-
 class TestG3BalePreferences:
 
     def test_post_persists_bale_channel(self, app, linked_user):
@@ -136,7 +131,6 @@ class TestG3BalePreferences:
         assert resp.status_code == 200
         body = resp.data.decode("utf-8")
         assert "بله" in body           # bale column header rendered
-
 
 class TestG5ActiveVsFutureTypes:
 

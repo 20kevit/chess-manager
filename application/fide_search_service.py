@@ -3,8 +3,8 @@ FIDE Search Service.
 Handles searching the local FIDE database.
 """
 from typing import List, Dict, Optional
-from infrastructure.repositories import FidePlayerRepository, FideRatingRepository
 
+from infrastructure.repositories.fide import (FidePlayerRepository, FideRatingRepository)
 class FideSearchService:
 
     @staticmethod

@@ -16,25 +16,23 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, PlayerProfileModel, TournamentModel,
-    RegistrationModel, TournamentStaffModel,
-)
 from infrastructure.file_storage import (
     detect_image_type, resolve_private_file,
 )
 from app.extensions import db
 
-
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import RegistrationModel
+from infrastructure.models.staff import TournamentStaffModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"png-payload"
 JPEG_BYTES = b"\xff\xd8\xff\xe0" + b"jpeg-payload"
-
 
 def _login(client, user):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
-
 
 def _reset_cached_login_user():
     """Reset flask-login's per-request user cache between client calls.
@@ -49,24 +47,19 @@ def _reset_cached_login_user():
     from flask import g
     g.pop("_login_user", None)
 
-
 def _get(client, url, **kw):
     _reset_cached_login_user()
     return client.get(url, **kw)
-
 
 def _post(client, url, **kw):
     _reset_cached_login_user()
     return client.post(url, **kw)
 
-
 def _png_file():
     return {"photo": (io.BytesIO(PNG_BYTES), "holiday.png")}
 
-
 def _id_file(content=None):
     return {"id_document": (io.BytesIO(content or PNG_BYTES), "shenasnameh.png")}
-
 
 @pytest.fixture(autouse=True)
 def clean_media_dirs(app):
@@ -79,7 +72,6 @@ def clean_media_dirs(app):
     for key in ("PROFILE_PHOTO_UPLOAD_DIR", "ID_DOCUMENT_UPLOAD_DIR"):
         shutil.rmtree(app.config[key], ignore_errors=True)
 
-
 def _make_user(email, is_admin=False, role="player"):
     user = UserModel(email=email)
     user.set_password("password123")
@@ -88,7 +80,6 @@ def _make_user(email, is_admin=False, role="player"):
     db.session.add(user)
     db.session.flush()
     return user
-
 
 @pytest.fixture
 def owner(app):
@@ -100,7 +91,6 @@ def owner(app):
         db.session.add(profile)
         db.session.commit()
         yield user
-
 
 class TestUploadValidation:
     def test_valid_png_upload_is_stored_privately(self, app, owner):
@@ -194,7 +184,6 @@ class TestUploadValidation:
         )
         assert "ابتدا باید پروفایل" in resp.get_data(as_text=True)
 
-
 class TestReplaceAndDelete:
     def test_replacement_removes_previous_file(self, app, owner):
         client = app.test_client()
@@ -235,7 +224,6 @@ class TestReplaceAndDelete:
         assert profile.photo_path is None
         assert not os.path.exists(stored_path)
 
-
 class TestIdDocumentUpload:
     def test_id_document_stored_in_dedicated_private_dir(self, app, owner):
         client = app.test_client()
@@ -269,7 +257,6 @@ class TestIdDocumentUpload:
         assert profile.id_document_path is None
         assert not os.path.isdir(app.config["ID_DOCUMENT_UPLOAD_DIR"]) or \
             os.listdir(app.config["ID_DOCUMENT_UPLOAD_DIR"]) == []
-
 
 @pytest.fixture
 def shared_tournament(app, owner):
@@ -306,7 +293,6 @@ def shared_tournament(app, owner):
             "staff": UserModel.query.get(staff.id),
             "tournament": tournament,
         }
-
 
 class TestServingAuthorizationMatrix:
     def _upload_photo(self, app, owner):
@@ -411,7 +397,6 @@ class TestServingAuthorizationMatrix:
         assert _get(client, 
             f"/uploads/id-document/{owner.profile.id}"
         ).status_code == 404
-
 
 class TestPathTraversalResistance:
     def test_resolver_rejects_traversal_payloads(self, tmp_path):

@@ -2,8 +2,8 @@
 import logging
 from typing import List
 from application.notification_provider_interface import NotificationProviderInterface
-from infrastructure.repositories import NotificationPreferenceRepository
 
+from infrastructure.repositories.notification import NotificationPreferenceRepository
 class NotificationDispatcher:
     """Routes notifications to the appropriate providers based on user preferences."""
     _providers: List[NotificationProviderInterface] = []

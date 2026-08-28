@@ -18,18 +18,19 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, PlayerProfileModel, TournamentModel,
-    TournamentParticipantModel, RegistrationModel, NotificationModel,
-    TournamentStaffModel,
-)
 from application.notification_policy import (
     load_tournament_prefs, serialize_tournament_prefs, tournament_allows,
 )
 from application.notification_types import NOTIFICATION_TYPE_NAMES_FA
 from app.extensions import db
 
-
+from infrastructure.models.notification import NotificationModel
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import RegistrationModel
+from infrastructure.models.staff import TournamentStaffModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 def _login(client, user_id):
     from flask import g
     g.pop("_login_user", None)
@@ -37,18 +38,15 @@ def _login(client, user_id):
         sess["_user_id"] = str(user_id)
         sess["_fresh"] = True
 
-
 def _get(client, url, **kw):
     from flask import g
     g.pop("_login_user", None)
     return client.get(url, **kw)
 
-
 def _post(client, url, **kw):
     from flask import g
     g.pop("_login_user", None)
     return client.post(url, **kw)
-
 
 @pytest.fixture
 def notif_setup(app):
@@ -116,7 +114,6 @@ def notif_setup(app):
             "users": [u.id for u in users] + [guest_user.id],
         }
 
-
 class TestPolicyUnit:
     def test_absent_key_defaults_enabled(self):
         assert tournament_allows(None, "ROUND_CREATED") is True
@@ -136,7 +133,6 @@ class TestPolicyUnit:
             {"ROUND_CREATED": False, "MADE_UP": True})
         assert set(json.loads(raw).keys()) == {"ROUND_CREATED"}
 
-
 class TestPersianLabels:
     def test_preference_page_uses_persian_names(self, notif_setup):
         client = _as_user(notif_setup["app"], notif_setup["users"][0])
@@ -151,7 +147,6 @@ class TestPersianLabels:
         for n_type in NotificationType:
             assert n_type.value in NOTIFICATION_TYPE_NAMES_FA
 
-
 def _as_user(app, uid):
     client = app.test_client()
     from flask import g
@@ -159,7 +154,6 @@ def _as_user(app, uid):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(uid); sess["_fresh"] = True
     return client
-
 
 class TestAnnouncements:
     def test_organizer_broadcast_reaches_all_distinct_users_once(self, notif_setup):
@@ -196,7 +190,6 @@ class TestAnnouncements:
                     f"/{notif_setup['public_id']}/admin/announcements"
                     ).status_code == 200
 
-
 class TestTournamentGates:
     def test_round_created_gate_suppresses_fanout(self, notif_setup):
         t = TournamentModel.query.get(notif_setup["tournament"].id)
@@ -228,11 +221,9 @@ class TestTournamentGates:
         assert "غیرفعال است" in resp.get_data(as_text=True)
         assert NotificationModel.query.count() == 0
 
-
 def RoundService_create(t):
     from application.round_service import RoundService
     RoundService.create_next_round(t)
-
 
 class TestTournamentPrefsCrud:
     def test_save_persists_and_is_isolated(self, notif_setup):

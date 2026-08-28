@@ -17,16 +17,15 @@ from sqlalchemy import event
 from app.extensions import db
 from application.fide_search_service import FideSearchService
 from application.verification_service import VerificationService
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, TournamentModel, PlayerProfileModel,
-    FidePlayerModel, FideRatingModel, PlayerVerificationModel,
-    RegistrationModel,
-)
-from infrastructure.repositories import (
-    FidePlayerRepository, RegistrationRepository,
-)
 
-
+from infrastructure.models.fide import (FidePlayerModel, FideRatingModel)
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import RegistrationModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
+from infrastructure.models.verification import PlayerVerificationModel
+from infrastructure.repositories.fide import FidePlayerRepository
+from infrastructure.repositories.registration import RegistrationRepository
 @pytest.fixture
 def query_counter(app):
     """Counts executed SQL statements while a test runs."""
@@ -38,7 +37,6 @@ def query_counter(app):
     event.listen(db.engine, "before_cursor_execute", _before)
     yield statements
     event.remove(db.engine, "before_cursor_execute", _before)
-
 
 @pytest.fixture
 def fide_data(app):
@@ -70,7 +68,6 @@ def fide_data(app):
             ))
         db.session.commit()
         yield
-
 
 class TestI1FideSearchBulk:
 
@@ -113,7 +110,6 @@ class TestI1FideSearchBulk:
         ]
         assert ratings_queries == []
 
-
 class TestI3PendingVerificationBulk:
 
     def test_bulk_lookup_single_query(self, app, query_counter):
@@ -153,7 +149,6 @@ class TestI3PendingVerificationBulk:
             s for s in query_counter[marker:] if "fide_players" in s
         ]
         assert fide_player_queries == []
-
 
 class TestI2RegistrationEagerLoading:
 

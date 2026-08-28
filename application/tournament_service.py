@@ -6,11 +6,6 @@ from datetime import datetime
 from typing import Optional
 import json
 
-from infrastructure.repositories import (
-    TournamentRepository, ParticipantRepository,
-    PairingRepository
-)
-from infrastructure.db_models import TournamentModel, RoundModel
 from domain.tiebreak.calculators import calculate_all, TIEBREAK_NAMES_FA
 from domain.tiebreak.models import PlayerTiebreakData, GameRecord
 from domain.rating.calculator import calculate_tournament_ratings
@@ -19,6 +14,9 @@ from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 from app.extensions import db
 
+from infrastructure.models.tournament import (RoundModel, TournamentModel)
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.tournament import (PairingRepository, TournamentRepository)
 class TournamentService:
 
     @staticmethod
@@ -360,7 +358,7 @@ class TournamentService:
         round_ids = {p.round_id for p in pairings}
         round_number_map = {}
         if round_ids:
-            from infrastructure.db_models import RoundModel
+            
             round_objs = RoundModel.query.filter(RoundModel.id.in_(round_ids)).all()
             round_number_map = {r.id: r.round_number for r in round_objs}
             

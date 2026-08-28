@@ -5,8 +5,8 @@ import logging
 import requests
 from datetime import datetime, timedelta
 from app.extensions import db
-from infrastructure.db_models import UserModel
 
+from infrastructure.models.user import UserModel
 # ── Dedicated Debug Logger ──
 # Handler is attached lazily on first use so that importing this module never
 # writes to the filesystem. P0-G: the log is strictly instance-anchored;
@@ -24,7 +24,6 @@ def _log_file_path():
     except RuntimeError:
         return None
 
-
 def _ensure_log_handler():
     if logger.handlers:
         return
@@ -40,7 +39,6 @@ def _ensure_log_handler():
     except OSError:
         # Never let debug logging break the service.
         logger.addHandler(logging.NullHandler())
-
 
 def _mask(value: str) -> str:
     """Safe-for-logs preview of secrets (link tokens) and chat IDs."""

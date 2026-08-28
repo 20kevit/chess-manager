@@ -21,13 +21,12 @@ from domain.pairing.models import (
     EnginePlayer, PlayerData, PairingCard, RoundResult, make_engine_players,
 )
 from domain.pairing.bye import select_bye_player
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, TournamentModel, PlayerProfileModel,
-    TournamentParticipantModel, ByeRequestModel, ManualPairingModel,
-)
-from infrastructure.repositories import ParticipantRepository
 
-
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.tournament import (ByeRequestModel, ManualPairingModel, PairingModel, RoundModel, TournamentModel)
+from infrastructure.models.user import (UserModel, UserRoleModel)
+from infrastructure.repositories.participant import ParticipantRepository
 @pytest.fixture
 def setup_pairing(app):
     """Factory fixture: creates organizer + tournament + n active participants."""
@@ -61,7 +60,6 @@ def setup_pairing(app):
         return {"organizer": organizer, "tournament": t, "parts": parts}
     return _make
 
-
 class TestE2StaleByeRequests:
 
     def test_withdrawn_player_request_mints_no_board(self, app, setup_pairing):
@@ -81,7 +79,7 @@ class TestE2StaleByeRequests:
         RoundService.create_next_round(t)
 
         all_ids = set()
-        from infrastructure.db_models import PairingModel, RoundModel
+        
         rnd = RoundModel.query.filter_by(tournament_id=t.id).first()
         for pm in PairingModel.query.filter_by(round_id=rnd.id).all():
             if pm.white_participant_id:
@@ -91,7 +89,6 @@ class TestE2StaleByeRequests:
 
         assert c.id not in all_ids          # no phantom board for the withdrawn player
         assert ByeRequestModel.query.count() == 0  # stale request consumed/cleaned
-
 
 class TestE3Round1Invariants:
 
@@ -110,7 +107,7 @@ class TestE3Round1Invariants:
 
         RoundService.create_next_round(t)
 
-        from infrastructure.db_models import PairingModel, RoundModel
+        
         rnd = RoundModel.query.filter_by(tournament_id=t.id).one()
         pairings = PairingModel.query.filter_by(round_id=rnd.id).all()
         boards = {(pm.white_participant_id, pm.black_participant_id): pm
@@ -129,7 +126,6 @@ class TestE3Round1Invariants:
         for pm in boards.values():
             assert (pm.white_float or "") == ""
             assert (pm.black_float or "") == ""
-
 
 class TestE1ValidatorSafetyNet:
 
@@ -155,7 +151,7 @@ class TestE1ValidatorSafetyNet:
 
         assert any("FIDE pairing violation" in r.message for r in caplog.records)
         # Nothing was persisted.
-        from infrastructure.db_models import PairingModel, RoundModel
+        
         assert RoundModel.query.filter_by(tournament_id=t.id).count() == 0
         assert PairingModel.query.filter_by(tournament_id=t.id).count() == 0
 
@@ -164,11 +160,10 @@ class TestE1ValidatorSafetyNet:
         t = data["tournament"]
         rnd = RoundService.create_next_round(t)
         assert rnd.round_number == 1
-        from infrastructure.db_models import PairingModel
+        
         pairings = PairingModel.query.filter_by(round_id=rnd.id).all()
         real_games = [p for p in pairings if p.black_participant_id]
         assert len(real_games) == 2  # 4 players -> 2 boards
-
 
 class TestE4ByeOrderingSingleSource:
 

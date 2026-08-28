@@ -25,45 +25,39 @@ from application.payment_service import PaymentService
 from application.registration_service import (
     RegistrationService, BLOCKING_REGISTRATION_STATUSES,
 )
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, TournamentModel, PlayerProfileModel,
-    RegistrationModel, PaymentModel, NotificationModel,
-    TournamentParticipantModel,
-)
+
 from app.extensions import db
 
-
+from infrastructure.models.notification import NotificationModel
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import (PaymentModel, RegistrationModel)
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 PNG_RECEIPT = b"\x89PNG\r\n\x1a\nreceipt"
-
 
 def _login(client, user):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
 
-
 def _reset_cached_login_user():
     from flask import g
     g.pop("_login_user", None)
-
 
 def _get(client, url, **kw):
     _reset_cached_login_user()
     return client.get(url, **kw)
 
-
 def _post(client, url, **kw):
     _reset_cached_login_user()
     return client.post(url, **kw)
-
 
 def R(model, row_id):
     """Fresh, session-attached instance for the current app context."""
     return model.query.filter_by(id=row_id).first()
 
-
 _counter = [0]
-
 
 def make_registration(*, price=100000, enable_online=True, status="pending"):
     """Create user + organizer + tournament + priced registration.
@@ -108,7 +102,6 @@ def make_registration(*, price=100000, enable_online=True, status="pending"):
         "reg_id": reg.id,
     }
 
-
 def _upload(client, reg_id):
     return _post(
         client, f"/registration/{reg_id}/upload-receipt",
@@ -116,7 +109,6 @@ def _upload(client, reg_id):
         content_type="multipart/form-data",
         follow_redirects=True,
     )
-
 
 class TestReceiptLifecycle:
     def test_upload_from_pending_enters_review_and_cancels_online_session(
@@ -244,7 +236,6 @@ class TestReceiptLifecycle:
             assert R(RegistrationModel, fx["reg_id"]).status \
                 == "receipt_submitted"
 
-
 class TestApprovalOfReceipts:
     def test_approving_receipt_creates_participant_and_notifies(self, app):
         with app.app_context():
@@ -270,7 +261,6 @@ class TestApprovalOfReceipts:
                 type="PAYMENT_CONFIRMED").first()
             assert notification is not None
             assert notification.user_id == fx["user_id"]
-
 
 class TestOnlinePaymentGates:
     def test_online_payment_blocked_while_receipt_under_review(self, app):
@@ -298,7 +288,6 @@ class TestOnlinePaymentGates:
             body = _get(client, f"/{public_id}/register").get_data(as_text=True)
             assert "پرداخت آنلاین برای این مسابقه غیرفعال است" in body
             assert "زرین‌پال" not in body
-
 
 class TestDuplicateAndCapacityConsistency:
     def test_blocking_statuses_all_friendly_duplicates(self, app):
@@ -381,7 +370,6 @@ class TestDuplicateAndCapacityConsistency:
                 player_profile_id=R(RegistrationModel,
                                     fx["reg_id"]).player_profile_id,
             ).count() == 0
-
 
 class TestDashboardPaymentActions:
     def test_buttons_map_to_payment_section_never_gateway(self, app):

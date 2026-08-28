@@ -8,24 +8,14 @@ import time
 from typing import Dict, List, Optional, Set, Tuple
 
 from app.extensions import db
-from infrastructure.repositories import (
-    ParticipantRepository,
-    RoundRepository,
-    PairingRepository,
-    ManualPairingRepository,
-)
-from infrastructure.db_models import (
-    RoundModel,
-    PairingModel,
-    ByeRequestModel,
-    ManualPairingModel,
-    TournamentParticipantModel,
-)
 
 from domain.pairing import SwissEngine, PlayerData
 from domain.pairing.models import compute_color
 
-
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.tournament import (ByeRequestModel, ManualPairingModel, PairingModel, RoundModel)
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.tournament import (ManualPairingRepository, PairingRepository, RoundRepository)
 class _RoundNotificationsDisabled(Exception):
     """P1-F sentinel: tournament-level gate disabled the round fan-out."""
 

@@ -21,17 +21,15 @@ from app.extensions import db
 from application.player_service import PlayerService
 from application.registration_service import RegistrationService
 from application.round_service import RoundService
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, TournamentModel, PlayerProfileModel,
-    TournamentParticipantModel, RoundModel, PairingModel,
-    ByeRequestModel, ManualPairingModel, RegistrationModel,
-    PaymentModel, NotificationModel,
-)
-from infrastructure.repositories import (
-    ParticipantRepository, NotificationRepository,
-)
 
-
+from infrastructure.models.notification import NotificationModel
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.registration import (PaymentModel, RegistrationModel)
+from infrastructure.models.tournament import (ByeRequestModel, ManualPairingModel, PairingModel, RoundModel, TournamentModel)
+from infrastructure.models.user import (UserModel, UserRoleModel)
+from infrastructure.repositories.notification import NotificationRepository
+from infrastructure.repositories.participant import ParticipantRepository
 @pytest.fixture
 def setup_tournament(app):
     """Organizer-owned tournament with three participants (A/B/C)."""
@@ -76,12 +74,10 @@ def setup_tournament(app):
             "parts": parts,  # [A, B, C]
         }
 
-
 def _login(client, user):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
-
 
 def _backup_payload(tournament_id, include_floats=True):
     """Internal-format backup for: R1: A(b)-B(w) 1-0 ; C bye. R2: A(w)-B(b) draw."""
@@ -124,7 +120,6 @@ def _backup_payload(tournament_id, include_floats=True):
              }]},
         ],
     }
-
 
 class TestC1BackupSwissState:
 
@@ -219,7 +214,6 @@ class TestC1BackupSwissState:
         )
         assert newcomer.pairing_no == 6
 
-
 class TestC2RejectionReason:
 
     def test_reject_registration_persists_reason(self, app, setup_tournament):
@@ -239,7 +233,6 @@ class TestC2RejectionReason:
         assert refreshed.status == "rejected"
         assert refreshed.rejection_reason == "ظرفیت تکمیل است"
 
-
 class TestC3RepositoriesFlushOnly:
 
     def test_notification_repo_does_not_commit(self, app, setup_tournament):
@@ -255,7 +248,6 @@ class TestC3RepositoriesFlushOnly:
         db.session.rollback()
         db.session.expire_all()
         assert NotificationModel.query.get(notif.id).is_read is False
-
 
 class TestC4ServiceOwnedMutations:
 
@@ -296,7 +288,6 @@ class TestC4ServiceOwnedMutations:
         assert RoundService.remove_manual_pairing(t, a.id) is True
         assert RoundService.remove_manual_pairing(t, a.id) is False
 
-
 class TestC5SerializationLocks:
 
     def test_for_update_emitted_on_mysql(self, app):
@@ -322,7 +313,6 @@ class TestC5SerializationLocks:
             RegistrationService.create_registration(t, user, {
                 "first_name": "Extra", "last_name": "Player",
             })
-
 
 class TestC6DeleteDependentRows:
 

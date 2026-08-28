@@ -9,15 +9,11 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from infrastructure.db_models import (
-    UserModel,
-    UserRoleModel,
-    TournamentModel,
-    TournamentStaffModel,
-)
 from app.extensions import db
 
-
+from infrastructure.models.staff import TournamentStaffModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
 @pytest.fixture
 def setup_access(app):
     """Owner (organizer), an invitee, a system admin, and one tournament."""
@@ -55,12 +51,10 @@ def setup_access(app):
             "sysadmin": sysadmin,
         }
 
-
 def _login(client, user_id):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user_id)
         sess["_fresh"] = True
-
 
 def _add_staff(tournament_id, user_id, status):
     staff = TournamentStaffModel(
@@ -72,7 +66,6 @@ def _add_staff(tournament_id, user_id, status):
     db.session.add(staff)
     db.session.commit()
     return staff
-
 
 class TestStaffInvitationAuthorization:
 
@@ -129,7 +122,6 @@ class TestStaffInvitationAuthorization:
         _login(client, data["sysadmin"].id)
         resp = client.get(f"/{data['tournament'].public_id}/players")
         assert resp.status_code == 200
-
 
 class TestLegacyAdminCodeRemoved:
     """The legacy admin_code authorization mechanism must be fully gone."""

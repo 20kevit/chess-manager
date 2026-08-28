@@ -3,14 +3,16 @@ import os
 import shutil
 from typing import List, Dict, Optional
 from app.extensions import db
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, TournamentModel, 
-    TournamentParticipantModel, NotificationModel,
-    FidePlayerModel, FideImportModel, PlayerVerificationModel
-)
-from infrastructure.repositories import UserRepository
+
 from application.notification_dispatcher import NotificationDispatcher
 
+from infrastructure.models.fide import (FideImportModel, FidePlayerModel)
+from infrastructure.models.notification import NotificationModel
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.tournament import TournamentModel
+from infrastructure.models.user import (UserModel, UserRoleModel)
+from infrastructure.models.verification import PlayerVerificationModel
+from infrastructure.repositories.user import UserRepository
 class AdminService:
 
     # ═════════════════════════════════════════════════════════

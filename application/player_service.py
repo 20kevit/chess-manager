@@ -1,11 +1,13 @@
 from datetime import datetime, date
 from typing import Optional
 from app.extensions import db
-from infrastructure.repositories import PlayerProfileRepository, ParticipantRepository, FidePlayerRepository
-from infrastructure.db_models import (
-    PlayerProfileModel, TournamentParticipantModel, ByeRequestModel, ManualPairingModel
-)
 
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.tournament import (ByeRequestModel, ManualPairingModel)
+from infrastructure.repositories.fide import FidePlayerRepository
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.profile import PlayerProfileRepository
 _AGE_CATEGORY_MAP = [(8, "U08"), (10, "U10"), (12, "U12"), (14, "U14"), (16, "U16"), (18, "U18"), (20, "U20")]
 
 def _detect_age_category(birth_date: date) -> str:

@@ -3,8 +3,8 @@ import logging
 from flask import request
 from application.notification_provider_interface import NotificationProviderInterface
 from application.bale_service import BaleService
-from infrastructure.db_models import UserModel
 
+from infrastructure.models.user import UserModel
 class BaleProvider(NotificationProviderInterface):
     @property
     def channel_name(self) -> str:

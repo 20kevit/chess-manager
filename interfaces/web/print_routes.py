@@ -2,19 +2,17 @@
 Print-friendly pages for PDF export.
 """
 from flask import Blueprint, render_template, abort, Response
-from infrastructure.repositories import (
-    TournamentRepository, ParticipantRepository, PairingRepository
-)
-from infrastructure.db_models import RoundModel
+
 from application.tournament_service import TournamentService
 
+from infrastructure.models.tournament import RoundModel
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.tournament import (PairingRepository, TournamentRepository)
 print_bp = Blueprint("print", __name__)
-
 
 def _validate_public_id(public_id):
     if not public_id.isdigit() or len(public_id) != 8:
         abort(404)
-
 
 @print_bp.route("/<public_id>/print/standings")
 def print_standings(public_id):
@@ -30,7 +28,6 @@ def print_standings(public_id):
         tournament=tournament,
         **standings,
     )
-
 
 @print_bp.route("/<public_id>/print/round/<int:round_number>")
 def print_round(public_id, round_number):
@@ -56,7 +53,6 @@ def print_round(public_id, round_number):
         pairings=pairings,
         players=participants,
     )
-
 
 @print_bp.route("/<public_id>/print/crosstable")
 def print_crosstable(public_id):
@@ -210,7 +206,6 @@ def export_trf(public_id):
         }
     )
     return response
-
 
 def _trf_result(result, color):
     mapping = {

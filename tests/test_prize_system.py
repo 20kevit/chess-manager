@@ -25,27 +25,26 @@ from domain.prizes import (
     PrizeDefinition, Candidate, allocate, eligible,
     category_title, rank_label,
 )
-from infrastructure.db_models import (
-    UserModel, UserRoleModel, PlayerProfileModel, TournamentModel,
-    TournamentParticipantModel, TournamentStaffModel,
-    TournamentPrizeModel, PrizeAllocationModel, RoundModel,
-)
+
 from application.prize_service import PrizeService
 from application.round_service import RoundService
 from app.extensions import db
 
-
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.prize import (PrizeAllocationModel, TournamentPrizeModel)
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.staff import TournamentStaffModel
+from infrastructure.models.tournament import (RoundModel, TournamentModel)
+from infrastructure.models.user import (UserModel, UserRoleModel)
 # ════════════════════════ Pure domain unit tests ════════════════════════
 
 def D(id_, cat, rank=1, amount=0, priority=0, **params):
     return PrizeDefinition(id=id_, category_type=cat, params=params,
                            rank=rank, amount=amount, priority=priority)
 
-
 def C(pid, pos, gender="M", age=30, rating=1800, active=True):
     return Candidate(participant_id=pid, position=pos, gender=gender,
                      age=age, rating=rating, is_active=active)
-
 
 class TestAllocationEngine:
     def test_spec_example_woman_takes_overall_then_next_woman_gets_women_prize(self):
@@ -117,7 +116,6 @@ class TestAllocationEngine:
     def test_no_definitions_empty_map(self):
         assert allocate([C(1, 1)], []) == {}
 
-
 # ════════════════════════ Integration tests ═════════════════════════════
 
 def _login(client, user):
@@ -127,18 +125,15 @@ def _login(client, user):
         sess["_user_id"] = str(user.id)
         sess["_fresh"] = True
 
-
 def _get(client, url, **kw):
     from flask import g
     g.pop("_login_user", None)
     return client.get(url, **kw)
 
-
 def _post(client, url, **kw):
     from flask import g
     g.pop("_login_user", None)
     return client.post(url, **kw)
-
 
 @pytest.fixture
 def prize_setup(app):
@@ -202,15 +197,12 @@ def prize_setup(app):
             "public_id": "44000001",
         }
 
-
 PIDZ = "44000001"
-
 
 def _save(client, payload):
     return _post(client, f"/{PIDZ}/admin/prizes",
                  data={"prizes_json": json.dumps(payload)},
                  follow_redirects=True)
-
 
 class TestCrudAndIsolation:
     def test_replace_all_persists_with_priority_from_order(self, prize_setup):
@@ -244,7 +236,6 @@ class TestCrudAndIsolation:
         assert (t.base_price, t.start_date, t.rulebook_text,
                 t.registration_requirements, t.total_rounds) == before
 
-
 def _as(setup, who):
     client = setup["app"].test_client()
     uid = setup["ids"][who]
@@ -253,7 +244,6 @@ def _as(setup, who):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(uid); sess["_fresh"] = True
     return client
-
 
 class TestAuthorization:
     def test_arbiter_denied_editor_and_recompute(self, prize_setup):
@@ -272,7 +262,6 @@ class TestAuthorization:
         assert PrizeService.get_definitions(
             prize_setup["tournament"]).count if False else \
             len(PrizeService.get_definitions(prize_setup["tournament"])) == 1
-
 
 class TestAutoPublishAndConsistency:
     def test_finish_round_publishes_allocations_publicly(self, prize_setup):
@@ -347,7 +336,6 @@ class TestAutoPublishAndConsistency:
         # left a consistent cache.
         assert PrizeAllocationModel.query.filter_by(
             tournament_id=prize_setup["tournament"].id).count() <= 1
-
 
 class TestPublicRendering:
     def test_summary_hidden_when_nothing_awarded(self, prize_setup):

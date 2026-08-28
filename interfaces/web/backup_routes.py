@@ -9,29 +9,27 @@ from flask import Blueprint, Response, request, redirect, url_for, flash, render
 from flask_login import login_required
 from interfaces.web.admin_auth import require_admin
 from interfaces.web.decorators import role_required
-from infrastructure.repositories import (
-    ParticipantRepository, PairingRepository, RoundRepository, TournamentRepository
-)
-from infrastructure.db_models import (
-    TournamentModel, TournamentParticipantModel, PlayerProfileModel, RoundModel, PairingModel
-)
+
 from app.extensions import db
 
 from application.import_export_service import ImportExportService, ImportExportError
 from infrastructure.providers.coronate_provider import CoronateProvider
 from application.provider_registry import registry
 
+from infrastructure.models.participant import TournamentParticipantModel
+from infrastructure.models.profile import PlayerProfileModel
+from infrastructure.models.tournament import (PairingModel, RoundModel, TournamentModel)
+from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.tournament import (PairingRepository, RoundRepository, TournamentRepository)
 registry.register("coronate", CoronateProvider())
 
 backup_bp = Blueprint("backup", __name__)
-
 
 class DateEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (date, datetime)):
             return obj.isoformat()
         return super().default(obj)
-
 
 @backup_bp.route("/<public_id>/admin/backup/export")
 def export_json(public_id):
@@ -119,7 +117,6 @@ def export_json(public_id):
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
-
 @backup_bp.route("/<public_id>/backup/import", methods=["GET", "POST"])
 def import_json(public_id):
     tournament = require_admin(public_id)
@@ -164,7 +161,6 @@ def import_json(public_id):
         tournament=tournament,
     )
 
-
 def _get_start_number(participant_id, participants):
     if not participant_id:
         return None
@@ -172,7 +168,6 @@ def _get_start_number(participant_id, participants):
         if p.id == participant_id:
             return p.start_number
     return None
-
 
 def _replace_import(tournament, data):
     PairingModel.query.filter_by(tournament_id=tournament.id).delete()
@@ -271,7 +266,6 @@ def _replace_import(tournament, data):
     from application.round_service import RoundService
     RoundService.rebuild_swiss_state(tournament.id)
 
-
 def _merge_import(tournament, data):
     existing = ParticipantRepository.get_all(tournament.id)
     existing_names = {
@@ -325,7 +319,6 @@ def _merge_import(tournament, data):
 
     db.session.commit()
 
-
 @backup_bp.route("/<public_id>/backup/export/<provider_name>", methods=["GET", "POST"])
 def export_provider(public_id, provider_name):
     tournament = require_admin(public_id)
@@ -351,7 +344,6 @@ def export_provider(public_id, provider_name):
         traceback.print_exc()
         flash(f"خطای غیرمنتظره: {str(e)}", "error")
         return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
-
 
 @backup_bp.route("/<public_id>/admin/backup/import/<provider_name>", methods=["GET", "POST"])
 def import_provider(public_id, provider_name):
@@ -399,7 +391,6 @@ def import_provider(public_id, provider_name):
         tournament=tournament,
     )
 
-
 @backup_bp.route("/create/from-backup/<provider_name>", methods=["POST"])
 @login_required
 @role_required("organizer")
@@ -435,7 +426,6 @@ def preview_tournaments_from_backup(provider_name):
     except Exception as e:
         traceback.print_exc()
         return jsonify({"success": False, "error": f"خطای غیرمنتظره: {str(e)}"}), 500
-
 
 @backup_bp.route("/create/execute/<provider_name>", methods=["POST"])
 @login_required
