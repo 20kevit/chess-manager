@@ -11,8 +11,10 @@ P1-B tiered authorization:
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from interfaces.web.admin_auth import require_admin, require_result_editor
 
-from application.round_service import (
-    RoundService, ManualPairingError, SwapError
+from application.round.round_lifecycle_service import RoundLifecycleService
+from application.round.result_recording_service import ResultRecordingService
+from application.round.manual_adjustment_service import (
+    ManualAdjustmentService, ManualPairingError, SwapError
 )
 
 from app.extensions import db
@@ -48,7 +50,7 @@ def round_new(public_id):
         return redirect(url_for("auth.login"))
 
     try:
-        new_round = RoundService.create_next_round(tournament)
+        new_round = RoundLifecycleService.create_next_round(tournament)
         flash(f"Round {new_round.round_number} generated successfully.", "success")
     except ValueError as e:
         flash(str(e), "error")
@@ -89,7 +91,7 @@ def save_results(public_id, round_number):
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
     
     try:
-        RoundService.save_results(round_obj, request.form)
+        ResultRecordingService.save_results(round_obj, request.form)
         flash("نتایج ذخیره شد.", "success")
     except Exception as e:
         flash("خطا در ذخیره نتایج.", "error")
@@ -105,7 +107,7 @@ def finish_round(public_id, round_number):
     if not round_obj:
         abort(404)
     try:
-        RoundService.finish_round(round_obj, tournament)
+        RoundLifecycleService.finish_round(round_obj, tournament)
         flash(f"دور {round_number} به پایان رسید", "success")
     except ValueError as e:
         flash(str(e), "error")
@@ -129,7 +131,7 @@ def delete_round(public_id, round_number):
         flash("فقط آخرین دور قابل حذف است", "error")
         return redirect(url_for("round.round_list", public_id=public_id))
     try:
-        RoundService.delete_round(round_obj, tournament)
+        RoundLifecycleService.delete_round(round_obj, tournament)
         flash(f"دور {round_number} حذف شد", "success")
     except Exception as e:
         import traceback
@@ -157,7 +159,7 @@ def request_bye(public_id):
                 flash("بازیکن انتخاب نشده", "error")
                 return redirect(request.url)
             
-            RoundService.add_manual_bye(tournament, participant_id, bye_type)
+            ManualAdjustmentService.add_manual_bye(tournament, participant_id, bye_type)
             flash("درخواست استراحت ثبت شد.", "success")
         except Exception as e:
             flash(f"خطا: {str(e)}", "error")
@@ -190,7 +192,7 @@ def manual_pairing_add(public_id):
         white_id = request.form.get("white_participant_id", type=int)
         black_id = request.form.get("black_participant_id", type=int)
         next_round = tournament.current_round + 1
-        RoundService.add_manual_pairing(tournament, next_round, white_id, black_id)
+        ManualAdjustmentService.add_manual_pairing(tournament, next_round, white_id, black_id)
         flash("جفت‌گذاری دستی با موفقیت قفل شد.", "success")
     except ManualPairingError as e:
         flash(str(e), "error")
@@ -204,7 +206,7 @@ def manual_pairing_remove(public_id):
     if redir:
         return redir
     participant_id = request.form.get("participant_id", type=int)
-    removed = RoundService.remove_manual_pairing(tournament, participant_id)
+    removed = ManualAdjustmentService.remove_manual_pairing(tournament, participant_id)
     if removed:
         flash("جفت‌گذاری دستی لغو شد.", "success")
     else:
@@ -216,7 +218,7 @@ def cancel_bye(public_id, bye_id):
     tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
-    cancelled = RoundService.cancel_bye_request(tournament, bye_id)
+    cancelled = ManualAdjustmentService.cancel_bye_request(tournament, bye_id)
     if cancelled:
         flash("درخواست استراحت لغو شد.", "success")
     else:
@@ -239,14 +241,14 @@ def manual_pairing(public_id, round_number):
         try:
             if action == "swap_colors":
                 board = request.form.get("board", type=int)
-                RoundService.swap_colors_in_board(round_obj, board)
+                ManualAdjustmentService.swap_colors_in_board(round_obj, board)
                 flash("رنگ‌ها با موفقیت جابجا شدند.", "success")
             elif action == "swap_players":
                 board1 = request.form.get("board1", type=int)
                 pos1 = request.form.get("position1")
                 board2 = request.form.get("board2", type=int)
                 pos2 = request.form.get("position2")
-                RoundService.swap_players_between_boards(round_obj, board1, pos1, board2, pos2)
+                ManualAdjustmentService.swap_players_between_boards(round_obj, board1, pos1, board2, pos2)
                 flash("بازیکنان با موفقیت جابجا شدند.", "success")
         except SwapError as e:
             flash(str(e), "error")
