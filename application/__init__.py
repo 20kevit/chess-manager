@@ -42,6 +42,7 @@ from application.registration.receipt_handler import ReceiptHandler
 
 # Player services
 from application.player.participant_management import ParticipantManagement
+from application.player.csv_import_service import PlayerCsvImportService, CsvImportError
 
 # Dashboard services
 from application.dashboard_availability_service import DashboardAvailabilityService
@@ -145,6 +146,8 @@ __all__ = [
 
     # Player
     "ParticipantManagement",
+    "PlayerCsvImportService",
+    "CsvImportError",
 
     # Dashboard
     "DashboardAvailabilityService",
