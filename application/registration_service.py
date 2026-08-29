@@ -19,6 +19,9 @@ from application.registration.pricing_calculator import PricingCalculator as _Pr
 class RegistrationService:
     """Backward compatibility facade. Use application.registration package directly."""
 
+    BLOCKING_REGISTRATION_STATUSES = BLOCKING_REGISTRATION_STATUSES
+    OPEN_SLOT_STATUSES = OPEN_SLOT_STATUSES
+
     @staticmethod
     def create_registration(tournament, user, form_data: dict):
         return _RegistrationCreator.create_registration(tournament, user, form_data)

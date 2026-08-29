@@ -19,6 +19,7 @@ from infrastructure.file_storage import (
 from application.registration_service import (
     BLOCKING_REGISTRATION_STATUSES, RegistrationService,
 )
+from application.dashboard_availability_service import DashboardAvailabilityService
 from domain.registration import (
     check_eligibility, parse_requirements, EligibilityProfile,
 )
@@ -76,45 +77,9 @@ def index():
     # registration or fails the configured entry requirements. This filter is
     # ONLY a UX optimization — RegistrationService re-enforces everything
     # server-side on direct POSTs.
-    available_tournaments = []
-    if is_player:
-        blocked_tournament_ids = {
-            reg.tournament_id
-            for reg in RegistrationModel.query.filter(
-                RegistrationModel.user_id == current_user.id,
-                RegistrationModel.status.in_(BLOCKING_REGISTRATION_STATUSES),
-            ).all()
-        }
-
-        eligibility_facts = (
-            RegistrationService._map_profile_to_eligibility(profile)
-            if profile is not None
-            else EligibilityProfile()
-        )
-
-        candidates = TournamentModel.query.filter(
-            TournamentModel.status != "finished",
-            db.or_(
-                TournamentModel.registration_deadline.is_(None),
-                TournamentModel.registration_deadline >= datetime.utcnow()
-            )
-        ).order_by(TournamentModel.created_at.desc()).all()
-
-        for tournament in candidates:
-            if tournament.id in blocked_tournament_ids:
-                continue
-            requirements = parse_requirements(
-                getattr(tournament, "registration_requirements", None)
-            )
-            if requirements.has_any:
-                # Age rules without a configured start date yield the
-                # 'start_date' failure -> tournament stays hidden.
-                reference = tournament.start_date
-                if check_eligibility(eligibility_facts, requirements, reference):
-                    continue
-            available_tournaments.append(tournament)
-            if len(available_tournaments) >= 10:
-                break
+    available_tournaments = DashboardAvailabilityService.get_eligible_tournaments(
+        current_user, profile, limit=10
+    ) if is_player else []
 
     return render_template(
         "dashboard/index.html", 
@@ -183,15 +148,9 @@ def search_profile():
         user_id=current_user.id, status="pending"
     ).all()
     
-    available_tournaments = []
-    if current_user.has_role('player'):
-        available_tournaments = TournamentModel.query.filter(
-            TournamentModel.status != "finished",
-            db.or_(
-                TournamentModel.registration_deadline.is_(None),
-                TournamentModel.registration_deadline >= datetime.utcnow()
-            )
-        ).order_by(TournamentModel.created_at.desc()).limit(10).all()
+    available_tournaments = DashboardAvailabilityService.get_eligible_tournaments(
+        current_user, current_user.profile, limit=10
+    ) if current_user.has_role('player') else []
     
     # Fix: Use player_profile_id for correct registration fetching
     profile_id = current_user.profile.id if current_user.profile else None

@@ -43,6 +43,9 @@ from application.registration.receipt_handler import ReceiptHandler
 # Player services
 from application.player.participant_management import ParticipantManagement
 
+# Dashboard services
+from application.dashboard_availability_service import DashboardAvailabilityService
+
 # Verification services
 from application.verification.verification_request_service import VerificationRequestService
 from application.verification.verification_approver import VerificationApprover
@@ -142,6 +145,9 @@ __all__ = [
 
     # Player
     "ParticipantManagement",
+
+    # Dashboard
+    "DashboardAvailabilityService",
 
     # Verification
     "VerificationRequestService",
