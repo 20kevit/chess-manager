@@ -46,19 +46,3 @@ class RegistrationService:
     @staticmethod
     def _map_tournament_to_pricing_data(tournament):
         return _PricingCalculator._map_tournament_to_pricing_data(tournament)
-
-    @staticmethod
-    def _map_profile_to_pricing_data(profile):
-        return _PricingCalculator._map_profile_to_pricing_data(profile)
-
-    @staticmethod
-    def _build_eligibility_profile(user, form_data: dict):
-        return _EligibilityChecker._build_eligibility_profile(user, form_data)
-
-    @staticmethod
-    def _check_eligibility_or_raise(tournament, user, form_data: dict) -> None:
-        return _EligibilityChecker._check_eligibility_or_raise(tournament, user, form_data)
-
-    @staticmethod
-    def _eligibility_reference_date(tournament):
-        return _EligibilityChecker._eligibility_reference_date(tournament)

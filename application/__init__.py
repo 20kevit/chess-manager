@@ -23,7 +23,6 @@ from application.tournament.tournament_pricing_service import TournamentPricingS
 from application.tournament.tournament_registration_rules_service import TournamentRegistrationRulesService
 from application.tournament.tournament_rulebook_service import TournamentRulebookService
 from application.tournament.standings_service import StandingsService
-from application.tournament.tournament_admin_service import TournamentAdminService as TournamentAdminServicePkg
 
 # Round services
 from application.round.round_lifecycle_service import RoundLifecycleService
@@ -42,7 +41,6 @@ from application.registration.receipt_handler import ReceiptHandler
 
 # Player services
 from application.player.participant_management import ParticipantManagement
-from application.player.fide_rating_fetcher import FideRatingFetcher
 
 # Verification services
 from application.verification.verification_request_service import VerificationRequestService
@@ -142,7 +140,6 @@ __all__ = [
 
     # Player
     "ParticipantManagement",
-    "FideRatingFetcher",
 
     # Verification
     "VerificationRequestService",

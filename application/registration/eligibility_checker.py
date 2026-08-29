@@ -22,12 +22,6 @@ from infrastructure.repositories.participant import ParticipantRepository
 from infrastructure.repositories.profile import PlayerProfileRepository
 from infrastructure.repositories.registration import (PromoCodeRepository, RegistrationRepository)
 
-BLOCKING_REGISTRATION_STATUSES = (
-    "pending", "payment_pending", "receipt_submitted", "paid", "approved",
-)
-
-OPEN_SLOT_STATUSES = ("pending", "payment_pending", "receipt_submitted", "paid")
-
 
 class EligibilityChecker:
     """Handles eligibility checking for tournament registrations."""

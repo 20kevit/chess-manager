@@ -71,7 +71,6 @@ application/
 │   ├── tournament_pricing_service.py    # Pricing, discounts, bank/payment, rulebook
 │   ├── tournament_registration_rules_service.py  # Entry requirements (eligibility rules)
 │   ├── tournament_rulebook_service.py   # Rulebook text/sections/PDF
-│   ├── tournament_admin_service.py      # Tournament admin operations
 │   └── standings_service.py             # Standings & tiebreak computation
 │
 ├── round/
@@ -93,8 +92,7 @@ application/
 │
 ├── player/
 │   ├── __init__.py
-│   ├── participant_management.py        # Create / update / withdraw / delete participants
-│   └── fide_rating_fetcher.py           # Auto-fetch FIDE rating for snapshot
+│   └── participant_management.py        # Create / update / withdraw / delete participants
 │
 ├── verification/
 │   ├── __init__.py
@@ -336,8 +334,7 @@ Pure re-export facade — no wrapper class. Re-exports: `BaleService`, `_log_fil
 
 ### `application/player/` — Participant Management
 
-- **`ParticipantManagement`** — Participant CRUD: create (with auto-FIDE rating fetch), update, toggle withdraw, delete (with renumbering).
-- **`FideRatingFetcher`** — Auto-fetches FIDE rating for participant snapshots.
+- **`ParticipantManagement`** — Participant CRUD: create (with auto-FIDE rating fetch), update, toggle withdraw, delete (with renumbering). FIDE rating auto-fetch is inlined in `create()` rather than delegated to a separate class.
 
 ### `application/verification/` — FIDE Verification
 

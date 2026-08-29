@@ -7,16 +7,6 @@ It delegates to the new focused services in the application.round package.
 IMPORTANT: This is a backward compatibility facade. New code should use the focused
 services in application.round package directly.
 """
-from datetime import datetime
-from typing import List, Optional
-
-from app.extensions import db
-
-from infrastructure.models.tournament import (
-    ByeRequestModel, ManualPairingModel, PairingModel, RoundModel, TournamentModel
-)
-from infrastructure.models.participant import TournamentParticipantModel
-
 from application.round.round_lifecycle_service import RoundLifecycleService
 from application.round.pairing_generation_service import PairingGenerationService
 from application.round.result_recording_service import ResultRecordingService
@@ -94,37 +84,3 @@ class RoundService:
     def rebuild_swiss_state(tournament_id: int) -> None:
         """Public entry point: fully reconstruct Swiss pairing state."""
         StatsRebuildService.rebuild_swiss_state(tournament_id)
-
-    @staticmethod
-    def _full_refresh_stats(tournament_id):
-        """Fully recompute all Swiss state from stored results."""
-        StatsRebuildService._full_refresh_stats(tournament_id)
-
-    @staticmethod
-    def _initialize_pairing_numbers(tournament_id: int):
-        """Initialize pairing numbers based on rating and start number."""
-        from application.round.pairing_generation_service import PairingGenerationService
-        PairingGenerationService._initialize_pairing_numbers(tournament_id)
-
-    @staticmethod
-    def _update_participant_stats_incremental(pairing):
-        """Update participant statistics incrementally from a pairing result."""
-        PairingGenerationService._update_participant_stats_incremental(pairing)
-
-    @staticmethod
-    def _validate_color_swap(participant_id, new_color, tournament_id):
-        """Validate that a color swap is legal."""
-        from application.round.pairing_generation_service import PairingGenerationService
-        PairingGenerationService._validate_color_swap(participant_id, new_color, tournament_id)
-
-    @staticmethod
-    def _get_opponent_ids(participant_id: int, tournament_id: int) -> set:
-        """Get all opponent IDs a participant has faced."""
-        from application.round.pairing_generation_service import PairingGenerationService
-        return PairingGenerationService._get_opponent_ids(participant_id, tournament_id)
-
-    @staticmethod
-    def _have_played(p1_id, p2_id, tournament_id):
-        """Check if two participants have already played each other."""
-        from application.round.pairing_generation_service import PairingGenerationService
-        return PairingGenerationService._have_played(p1_id, p2_id, tournament_id)

@@ -3,10 +3,7 @@ Player Service - Backward Compatibility Facade.
 
 Delegates to application.player package services.
 """
-from application.player.participant_management import (
-    ParticipantManagement as _ParticipantManagement,
-    _detect_age_category,
-)
+from application.player.participant_management import ParticipantManagement as _ParticipantManagement
 
 
 class PlayerService:

@@ -10,8 +10,6 @@ from application.registration.registration_creator import OPEN_SLOT_STATUSES
 class PaymentService:
     """Backward compatibility facade. Use application.payment package directly."""
 
-    gateway = _PaymentInitiator.gateway
-
     @staticmethod
     def initiate_payment(registration_id: int, user_id: int, callback_url: str) -> str:
         return _PaymentInitiator.initiate_payment(registration_id, user_id, callback_url)

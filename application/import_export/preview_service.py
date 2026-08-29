@@ -8,6 +8,7 @@ from typing import List
 from application.provider_registry import registry
 from application.import_export_interface import TournamentPreviewData, BackupFileData
 from application.import_export_interface import ImportProvider
+from application.import_export.export_service import ImportExportError
 
 
 class PreviewService:
@@ -34,7 +35,3 @@ class PreviewService:
             return previews
         except Exception as e:
             raise ImportExportError(f"Failed to parse backup file: {str(e)}")
-
-
-class ImportExportError(Exception):
-    pass

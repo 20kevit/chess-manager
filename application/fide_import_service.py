@@ -28,7 +28,3 @@ class FideImportService:
     @staticmethod
     def latest_status() -> dict:
         return _FideImportOrchestrator.latest_status()
-
-    @staticmethod
-    def _save_rating(fide_id, period, rating_type, rating, games, k_factor):
-        return _FideImportOrchestrator._save_rating(fide_id, period, rating_type, rating, games, k_factor)

@@ -19,6 +19,7 @@ from infrastructure.models.tournament import TournamentModel
 from infrastructure.repositories.participant import ParticipantRepository
 from infrastructure.repositories.registration import (PromoCodeRepository, RegistrationRepository)
 from application.player.participant_management import ParticipantManagement
+from application.registration.registration_creator import OPEN_SLOT_STATUSES
 
 
 class RegistrationApprover:

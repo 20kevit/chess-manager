@@ -3,9 +3,6 @@ Tournament Service - Backward Compatibility Facade.
 
 Delegates to application.tournament package services.
 """
-import json
-from typing import Optional
-
 from application.tournament.tournament_config_service import TournamentConfigService as _TournamentConfigService
 from application.tournament.tournament_pricing_service import TournamentPricingService as _TournamentPricingService
 from application.tournament.tournament_registration_rules_service import TournamentRegistrationRulesService as _TournamentRegistrationRulesService
@@ -39,11 +36,3 @@ class TournamentService:
     @staticmethod
     def get_standings(tournament) -> dict:
         return _StandingsService.get_standings(tournament)
-
-    @staticmethod
-    def _build_tiebreak_data(participants, pairings) -> dict:
-        return _StandingsService._build_tiebreak_data(participants, pairings)
-
-    @staticmethod
-    def _calculate_rating_changes(participants, pairings, time_control_type):
-        return _StandingsService._calculate_rating_changes(participants, pairings, time_control_type)

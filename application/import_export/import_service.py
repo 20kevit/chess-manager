@@ -21,10 +21,7 @@ from infrastructure.models.tournament import ByeRequestModel, PairingModel, Roun
 from infrastructure.repositories.participant import ParticipantRepository
 from infrastructure.repositories.profile import PlayerProfileRepository
 from infrastructure.repositories.tournament import PairingRepository, RoundRepository, TournamentRepository
-
-
-class ImportExportError(Exception):
-    pass
+from application.import_export.export_service import ImportExportError
 
 
 class ImportService:
@@ -342,7 +339,3 @@ class ImportService:
         except Exception as e:
             db.session.rollback()
             raise ImportExportError(f"Failed to create tournament from backup: {str(e)}")
-
-
-class ImportExportError(Exception):
-    pass
