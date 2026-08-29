@@ -31,6 +31,7 @@ from application.round.result_recording_service import ResultRecordingService
 from application.round.manual_adjustment_service import ManualAdjustmentService
 from application.round.stats_rebuild_service import StatsRebuildService
 from application.round.round_notification_service import RoundNotificationService
+from application.round.display_service import RoundDisplayService
 
 # Registration services
 from application.registration.registration_creator import RegistrationCreator
@@ -130,6 +131,7 @@ __all__ = [
     "ManualAdjustmentService",
     "StatsRebuildService",
     "RoundNotificationService",
+    "RoundDisplayService",
 
     # Registration
     "RegistrationCreator",

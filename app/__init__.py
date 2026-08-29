@@ -84,7 +84,7 @@ def create_app(config_class=None) -> Flask:
         
         return UserRepository.get_by_id(int(user_id))
 
-    from interfaces.web.tournament_routes import tournament_bp
+    from interfaces.web.tournament import tournament_bp
     from interfaces.web.player_routes import player_bp
     from interfaces.web.round_routes import round_bp
     from interfaces.web.print_routes import print_bp
