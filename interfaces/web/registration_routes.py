@@ -278,77 +278,24 @@ def calculate_price_api(public_id):
 @registration_bp.route("/registration/<int:reg_id>/upload-receipt", methods=["POST"])
 @login_required
 def upload_receipt(reg_id):
+    try:
+        from application.registration.receipt_handler import ReceiptHandler
+        ReceiptHandler.upload_receipt(
+            registration_id=reg_id,
+            user_id=current_user.id,
+            file=request.files.get('receipt'),
+            receipt_dir=current_app.config["RECEIPT_UPLOAD_DIR"],
+        )
+        flash("رسید شما با موفقیت ثبت شد و در انتظار تایید برگزارکننده است.", "success")
+    except ValueError as e:
+        flash(str(e), "error")
+    except Exception as e:
+        flash(f"خطا در آپلود رسید: {str(e)}", "error")
+
     reg = RegistrationRepository.get_by_id(reg_id)
-    if not reg or reg.user_id != current_user.id:
-        abort(403)
-
-    # P0-E: receipts may only be submitted while payment is still open.
-    if reg.status == "receipt_submitted":
-        flash("رسید شما قبلاً ثبت شده و در انتظار بررسی برگزارکننده است.", "info")
+    if reg:
         return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
-    if reg.status not in ["pending", "payment_pending"]:
-        flash("در وضعیت فعلی ثبت‌نام، امکان بارگذاری رسید وجود ندارد.", "error")
-        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
-
-    if 'receipt' not in request.files:
-        flash("فایلی انتخاب نشده است.", "error")
-        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
-
-    file = request.files['receipt']
-    if file.filename == '':
-        flash("فایلی انتخاب نشده است.", "error")
-        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
-
-    # Validate extension
-    allowed_extensions = {'png', 'jpg', 'jpeg', 'pdf'}
-    if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
-        flash("فرمت فایل مجاز نیست (فقط JPG, PNG, PDF).", "error")
-        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
-
-    # Enforce the receipt-specific size limit (global ceiling is 8 MB).
-    file.seek(0, os.SEEK_END)
-    file_size = file.tell()
-    file.seek(0)
-    max_receipt_bytes = current_app.config.get("MAX_RECEIPT_BYTES", 5 * 1024 * 1024)
-    if file_size > max_receipt_bytes:
-        flash("حجم فایل رسید نباید بیشتر از ۵ مگابایت باشد.", "error")
-        return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
-
-    # Private storage (Category H): receipts live under <instance>/uploads/receipts,
-    # outside the web-servable static tree, anchored to app.instance_path — never CWD.
-    upload_dir = current_app.config["RECEIPT_UPLOAD_DIR"]
-    os.makedirs(upload_dir, exist_ok=True)
-
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    filename = secure_filename(f"receipt_{reg.id}.{ext}")
-    file_path = os.path.join(upload_dir, filename)
-
-    # Remove any previous receipt for this registration (extension may change).
-    for old_ext in allowed_extensions:
-        old_path = os.path.join(upload_dir, secure_filename(f"receipt_{reg.id}.{old_ext}"))
-        if os.path.exists(old_path):
-            os.remove(old_path)
-
-    file.save(file_path)
-
-    # P0-E lifecycle: switch to transfer, enter the review state and cancel
-    # any open online-payment session so it can never complete afterwards.
-    PaymentModel.query.filter_by(
-        registration_id=reg.id, status="pending"
-    ).update({
-        "status": "cancelled",
-        "gateway_metadata": '{"cancelled_reason": "receipt_submitted"}',
-    })
-
-    # Store only the bare filename; the physical directory is application-owned.
-    reg.payment_method = "transfer"
-    reg.receipt_path = filename
-    reg.rejection_reason = None
-    reg.status = "receipt_submitted"
-    db.session.commit()
-
-    flash("رسید شما با موفقیت ثبت شد و در انتظار تایید برگزارکننده است.", "success")
-    return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
+    return redirect(url_for("dashboard.index"))
 
 @registration_bp.route("/registration/<int:reg_id>/receipt/discard", methods=["POST"])
 @login_required
@@ -356,13 +303,16 @@ def discard_receipt(reg_id):
     """Player withdraws a submitted receipt; online payment becomes
     available again (P0-E)."""
     try:
-        RegistrationService.discard_receipt(
+        from application.registration.receipt_handler import ReceiptHandler
+        ReceiptHandler.discard_receipt(
             reg_id, current_user.id,
             current_app.config["RECEIPT_UPLOAD_DIR"],
         )
         flash("رسید شما حذف شد؛ اکنون می‌توانید پرداخت را از سر بگیرید.", "success")
     except ValueError as e:
         flash(str(e), "error")
+    except Exception as e:
+        flash(f"خطا: {str(e)}", "error")
     reg = RegistrationRepository.get_by_id(reg_id)
     if reg:
         return redirect(url_for("registration.register", public_id=reg.tournament.public_id))
@@ -378,46 +328,17 @@ def reject_receipt(public_id, reg_id):
 
     reason = request.form.get("rejection_reason", "").strip()
     try:
-        RegistrationService.reject_receipt(
+        from application.registration.receipt_handler import ReceiptHandler
+        ReceiptHandler.reject_receipt(
             reg_id, reason, current_app.config["RECEIPT_UPLOAD_DIR"],
         )
         flash("رسید رد شد؛ ثبت‌نام برای پرداخت مجدد به حالت در انتظار بازگشت.", "warning")
     except ValueError as e:
         flash(str(e), "error")
+    except Exception as e:
+        flash(f"خطا: {str(e)}", "error")
 
     return redirect(url_for("registration.manage_registrations", public_id=public_id))
-
-_RECEIPT_MIMETYPES = {
-    "pdf": "application/pdf",
-    "png": "image/png",
-    "jpg": "image/jpeg",
-    "jpeg": "image/jpeg",
-}
-
-def _resolve_receipt_absolute_path(receipt_path: str):
-    """
-    Resolves a stored receipt_path to an absolute filesystem path.
-
-    New-format records store the bare filename inside RECEIPT_UPLOAD_DIR.
-    Legacy records ("uploads/receipts/receipt_N.ext") are first looked up in
-    the private directory and then fall back to the historical static location
-    so pre-existing production receipts keep working until they are migrated.
-    Returns None when no readable file exists.
-    """
-    if not receipt_path:
-        return None
-
-    filename = os.path.basename(receipt_path)
-    private_candidate = os.path.join(current_app.config["RECEIPT_UPLOAD_DIR"], filename)
-    if os.path.isfile(private_candidate):
-        return private_candidate
-
-    if "/" in receipt_path or "\\" in receipt_path:
-        legacy_candidate = os.path.join(current_app.static_folder, receipt_path.replace("/", os.sep))
-        if os.path.isfile(legacy_candidate):
-            return legacy_candidate
-
-    return None
 
 @registration_bp.route("/registration/<int:reg_id>/receipt")
 @login_required
@@ -438,10 +359,12 @@ def download_receipt(reg_id):
     if not (is_owner or is_tournament_admin):
         abort(403)
 
-    absolute_path = _resolve_receipt_absolute_path(reg.receipt_path)
-    if not absolute_path:
+    try:
+        from application.registration.receipt_handler import ReceiptHandler
+        absolute_path, mimetype, download_name = ReceiptHandler.get_receipt_file(
+            registration_id=reg_id, user_id=current_user.id
+        )
+    except ValueError:
         abort(404)
 
-    ext = absolute_path.rsplit(".", 1)[-1].lower() if "." in absolute_path else ""
-    mimetype = _RECEIPT_MIMETYPES.get(ext, "application/octet-stream")
-    return send_file(absolute_path, mimetype=mimetype, download_name=os.path.basename(absolute_path))
+    return send_file(absolute_path, mimetype=mimetype, download_name=download_name)
