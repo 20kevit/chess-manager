@@ -6,8 +6,8 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import current_user, login_required
 from app.extensions import csrf 
 from application.notification_service import NotificationService
-from application.telegram_service import TelegramService
-from application.bale_service import BaleService
+from application.telegram.telegram_service import TelegramService
+from application.bale.bale_service import BaleService
 
 from infrastructure.models.user import UserModel
 notification_bp = Blueprint("notification", __name__)
