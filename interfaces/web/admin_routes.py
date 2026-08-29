@@ -1,7 +1,10 @@
 # interfaces/web/admin_routes.py
 from flask import Blueprint, render_template, redirect, url_for, flash, abort, request
 from flask_login import current_user, login_required
-from application.admin_service import AdminService
+from application.admin.dashboard_stats_service import DashboardStatsService
+from application.admin.system_health_service import SystemHealthService
+from application.admin.user_management_service import UserManagementService
+from application.admin.tournament_admin_service import TournamentAdminService
 from interfaces.web.decorators import admin_required
 
 admin_bp = Blueprint("admin", __name__)
@@ -11,7 +14,7 @@ admin_bp = Blueprint("admin", __name__)
 @admin_required
 def dashboard():
     """Admin dashboard overview."""
-    stats = AdminService.get_dashboard_stats()
+    stats = DashboardStatsService.get_dashboard_stats()
     return render_template("admin/dashboard.html", stats=stats, active_section="dashboard")
 
 @admin_bp.route("/admin/users")
@@ -24,7 +27,7 @@ def manage_users():
     search = request.args.get('q', '').strip()
     role_filter = request.args.get('role', '').strip()
     
-    result = AdminService.get_users_paginated(page, per_page, search, role_filter)
+    result = UserManagementService.get_users_paginated(page, per_page, search, role_filter)
     
     return render_template(
         "admin/users.html",
@@ -40,7 +43,7 @@ def manage_users():
 @admin_required
 def user_detail(user_id):
     """User detail page."""
-    user = AdminService.get_user_detail(user_id)
+    user = UserManagementService.get_user_detail(user_id)
     if not user:
         abort(404)
     return render_template("admin/user_detail.html", user=user, active_section="users")
@@ -51,7 +54,7 @@ def user_detail(user_id):
 def add_role(user_id, role_name):
     """Add a role to a user."""
     try:
-        AdminService.add_role(user_id, role_name, current_user.id)
+        UserManagementService.add_role(user_id, role_name, current_user.id)
         flash(f"نقش '{role_name}' با موفقیت افزوده شد.", "success")
     except ValueError as e:
         flash(str(e), "error")
@@ -63,7 +66,7 @@ def add_role(user_id, role_name):
 def remove_role(user_id, role_name):
     """Remove a role from a user."""
     try:
-        AdminService.remove_role(user_id, role_name, current_user.id)
+        UserManagementService.remove_role(user_id, role_name, current_user.id)
         flash(f"نقش '{role_name}' با موفقیت حذف شد.", "success")
     except ValueError as e:
         flash(str(e), "error")
@@ -75,7 +78,7 @@ def remove_role(user_id, role_name):
 def toggle_admin(user_id):
     """Toggle system admin status."""
     try:
-        action = AdminService.toggle_admin(user_id, current_user.id)
+        action = UserManagementService.toggle_admin(user_id, current_user.id)
         flash(f"دسترسی ادمین سیستم با موفقیت {('فعال شد' if action == 'added' else 'غیرفعال شد')}.", "success")
     except ValueError as e:
         flash(str(e), "error")
@@ -88,7 +91,7 @@ def toggle_admin(user_id):
 def toggle_role_legacy(user_id, role_name):
     """Legacy toggle role endpoint - redirects to new add/remove logic."""
     try:
-        action = AdminService.toggle_role(user_id, role_name)
+        action = UserManagementService.toggle_role(user_id, role_name)
         flash(f"نقش {role_name} با موفقیت {('افزوده شد' if action == 'added' else 'حذف شد')}.", "success")
     except ValueError as e:
         flash(str(e), "error")
@@ -105,7 +108,7 @@ def manage_tournaments():
     search = request.args.get('q', '').strip()
     status_filter = request.args.get('status', '').strip()
     
-    result = AdminService.get_tournaments_paginated(page, per_page, search, status_filter)
+    result = TournamentAdminService.get_tournaments_paginated(page, per_page, search, status_filter)
     
     return render_template(
         "admin/tournaments.html",
@@ -121,7 +124,7 @@ def manage_tournaments():
 @admin_required
 def notification_status():
     """Notification system status page."""
-    stats = AdminService.get_notification_stats()
+    stats = DashboardStatsService.get_notification_stats()
     return render_template("admin/notifications.html", stats=stats, active_section="notifications")
 
 @admin_bp.route("/admin/system")
@@ -129,5 +132,5 @@ def notification_status():
 @admin_required
 def system_health():
     """System health check page."""
-    health = AdminService.get_system_health()
+    health = SystemHealthService.get_system_health()
     return render_template("admin/system.html", health=health, active_section="system")
