@@ -1,5 +1,5 @@
 """
-Backup and restore via JSON.
+Backup and restore via provider-based JSON.
 All routes use user-account based auth (require_admin / organizer role).
 """
 import json
@@ -13,17 +13,10 @@ from interfaces.web.decorators import role_required
 from app.extensions import db
 
 from application.import_export_service import ImportExportService, ImportExportError
-from infrastructure.providers.coronate_provider import CoronateProvider
 from application.provider_registry import registry
 
-from infrastructure.models.participant import TournamentParticipantModel
-from infrastructure.models.profile import PlayerProfileModel
-from infrastructure.models.tournament import (PairingModel, RoundModel, TournamentModel)
-from infrastructure.repositories.participant import ParticipantRepository
-from infrastructure.repositories.tournament import (PairingRepository, RoundRepository, TournamentRepository)
-registry.register("coronate", CoronateProvider())
-
 backup_bp = Blueprint("backup", __name__)
+
 
 class DateEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -31,91 +24,33 @@ class DateEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
+
 @backup_bp.route("/<public_id>/admin/backup/export")
 def export_json(public_id):
     tournament = require_admin(public_id)
     if not tournament:
         return redirect(url_for("auth.login"))
 
-    participants = ParticipantRepository.get_all(tournament.id)
-    rounds = RoundRepository.get_all(tournament.id)
-    pairings = PairingRepository.get_all_for_tournament(tournament.id)
+    try:
+        file_content = ImportExportService.export_tournament(
+            tournament=tournament,
+            provider_name="custom_json"
+        )
 
-    data = {
-        "version": "1.0",
-        "exported_at": datetime.utcnow().isoformat(),
-        "tournament": {
-            "name": tournament.name,
-            "city": tournament.city or "",
-            "federation": tournament.federation or "IRI",
-            "time_control_type": tournament.time_control_type,
-            "time_control_description": tournament.time_control_description or "",
-            "total_rounds": tournament.total_rounds,
-            "current_round": tournament.current_round,
-            "status": tournament.status,
-            "chief_arbiter": tournament.chief_arbiter or "",
-            "arbiter": tournament.arbiter or "",
-            "tiebreak_rules": tournament.tiebreak_rules or "[]",
-            "cumulative_age_category": tournament.cumulative_age_category,
-            "start_date": tournament.start_date,
-            "end_date": tournament.end_date,
-        },
-        "players": [
-            {
-                "start_number": p.start_number,
-                "first_name": p.profile.first_name,
-                "last_name": p.profile.last_name,
-                "gender": p.profile.gender,
-                "birth_date": p.profile.birth_date,
-                "federation": p.profile.federation,
-                "fide_id": p.profile.fide_id or "",
-                "fide_title": p.fide_title_snapshot or "",
-                "rating": p.rating_snapshot,
-                "k_factor": p.k_factor,
-                "age_category": p.age_category or "",
-                "custom_category": p.custom_category or "",
-                "status": p.status,
-                "joined_from_round": p.joined_from_round,
-                "withdrawn_at_round": p.withdrawn_at_round,
-                "points": p.points,
-            }
-            for p in participants
-        ],
-        "rounds": [
-            {
-                "round_number": r.round_number,
-                "status": r.status,
-                "pairings": [
-                    {
-                        "board_number": pr.board_number,
-                        "white_start_number": _get_start_number(
-                            pr.white_participant_id, participants
-                        ),
-                        "black_start_number": _get_start_number(
-                            pr.black_participant_id, participants
-                        ),
-                        "result": pr.result,
-                        # Float tags needed to fully restore Swiss pairing state.
-                        # Older backups lack these keys; the importer falls back
-                        # to result-derived reconstruction.
-                        "white_float": pr.white_float,
-                        "black_float": pr.black_float,
-                    }
-                    for pr in pairings
-                    if pr.round_id == r.id
-                ],
-            }
-            for r in rounds
-        ],
-    }
+        filename = f"{tournament.public_id}_backup_{datetime.now().strftime('%Y%m%d')}.json"
+        return Response(
+            file_content,
+            mimetype="application/json",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+    except ImportExportError as e:
+        flash(f"خطا در خروجی: {str(e)}", "error")
+        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+    except Exception as e:
+        traceback.print_exc()
+        flash(f"خطای غیرمنتظره: {str(e)}", "error")
+        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
 
-    content = json.dumps(data, cls=DateEncoder, ensure_ascii=False, indent=2)
-    filename = f"{tournament.public_id}_backup_{datetime.now().strftime('%Y%m%d')}.json"
-    return Response(
-        content,
-        mimetype="application/json",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
-    )
 
 @backup_bp.route("/<public_id>/backup/import", methods=["GET", "POST"])
 def import_json(public_id):
@@ -139,11 +74,16 @@ def import_json(public_id):
 
             mode = request.form.get("mode", "merge")
 
+            ImportExportService.import_tournament(
+                tournament=tournament,
+                provider_name="custom_json",
+                file_content=content,
+                mode=mode
+            )
+
             if mode == "replace":
-                _replace_import(tournament, data)
                 flash("تورنومنت از فایل پشتیبان بازیابی شد", "success")
             else:
-                _merge_import(tournament, data)
                 flash("داده‌ها ادغام شد", "success")
 
             return redirect(url_for(
@@ -152,6 +92,8 @@ def import_json(public_id):
 
         except json.JSONDecodeError:
             flash("فایل JSON معتبر نیست", "error")
+        except ImportExportError as e:
+            flash(f"خطا در ورودی: {str(e)}", "error")
         except Exception as e:
             traceback.print_exc()
             flash(f"خطا: {str(e)}", "error")
@@ -161,163 +103,6 @@ def import_json(public_id):
         tournament=tournament,
     )
 
-def _get_start_number(participant_id, participants):
-    if not participant_id:
-        return None
-    for p in participants:
-        if p.id == participant_id:
-            return p.start_number
-    return None
-
-def _replace_import(tournament, data):
-    PairingModel.query.filter_by(tournament_id=tournament.id).delete()
-    RoundModel.query.filter_by(tournament_id=tournament.id).delete()
-    TournamentParticipantModel.query.filter_by(tournament_id=tournament.id).delete()
-    db.session.flush()
-
-    t_data = data.get("tournament", {})
-    tournament.name = t_data.get("name", tournament.name)
-    tournament.city = t_data.get("city", "")
-    tournament.federation = t_data.get("federation", "IRI")
-    tournament.time_control_type = t_data.get(
-        "time_control_type", tournament.time_control_type
-    )
-    tournament.time_control_description = t_data.get(
-        "time_control_description", ""
-    )
-    tournament.total_rounds = t_data.get("total_rounds", tournament.total_rounds)
-    tournament.current_round = t_data.get("current_round", 0)
-    tournament.status = t_data.get("status", "setup")
-    tournament.chief_arbiter = t_data.get("chief_arbiter", "")
-    tournament.arbiter = t_data.get("arbiter", "")
-    tournament.tiebreak_rules = t_data.get("tiebreak_rules", "[]")
-    tournament.cumulative_age_category = t_data.get(
-        "cumulative_age_category", False
-    )
-
-    start_num_to_id = {}
-    for p_data in data.get("players", []):
-        birth_date = None
-        if p_data.get("birth_date"):
-            try:
-                birth_date = datetime.fromisoformat(
-                    p_data["birth_date"]
-                ).date()
-            except (ValueError, TypeError):
-                pass
-
-        profile = PlayerProfileModel(
-            first_name=p_data["first_name"],
-            last_name=p_data["last_name"],
-            gender=p_data.get("gender", "M"),
-            birth_date=birth_date,
-            federation=p_data.get("federation", "IRI"),
-            fide_id=p_data.get("fide_id", ""),
-            fide_title=p_data.get("fide_title", ""),
-        )
-        db.session.add(profile)
-        db.session.flush()
-
-        participant = TournamentParticipantModel(
-            tournament_id=tournament.id,
-            player_profile_id=profile.id,
-            start_number=p_data["start_number"],
-            rating_snapshot=p_data.get("rating", 0),
-            fide_title_snapshot=p_data.get("fide_title", ""),
-            k_factor=p_data.get("k_factor", 20),
-            age_category=p_data.get("age_category", ""),
-            custom_category=p_data.get("custom_category", ""),
-            status=p_data.get("status", "active"),
-            joined_from_round=p_data.get("joined_from_round", 1),
-            withdrawn_at_round=p_data.get("withdrawn_at_round", 0),
-            points=p_data.get("points", 0.0),
-        )
-        db.session.add(participant)
-        db.session.flush()
-        start_num_to_id[participant.start_number] = participant.id
-
-    for r_data in data.get("rounds", []):
-        round_obj = RoundModel(
-            tournament_id=tournament.id,
-            round_number=r_data["round_number"],
-            status=r_data.get("status", "finished"),
-        )
-        db.session.add(round_obj)
-        db.session.flush()
-
-        for pr_data in r_data.get("pairings", []):
-            w_num = pr_data.get("white_start_number")
-            b_num = pr_data.get("black_start_number")
-            pairing = PairingModel(
-                round_id=round_obj.id,
-                tournament_id=tournament.id,
-                board_number=pr_data["board_number"],
-                white_participant_id=start_num_to_id.get(w_num),
-                black_participant_id=start_num_to_id.get(b_num),
-                result=pr_data.get("result", ""),
-                white_float=pr_data.get("white_float"),
-                black_float=pr_data.get("black_float"),
-            )
-            db.session.add(pairing)
-
-    db.session.commit()
-    # Reconstruct all Swiss pairing state (points, color/float history,
-    # received_bye, pairing_no) from the restored results.
-    from application.round_service import RoundService
-    RoundService.rebuild_swiss_state(tournament.id)
-
-def _merge_import(tournament, data):
-    existing = ParticipantRepository.get_all(tournament.id)
-    existing_names = {
-        f"{p.profile.first_name.strip().lower()}{p.profile.last_name.strip().lower()}" for p in existing
-    }
-    # Newcomers must not disturb existing pairing numbers (FIDE: pairing_no is
-    # fixed once assigned); they continue after the highest existing number.
-    next_pairing_no = max((p.pairing_no or 0) for p in existing) if existing else 0
-
-    for p_data in data.get("players", []):
-        name_key = f"{p_data['first_name'].strip().lower()}{p_data['last_name'].strip().lower()}"
-        if name_key in existing_names:
-            continue
-
-        birth_date = None
-        if p_data.get("birth_date"):
-            try:
-                birth_date = datetime.fromisoformat(
-                    p_data["birth_date"]
-                ).date()
-            except (ValueError, TypeError):
-                pass
-
-        profile = PlayerProfileModel(
-            first_name=p_data["first_name"],
-            last_name=p_data["last_name"],
-            gender=p_data.get("gender", "M"),
-            birth_date=birth_date,
-            federation=p_data.get("federation", "IRI"),
-            fide_id=p_data.get("fide_id", ""),
-            fide_title=p_data.get("fide_title", ""),
-        )
-        db.session.add(profile)
-        db.session.flush()
-
-        next_num = ParticipantRepository.next_start_number(tournament.id)
-        next_pairing_no += 1
-        participant = TournamentParticipantModel(
-            tournament_id=tournament.id,
-            player_profile_id=profile.id,
-            start_number=next_num,
-            pairing_no=next_pairing_no,
-            rating_snapshot=p_data.get("rating", 0),
-            fide_title_snapshot=p_data.get("fide_title", ""),
-            k_factor=p_data.get("k_factor", 20),
-            age_category=p_data.get("age_category", ""),
-            custom_category=p_data.get("custom_category", ""),
-            status="active",
-        )
-        db.session.add(participant)
-
-    db.session.commit()
 
 @backup_bp.route("/<public_id>/backup/export/<provider_name>", methods=["GET", "POST"])
 def export_provider(public_id, provider_name):
@@ -344,6 +129,7 @@ def export_provider(public_id, provider_name):
         traceback.print_exc()
         flash(f"خطای غیرمنتظره: {str(e)}", "error")
         return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+
 
 @backup_bp.route("/<public_id>/admin/backup/import/<provider_name>", methods=["GET", "POST"])
 def import_provider(public_id, provider_name):
@@ -391,6 +177,7 @@ def import_provider(public_id, provider_name):
         tournament=tournament,
     )
 
+
 @backup_bp.route("/create/from-backup/<provider_name>", methods=["POST"])
 @login_required
 @role_required("organizer")
@@ -426,6 +213,7 @@ def preview_tournaments_from_backup(provider_name):
     except Exception as e:
         traceback.print_exc()
         return jsonify({"success": False, "error": f"خطای غیرمنتظره: {str(e)}"}), 500
+
 
 @backup_bp.route("/create/execute/<provider_name>", methods=["POST"])
 @login_required
