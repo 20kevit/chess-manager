@@ -3,7 +3,7 @@ import html
 import logging
 from flask import request
 from application.notification_provider_interface import NotificationProviderInterface
-from application.telegram_service import TelegramService
+from application.telegram.telegram_service import TelegramService
 
 from infrastructure.models.user import UserModel
 class TelegramProvider(NotificationProviderInterface):

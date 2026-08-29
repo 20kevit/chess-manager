@@ -262,7 +262,7 @@ class TestRoutes:
             def start(self):          # do NOT run during this unit test
                 captured["started"] = True
         monkeypatch.setattr(
-            "application.fide_import_service.threading.Thread", FakeThread)
+            "application.fide.fide_import_orchestrator.threading.Thread", FakeThread)
 
         resp = _post(client, "/admin/fide/import", follow_redirects=True)
         assert "آغاز شد" in resp.get_data(as_text=True)

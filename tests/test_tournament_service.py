@@ -85,11 +85,11 @@ def test_public_id_retry_on_collision(monkeypatch, app, organizer):
 
         fake = FakeRepoSave()
         monkeypatch.setattr(
-            "application.tournament_service.TournamentRepository.save",
+            "application.tournament.tournament_config_service.TournamentRepository.save",
             fake,
         )
         monkeypatch.setattr(
-            "application.tournament_service.TournamentRepository.generate_public_id",
+            "application.tournament.tournament_config_service.TournamentRepository.generate_public_id",
             staticmethod(lambda: f"{calls['n']:08d}"),
         )
 

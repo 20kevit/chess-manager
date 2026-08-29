@@ -2,7 +2,7 @@
 import logging
 from flask import request
 from application.notification_provider_interface import NotificationProviderInterface
-from application.bale_service import BaleService
+from application.bale.bale_service import BaleService
 
 from infrastructure.models.user import UserModel
 class BaleProvider(NotificationProviderInterface):
