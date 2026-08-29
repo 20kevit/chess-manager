@@ -4,9 +4,11 @@ Handles admin UI for importing, searching, and verifying FIDE data.
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import current_user, login_required
-from application.fide_import_service import FideImportService
-from application.fide_search_service import FideSearchService
-from application.verification_service import VerificationService
+from application.fide.fide_import_orchestrator import FideImportOrchestrator
+from application.fide.fide_search_service import FideSearchService
+from application.verification.verification_request_service import VerificationRequestService
+from application.verification.verification_approver import VerificationApprover
+from application.verification.verification_status_updater import VerificationStatusUpdater
 
 from interfaces.web.decorators import role_required
 
@@ -22,7 +24,7 @@ def fide_dashboard():
     """Main FIDE management dashboard."""
     # Get latest imports
     imports = FideImportRepository.get_all() if hasattr(FideImportRepository, 'get_all') else []
-    pending_verifications = VerificationService.get_pending_requests()
+    pending_verifications = VerificationRequestService.get_pending_requests()
     
     return render_template(
         "admin/fide_dashboard.html",
@@ -37,7 +39,7 @@ def trigger_import():
     """Spawns the FIDE import on a background thread; the dashboard polls
     /admin/fide/import/status for live stage/percent progress (P1-G)."""
     try:
-        outcome = FideImportService.start_async()
+        outcome = FideImportOrchestrator.start_async()
         if outcome == "started":
             flash("ایمپورت در پس‌زمینه آغاز شد؛ پیشرفت در همین صفحه نمایش داده می‌شود.", "success")
         elif outcome == "skipped":
@@ -54,7 +56,7 @@ def trigger_import():
 @role_required('admin')
 def import_status():
     """JSON progress payload for the dashboard poller."""
-    return jsonify(FideImportService.latest_status())
+    return jsonify(FideImportOrchestrator.latest_status())
 
 @fide_bp.route("/admin/fide/search")
 @login_required
@@ -75,7 +77,7 @@ def search():
 @role_required('admin')
 def verifications_list():
     """View all pending verification requests."""
-    pending = VerificationService.get_pending_requests()
+    pending = VerificationRequestService.get_pending_requests()
     return render_template("admin/verifications.html", pending=pending)
 
 @fide_bp.route("/admin/fide/verifications/<int:req_id>/approve", methods=["POST"])
@@ -84,7 +86,7 @@ def verifications_list():
 def approve_verification(req_id):
     """Approve a verification request."""
     try:
-        VerificationService.approve_request(req_id, current_user.id)
+        VerificationStatusUpdater.approve_request(req_id, current_user.id)
         flash("درخواست تأیید شد و هویت بازیکن باز شد.", "success")
     except ValueError as e:
         flash(str(e), "error")
@@ -97,7 +99,7 @@ def reject_verification(req_id):
     """Reject a verification request (legacy overall reject)."""
     reason = request.form.get("reason", "")
     try:
-        VerificationService.reject_request(req_id, current_user.id, reason)
+        VerificationStatusUpdater.reject_request(req_id, current_user.id, reason)
         flash("درخواست رد شد.", "info")
     except ValueError as e:
         flash(str(e), "error")
@@ -114,7 +116,7 @@ def verify_fide_id(req_id):
         flash("برای رد، وارد کردن دلیل الزامی است.", "error")
         return redirect(url_for("fide.verifications_list"))
     try:
-        VerificationService.verify_fide_id(req_id, current_user.id, verified, notes or None)
+        VerificationApprover.verify_fide_id(req_id, current_user.id, verified, notes or None)
         flash("تأیید کد فیده " + ("تأیید" if verified else "رد") + " شد.", "success" if verified else "warning")
     except ValueError as e:
         flash(str(e), "error")
@@ -131,7 +133,7 @@ def verify_dob(req_id):
         flash("برای رد، وارد کردن دلیل الزامی است.", "error")
         return redirect(url_for("fide.verifications_list"))
     try:
-        VerificationService.verify_dob(req_id, current_user.id, verified, notes or None)
+        VerificationApprover.verify_dob(req_id, current_user.id, verified, notes or None)
         flash("تأیید تاریخ تولد " + ("تأیید" if verified else "رد") + " شد.", "success" if verified else "warning")
     except ValueError as e:
         flash(str(e), "error")
@@ -148,7 +150,7 @@ def verify_photo(req_id):
         flash("برای رد، وارد کردن دلیل الزامی است.", "error")
         return redirect(url_for("fide.verifications_list"))
     try:
-        VerificationService.verify_photo(req_id, current_user.id, verified, notes or None)
+        VerificationApprover.verify_photo(req_id, current_user.id, verified, notes or None)
         flash("تأیید تطابق عکس " + ("تأیید" if verified else "رد") + " شد.", "success" if verified else "warning")
     except ValueError as e:
         flash(str(e), "error")
