@@ -48,7 +48,6 @@ class StatsRebuildService:
         for r in rounds:
             pairings = PairingModel.query.filter_by(round_id=r.id).all()
             for pr in pairings:
-                from application.round.pairing_generation_service import PairingGenerationService
                 PairingGenerationService._update_participant_stats_incremental(pr)
 
         # FIDE Dutch: pairing numbers are deterministic (rating DESC,

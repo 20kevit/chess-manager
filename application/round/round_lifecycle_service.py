@@ -16,6 +16,8 @@ from infrastructure.models.participant import TournamentParticipantModel
 from infrastructure.models.tournament import (ByeRequestModel, ManualPairingModel, PairingModel, RoundModel, TournamentModel)
 from infrastructure.repositories.participant import ParticipantRepository
 from infrastructure.repositories.tournament import (ManualPairingRepository, PairingRepository, RoundRepository)
+from application.round.pairing_generation_service import PairingGenerationService
+from application.round.stats_rebuild_service import StatsRebuildService
 from application.round.round_notification_service import RoundNotificationService
 
 
