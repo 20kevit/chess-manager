@@ -27,14 +27,15 @@ class TestPhase9D:
 
     def test_default_preferences(self, app, setup_user):
         with app.app_context():
-            # By default, should create notification
-            notif = NotificationService.create_notification(
+            NotificationService.create_notification(
                 user_id=setup_user.id,
                 type=NotificationType.WELCOME,
                 title="Test",
                 message="Test"
             )
-            assert notif is not None
+            # fire-and-forget returns None, but notification should be persisted
+            count = NotificationService.get_unread_count(setup_user.id)
+            assert count == 1
 
     def test_disable_web_notification(self, app, setup_user):
         with app.app_context():
@@ -42,17 +43,12 @@ class TestPhase9D:
             prefs = {"WELCOME": {"web": False}}
             NotificationService.update_preferences(setup_user.id, prefs)
             
-            # Try to create notification
-            notif = NotificationService.create_notification(
+            NotificationService.create_notification(
                 user_id=setup_user.id,
                 type=NotificationType.WELCOME,
                 title="Test",
                 message="Test"
             )
-            
-            # Should return None because it's disabled
-            assert notif is None
-            
-            # Check unread count
+            # disabled channel should not create notification
             count = NotificationService.get_unread_count(setup_user.id)
             assert count == 0

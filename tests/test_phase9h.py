@@ -44,14 +44,12 @@ class TestPhase9H:
     def test_user_isolation_mark_read(self, app, setup_users):
         with app.app_context():
             user_a, user_b = setup_users
-            notif_a = NotificationService.create_notification(user_a.id, NotificationType.WELCOME, "Test", "Test")
+            NotificationService.create_notification(user_a.id, NotificationType.WELCOME, "Test", "Test")
             db.session.commit()
-            
-            # User B tries to mark User A's notification
+            from infrastructure.models.notification import NotificationModel
+            notif_a = NotificationModel.query.filter_by(user_id=user_a.id).first()
             success = NotificationService.mark_as_read(notif_a.id, user_b.id)
             assert success is False
-            
-            # Verify it's still unread for User A
             assert NotificationService.get_unread_count(user_a.id) == 1
 
     def test_user_isolation_get_notifications(self, app, setup_users):

@@ -38,14 +38,17 @@ class TestPhase9A:
     def test_create_notification(self, app, setup_users):
         with app.app_context():
             user_a, _ = setup_users
-            notif = NotificationService.create_notification(
+            NotificationService.create_notification(
                 user_id=user_a.id,
                 type=NotificationType.WELCOME,
                 title="خوش آمدید",
                 message="به سیستم مدیریت مسابقات خوش آمدید.",
                 link_url="/dashboard"
             )
-            assert notif.id is not None
+            # fire-and-forget: returns None, but WebProvider persists
+            from infrastructure.models.notification import NotificationModel
+            notif = NotificationModel.query.filter_by(user_id=user_a.id).order_by(NotificationModel.id.desc()).first()
+            assert notif is not None
             assert notif.is_read is False
             assert notif.type == "WELCOME"
 
@@ -64,26 +67,24 @@ class TestPhase9A:
     def test_mark_as_read(self, app, setup_users):
         with app.app_context():
             user_a, _ = setup_users
-            notif = NotificationService.create_notification(user_a.id, NotificationType.WELCOME, "تست", "تست")
+            NotificationService.create_notification(user_a.id, NotificationType.WELCOME, "تست", "تست")
             db.session.commit()
-            
+            from infrastructure.models.notification import NotificationModel
+            notif = NotificationModel.query.filter_by(user_id=user_a.id).first()
             success = NotificationService.mark_as_read(notif.id, user_a.id)
             assert success is True
-            
             count = NotificationService.get_unread_count(user_a.id)
             assert count == 0
 
     def test_user_isolation_on_read(self, app, setup_users):
         with app.app_context():
             user_a, user_b = setup_users
-            notif_a = NotificationService.create_notification(user_a.id, NotificationType.WELCOME, "تست", "تست")
+            NotificationService.create_notification(user_a.id, NotificationType.WELCOME, "تست", "تست")
             db.session.commit()
-            
-            # User B tries to read User A's notification
+            from infrastructure.models.notification import NotificationModel
+            notif_a = NotificationModel.query.filter_by(user_id=user_a.id).first()
             success = NotificationService.mark_as_read(notif_a.id, user_b.id)
             assert success is False
-            
-            # Ensure it's still unread for User A
             count = NotificationService.get_unread_count(user_a.id)
             assert count == 1
 

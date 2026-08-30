@@ -78,8 +78,17 @@ class TestPhase10:
     def test_self_demotion_protection(self, app, setup_admin):
         with app.app_context():
             admin, player = setup_admin
+            # ensure at least two admins so last-admin check doesn't mask self-demotion
+            from infrastructure.models.user import UserModel
+            second_admin = UserModel(email="second_admin@test.com", is_admin=True)
+            second_admin.set_password("password123")
+            db.session.add(second_admin)
+            db.session.commit()
             with pytest.raises(ValueError, match="دسترسی ادمین خود"):
                 AdminService.toggle_admin(admin.id, admin.id)
+            # cleanup second admin
+            db.session.delete(second_admin)
+            db.session.commit()
 
     def test_tournament_management_accessible(self, app, setup_admin):
         client = app.test_client()
