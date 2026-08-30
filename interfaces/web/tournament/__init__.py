@@ -84,7 +84,7 @@ def create():
     from interfaces.web.decorators import role_required
     from flask import request, flash, redirect, url_for, render_template
 
-    if not current_user.has_role('organizer'):
+    if not current_user.is_authenticated or not current_user.has_role('organizer'):
         return redirect(url_for('auth.login'))
 
     if request.method == "POST":
