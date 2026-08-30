@@ -26,6 +26,8 @@ def create_app(config_class=None) -> Flask:
     flask_app.config["SESSION_COOKIE_SECURE"] = (
         flask_app.config.get("ENV") == "production"
     )
+    flask_app.config["SESSION_COOKIE_HTTPONLY"] = True
+    flask_app.config["SESSION_COOKIE_SAMESITE"] = flask_app.config.get("SESSION_COOKIE_SAMESITE", "Lax")
 
     # Upload hardening (Category H): global request-size ceiling plus a
     # private, non-web-servable directory for bank-payment receipts.
@@ -141,6 +143,17 @@ def create_app(config_class=None) -> Flask:
     def request_entity_too_large(e):
         flash("حجم فایل ارسال‌شده بیش از حد مجاز (۸ مگابایت) است.", "error")
         return redirect(request.referrer or url_for("tournament.index")), 302
+
+    @flask_app.after_request
+    def add_security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        # HSTS only in production (HTTPS)
+        if flask_app.config.get("ENV") == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
 
     @flask_app.template_filter('toman_formatter')
     def toman_formatter(value):

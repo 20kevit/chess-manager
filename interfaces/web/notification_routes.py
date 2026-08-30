@@ -118,14 +118,21 @@ def telegram_webhook():
     if text.startswith("/start ") and chat_id:
         token = text.split(" ", 1)[1]
         logger.info(f"Extracted token: {token}")
-        
-        success = TelegramService.link_account(token, chat_id)
-        logger.info(f"link_account function returned: {success}")
-        
-        if success:
-            TelegramService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
-        else:
-            TelegramService.send_message(str(chat_id), "❌ لینک اتصال نامعتبر یا منقضی شده است.")
+        try:
+            success = TelegramService.link_account(token, chat_id)
+            logger.info(f"link_account function returned: {success}")
+            if success:
+                try:
+                    TelegramService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
+                except Exception:
+                    logger.exception("Telegram send_message failed")
+            else:
+                try:
+                    TelegramService.send_message(str(chat_id), "❌ لینک اتصال نامعتبر یا منقضی شده است.")
+                except Exception:
+                    logger.exception("Telegram send_message failed")
+        except Exception:
+            logger.exception("Telegram link_account failed")
         
     return jsonify({"success": True}), 200
 
@@ -172,14 +179,21 @@ def bale_webhook():
     if text.startswith("/start ") and chat_id:
         token = text.split(" ", 1)[1]
         logger.info(f"Extracted Bale token: {token}")
-        
-        success = BaleService.link_account(token, chat_id)
-        logger.info(f"Bale link_account function returned: {success}")
-        
-        if success:
-            BaleService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
-        else:
-            BaleService.send_message(str(chat_id), "❌ لینک اتصال نامعتبر یا منقضی شده است.")
+        try:
+            success = BaleService.link_account(token, chat_id)
+            logger.info(f"Bale link_account function returned: {success}")
+            if success:
+                try:
+                    BaleService.send_message(str(chat_id), "✅ حساب شما با موفقیت به سایت متصل شد.")
+                except Exception:
+                    logger.exception("Bale send_message failed")
+            else:
+                try:
+                    BaleService.send_message(str(chat_id), "❌ لینک اتصال نامعتبر یا منقضی شده است.")
+                except Exception:
+                    logger.exception("Bale send_message failed")
+        except Exception:
+            logger.exception("Bale link_account failed")
         
     return jsonify({"success": True}), 200
 
