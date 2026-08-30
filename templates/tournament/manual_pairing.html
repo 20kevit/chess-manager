@@ -167,30 +167,8 @@
         <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary">بازگشت به لیست دورها</a>
     </div>
 </div>
+{% endblock %}
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const board1Select = document.getElementById('board1');
-    const board2Select = document.getElementById('board2');
-    const submitBtn = document.getElementById('swap-submit-btn');
-    const warning = document.getElementById('swap-warning');
-
-    if (!board1Select || !board2Select) return;
-
-    function validateBoards() {
-        const b1 = board1Select.value;
-        const b2 = board2Select.value;
-        if (b1 && b2 && b1 === b2) {
-            warning.style.display = 'block';
-            submitBtn.disabled = true;
-        } else {
-            warning.style.display = 'none';
-            submitBtn.disabled = false;
-        }
-    }
-
-    board1Select.addEventListener('change', validateBoards);
-    board2Select.addEventListener('change', validateBoards);
-});
-</script>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/manual-pairing.js') }}"></script>
 {% endblock %}

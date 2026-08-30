@@ -106,7 +106,7 @@
             </ul>
         </div>
 
-        <form method="POST" action="{{ url_for('registration.register', public_id=tournament.public_id) }}" id="reg-form">
+        <form method="POST" action="{{ url_for('registration.register', public_id=tournament.public_id) }}" id="reg-form" data-api-url="{{ url_for('registration.calculate_price_api', public_id=tournament.public_id) }}" data-base-price="{{ tournament.base_price or 0 }}">
             <h4 style="margin-top: 20px; color: #1f2937;">اطلاعات بازیکن</h4>
             <p style="font-size: 0.85em; color: #6b7280; margin-bottom: 15px;">اگر پروفایل شطرنجی شما در سیستم باشد، اطلاعات زیر پیش‌فرض است.</p>
             
@@ -182,57 +182,8 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('reg-form');
-    if(!form) return;
-
-    const inputs = ['first_name', 'last_name', 'fide_id', 'birth_date', 'gender', 'promo_code'];
-    
-    function recalculatePrice() {
-        const data = {};
-        inputs.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) data[id] = el.value;
-        });
-
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        fetch('{{ url_for("registration.calculate_price_api", public_id=tournament.public_id) }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error(data.error);
-                return;
-            }
-            document.getElementById('base-price').innerText = data.base_price;
-            document.getElementById('final-price').innerText = data.final_price;
-            
-            const discountList = document.getElementById('discount-list');
-            discountList.innerHTML = '';
-            data.discounts.forEach(d => {
-                discountList.innerHTML += `<div class="price-row" style="font-size: 0.9rem; color: #059669;"><span>${d.reason}:</span><span>- ${d.amount} تومان</span></div>`;
-            });
-        })
-        .catch(error => console.error('Error:', error));
-    }
-
-    inputs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('change', recalculatePrice);
-            el.addEventListener('input', recalculatePrice);
-        }
-    });
-
-    recalculatePrice();
-});
-</script>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/registration.js') }}"></script>
 {% endblock %}

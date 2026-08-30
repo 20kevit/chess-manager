@@ -4,34 +4,34 @@
 {% block content %}
 
 {% if can_edit_results %}
-<div style="margin-bottom: 15px; text-align: left;">
+<div class="flex justify-center gap-8 mb-15">
     {% if can_manage %}
-    <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-primary" style="font-size: 0.9rem; padding: 8px 15px;">
+    <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-primary">
         ⚙️ ورود به پنل مدیریت تورنمنت
     </a>
     {% endif %}
-    <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 8px 15px;">
+    <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary">
         🎛️ کنسول داوری و ثبت نتایج
     </a>
 </div>
 {% endif %}
 
-<div class="tournament-header" style="border-right: 5px solid var(--primary); padding-right: 20px;">
-    <h1 style="font-size: 1.8em; margin-bottom: 5px;">{{ tournament.name }}</h1>
-    <div class="tournament-meta" style="color: #64748b;">
+<div class="tournament-header border-r-5-primary pr-20">
+    <h1 class="fs-1-8 mb-10">{{ tournament.name }}</h1>
+    <div class="tournament-meta text-gray-600">
         <span>📍 {{ tournament.city }}</span> | 
         <span>♟️ {{ tournament.time_control_type|capitalize }}</span> | 
         <span>🔄 دور {{ tournament.current_round }} از {{ tournament.total_rounds }}</span>
     </div>
     
     {% if current_user.is_authenticated %}
-    <div style="margin-top: 15px;">
+    <div class="mt-15">
         <a href="{{ url_for('registration.register', public_id=tournament.public_id) }}" class="btn btn-success">
             📝 ثبت‌نام آنلاین در مسابقه
         </a>
     </div>
     {% else %}
-    <div style="margin-top: 15px;">
+    <div class="mt-15">
         <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-outline-primary">
             برای ثبت‌نام لطفاً وارد شوید
         </a>
@@ -39,15 +39,16 @@
     {% endif %}
 </div>
 
-<div class="tabs" style="margin-top: 25px; border-bottom: 1px solid #e2e8f0; background: none; box-shadow: none;">
-    <button class="tab active" onclick="showTab('standings', this)">رده‌بندی</button>
+<div class="tabs mt-25 border-b-2-gray-300 bg-transparent shadow-none">
+    <button class="tab active" data-tab="standings">رده‌بندی</button>
     {% for r in tournament.rounds|sort(attribute='round_number') %}
-        <button class="tab" onclick="showTab('round-{{ r.round_number }}', this)">دور {{ r.round_number }}</button>
+        <button class="tab" data-tab="round-{{ r.round_number }}">دور {{ r.round_number }}</button>
     {% endfor %}
-    <button class="tab" onclick="showTab('crosstable', this)">جدول برخورد</button>
-    <button class="tab" onclick="showTab('summary', this)">خلاصه و آمار</button> 
-    <button class="tab" onclick="showTab('rulebook', this)">آیین‌نامه مسابقه</button></div>
-<div id="tab-standings" class="tab-content active" style="box-shadow:none; padding: 20px 0;">
+    <button class="tab" data-tab="crosstable">جدول برخورد</button>
+    <button class="tab" data-tab="summary">خلاصه و آمار</button> 
+    <button class="tab" data-tab="rulebook">آیین‌نامه مسابقه</button>
+</div>
+<div id="tab-standings" class="tab-content active shadow-none p-0">
     
     {% set unique_ages = [] %}
     {% for ps in player_standings %}
@@ -57,19 +58,19 @@
     {% endfor %}
     
     {% if unique_ages %}
-    <div class="filter-bar" style="background:#f8fafc; padding:15px; border-radius:10px; margin-bottom:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; border: 1px solid #e2e8f0;">
-        <span style="font-weight:bold; color:#475569;">هایلایت رده سنی:</span>
-        <button class="filter-btn active" onclick="highlightTable('none', this)">هیچکدام (حالت عادی)</button>
-        <span style="color:#cbd5e1; margin: 0 5px;">|</span>
+    <div class="filter-bar bg-gray-50 p-15 rounded-10 mb-20 border border-gray-200 flex flex-wrap items-center gap-10">
+        <span class="fw-600 text-gray-700">هایلایت رده سنی:</span>
+        <button class="filter-btn active" data-filter="none">هیچکدام (حالت عادی)</button>
+        <span class="text-gray-400 mx-2">|</span>
         
         {% for cat in unique_ages|sort %}
-            <button class="filter-btn" onclick="highlightTable('age-{{ cat }}', this)">{{ cat }}</button>
+            <button class="filter-btn" data-filter="age-{{ cat }}">{{ cat }}</button>
         {% endfor %}
     </div>
     {% endif %}
 
     <div class="table-responsive">
-        <table class="standings-table" id="main-standings-table" style="width:100%; border-collapse: collapse;">
+        <table class="standings-table" id="main-standings-table">
             <thead>
                 <tr>
                     <th style="width: 50px;">رتبه</th>
@@ -85,36 +86,36 @@
             </thead>
             <tbody id="standings-body">
                 {% for ps in player_standings %}
-                <tr class="player-row {% if ps.player.status == 'withdrawn' %}row-withdrawn{% endif %}" 
+                <tr class="player-row {% if ps.player.status == 'withdrawn' %}row-withdrawn{% endif %} transition-bg" 
                     data-age="{{ ps.player.age_category or 'none' }}"
-                    style="transition: background-color 0.3s; {% if ps.player.status == 'withdrawn' %}opacity:0.5;{% endif %}">
+                    {% if ps.player.status == 'withdrawn' %}style="opacity:0.5;"{% endif %}>
                     
-                    <td style="text-align:center;"><strong>{{ loop.index }}</strong></td>
-                    <td style="text-align:center; color:#94a3b8;">{{ ps.player.ranking_label }}</td>
+                    <td class="text-center"><strong>{{ loop.index }}</strong></td>
+                    <td class="text-center text-gray-400">{{ ps.player.ranking_label }}</td>
                     
-                    <td style="text-align:right;">
-                        <a href="/{{ tournament.public_id }}/player/{{ ps.player.id }}" style="color:var(--gray-800); font-weight:500;">
-                            {% if ps.player.fide_title_snapshot %}<span class="badge" style="background:#e0e7ff; color:#1e40af; font-size:0.7em;">{{ ps.player.fide_title_snapshot }}</span>{% endif %}
+                    <td class="text-right">
+                        <a href="/{{ tournament.public_id }}/player/{{ ps.player.id }}" class="text-gray-800 fw-500">
+                            {% if ps.player.fide_title_snapshot %}<span class="badge bg-primary-light text-primary badge-xs">{{ ps.player.fide_title_snapshot }}</span>{% endif %}
                             {{ ps.player.full_name }}
                         </a>
                     </td>
                     
-                    <td style="text-align:center; color:#64748b;">
+                    <td class="text-center text-gray-500">
                         {% if ps.player.profile.gender == 'M' %}آقا{% elif ps.player.profile.gender == 'F' %}خانم{% else %}-{% endif %}
                     </td>
                     
-                    <td style="text-align:center;">
-                        <span class="badge" style="background:#f1f5f9; color:#475569;">{{ ps.player.age_category or '-' }}</span>
+                    <td class="text-center">
+                        <span class="badge bg-gray-100 text-gray-600">{{ ps.player.age_category or '-' }}</span>
                     </td>
                     
-                    <td style="text-align:center;">{{ ps.player.rating_snapshot or 0 }}</td>
-                    <td style="text-align:center;"><strong style="font-size:1.1rem; color:var(--primary-dark);">{{ ps.points }}</strong></td>
+                    <td class="text-center">{{ ps.player.rating_snapshot or 0 }}</td>
+                    <td class="text-center"><strong class="fs-1-1 text-primary-dark">{{ ps.points }}</strong></td>
                     
                     {% for tb in tiebreak_rules %}
-                        <td style="text-align:center; font-size:0.9em; color:#64748b;">{{ ps.tiebreaks.get(tb, 0) }}</td>
+                        <td class="text-center fs-0-9 text-gray-500">{{ ps.tiebreaks.get(tb, 0) }}</td>
                     {% endfor %}
                     
-                    <td style="text-align:center;">
+                    <td class="text-center">
                         {% set rc = rating_changes.get(ps.player.id, {}) %}
                         <span class="{% if rc.rating_change > 0 %}rating-up{% elif rc.rating_change < 0 %}rating-down{% endif %}">
                             {{ rc.rating_change|round(1) if rc.rating_change else '0' }}
@@ -128,9 +129,9 @@
 </div>
 
 {% for r in tournament.rounds %}
-<div id="tab-round-{{ r.round_number }}" class="tab-content" style="box-shadow:none;">
+<div id="tab-round-{{ r.round_number }}" class="tab-content shadow-none">
     <div class="table-responsive">
-        <table class="standings-table" style="width:100%;">
+        <table class="standings-table">
             <thead>
                 <tr>
                     <th style="width:40px;">میز</th>
@@ -142,20 +143,20 @@
             <tbody>
                 {% for p in r.pairings|sort(attribute='board_number') %}
                 <tr>
-                    <td style="text-align:center; color:#94a3b8;">{{ p.board_number }}</td>
-                    <td style="text-align:right;">
+                    <td class="text-center text-gray-400">{{ p.board_number }}</td>
+                    <td class="text-right">
                         {{ p.white_participant.ranking_label }}. {{ p.white_participant.full_name }} 
-                        <span style="font-size:0.8em; color:#94a3b8;">({{ p.white_participant.rating }})</span>
+                        <span class="fs-0-8 text-gray-400">({{ p.white_participant.rating }})</span>
                     </td>
-                    <td style="text-align:center;">
-                        <span style="font-weight:bold; letter-spacing:2px;">{{ p.result_display }}</span>
+                    <td class="text-center">
+                        <span class="fw-bold" style="letter-spacing:2px;">{{ p.result_display }}</span>
                     </td>
-                    <td style="text-align:right;">
+                    <td class="text-right">
                         {% if p.black_participant_id %}
                             {{ p.black_participant.ranking_label }}. {{ p.black_participant.full_name }}
-                            <span style="font-size:0.8em; color:#94a3b8;">({{ p.black_participant.rating }})</span>
+                            <span class="fs-0-8 text-gray-400">({{ p.black_participant.rating }})</span>
                         {% else %}
-                            <span style="color:#eab308; font-size:0.9em;">استراحت</span>
+                            <span class="text-warning fs-0-9">استراحت</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -166,46 +167,46 @@
 </div>
 {% endfor %}
 
-<div id="tab-crosstable" class="tab-content" style="box-shadow:none;">
-    <div style="text-align:center; padding:40px;">
+<div id="tab-crosstable" class="tab-content shadow-none">
+    <div class="text-center py-40">
         <a href="/{{ tournament.public_id }}/crosstable" class="btn btn-secondary">مشاهده جدول کامل برخوردها</a>
     </div>
 </div>
 
-<div id="tab-summary" class="tab-content" style="box-shadow:none; padding: 20px 0;">
+<div id="tab-summary" class="tab-content shadow-none py-20">
     {% if prize_summary and prize_summary.winners %}
-        <div class="card" style="padding: 18px; margin-bottom: 18px;">
-            <h3 style="margin-top:0; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">🏆 برندگان جوایز</h3>
-            <table class="standings-table" style="width:100%; margin-top:8px;">
+        <div class="card p-18 mb-18">
+            <h3 class="mb-0 border-b border-gray-200 pb-8">🏆 برندگان جوایز</h3>
+            <table class="standings-table mt-8">
                 <tbody>
                 {% for w in prize_summary.winners %}
                     <tr>
                         <td>{{ w.rank_medal }}</td>
-                        <td><strong>{{ w.category_title }}</strong>{% if w.description %} <span style="font-size:0.8rem;color:#64748b;">({{ w.description }})</span>{% endif %}</td>
+                        <td><strong>{{ w.category_title }}</strong>{% if w.description %} <span class="fs-0-8 text-gray-500">({{ w.description }})</span>{% endif %}</td>
                         <td>{{ w.winner_name }}</td>
-                        <td style="text-align:left; white-space:nowrap;">{{ w.amount | toman_formatter }}</td>
+                        <td class="text-left nowrap">{{ w.amount | toman_formatter }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
             </table>
-            <p style="text-align:left; font-size:0.85rem; color:#64748b; margin-bottom:0;">
+            <p class="text-left fs-0-85 text-gray-500 mb-0">
                 جمع جوایز: {{ prize_summary.total_awarded_amount | toman_formatter }}
             </p>
         </div>
     {% endif %}
-    <div style="text-align:center; padding:40px;">
+    <div class="text-center py-40">
         <a href="/{{ tournament.public_id }}/summary" class="btn btn-secondary">مشاهده آمار و گزارشات</a>
     </div>
 </div>
 
-<div id="tab-rulebook" class="tab-content" style="box-shadow:none; padding: 20px 0;">
+<div id="tab-rulebook" class="tab-content shadow-none py-20">
     {% set has_text = tournament.rulebook_text %}
     {% set sections_list = rulebook_sections or [] %}
     {% set has_sections = sections_list|length > 0 %}
     {% set has_pdf = tournament.rulebook_pdf_path %}
 
     {% if has_pdf %}
-        <div style="margin-bottom: 20px; text-align:center;">
+        <div class="mb-20 text-center">
             <a href="{{ url_for('tournament.download_rulebook_pdf', public_id=tournament.public_id) }}" target="_blank" class="btn btn-primary">
                 📎 مشاهده / دانلود فایل PDF آیین‌نامه
             </a>
@@ -214,87 +215,30 @@
 
     {% if has_sections %}
         {% for s in sections_list %}
-        <div class="card" style="padding: 18px; margin-bottom: 12px;">
-            <h3 style="margin-top:0; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">{{ s.title }}</h3>
-            <div style="white-space: pre-wrap; line-height: 1.8;">{{ s.body }}</div>
+        <div class="card p-18 mb-12">
+            <h3 class="mb-0 border-b border-gray-200 pb-8">{{ s.title }}</h3>
+            <div class="pre-wrap lh-1-8">{{ s.body }}</div>
         </div>
         {% endfor %}
     {% endif %}
 
     {% if has_text %}
-        <div class="card" style="padding: 20px; white-space: pre-wrap; line-height: 1.8; font-family: Vazirmatn, sans-serif; {% if has_sections %}margin-top:15px;{% endif %}">
+        <div class="card p-20 pre-wrap lh-1-8 font-vazir {% if has_sections %}mt-15{% endif %}">
             {{ tournament.rulebook_text }}
         </div>
     {% endif %}
 
     {% if not (has_pdf or has_sections or has_text) %}
-        <p style="text-align: center; color: #6b7280; padding: 40px;">آیین‌نامه‌ای برای این مسابقه ثبت نشده است.</p>
+        <p class="text-center text-gray-500 py-40">آیین‌نامه‌ای برای این مسابقه ثبت نشده است.</p>
     {% endif %}
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
-function showTab(tabName, btnElement) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
-    if (btnElement) {
-        btnElement.classList.add('active');
-    }
-    document.getElementById('tab-' + tabName).classList.add('active');
-}
-
-function highlightTable(filterType, btnElement) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btnElement.classList.add('active');
-
-    const tableBody = document.getElementById('standings-body');
-    const rows = document.querySelectorAll('.player-row');
-    
-    const cumulativeMode = {{ 'true' if tournament.cumulative_age_category else 'false' }};
-    
-    const ageOrder = {
-        'U08': 8, 'U10': 10, 'U12': 12, 'U14': 14, 
-        'U16': 16, 'U18': 18, 'U20': 20,
-        'S50': 50, 'S65': 65
-    };
-
-    if (filterType === 'none') {
-        tableBody.classList.remove('table-filtered');
-        rows.forEach(row => row.classList.remove('row-highlighted'));
-        return;
-    }
-
-    tableBody.classList.add('table-filtered');
-    const targetAge = filterType.replace('age-', '');
-
-    rows.forEach(row => {
-        row.classList.remove('row-highlighted');
-        const rowAge = row.getAttribute('data-age');
-        
-        let shouldHighlight = false;
-
-        if (cumulativeMode && targetAge.startsWith('U') && rowAge.startsWith('U')) {
-            const selectedLimit = ageOrder[targetAge] || 0;
-            const playerLimit = ageOrder[rowAge] || 0;
-            if (playerLimit > 0 && playerLimit <= selectedLimit) {
-                shouldHighlight = true;
-            }
-        } else if (cumulativeMode && targetAge.startsWith('S') && rowAge.startsWith('S')) {
-            const selectedLimit = ageOrder[targetAge] || 0;
-            const playerLimit = ageOrder[rowAge] || 0;
-            if (playerLimit > 0 && playerLimit >= selectedLimit) {
-                shouldHighlight = true;
-            }
-        } else {
-            if (rowAge === targetAge) {
-                shouldHighlight = true;
-            }
-        }
-
-        if (shouldHighlight) {
-            row.classList.add('row-highlighted');
-        }
-    });
-}
+    // Pass configuration to tournament-view.js
+    document.body.dataset.cumulativeAgeCategory = "{{ 'true' if tournament.cumulative_age_category else 'false' }}";
 </script>
+<script src="{{ url_for('static', filename='js/tournament-view.js') }}"></script>
 {% endblock %}

@@ -1,0 +1,293 @@
+/* ============================================
+   Dashboard Styles
+   ============================================ */
+
+/* Dashboard Header */
+.dash-header {
+    background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-700) 100%);
+    color: white;
+    padding: 30px;
+    border-radius: var(--radius);
+    margin-bottom: 30px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.dash-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.dash-header .role-badge {
+    background: rgba(255,255,255,0.15);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+/* Dashboard Grid */
+.dash-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+}
+
+@media (max-width: 768px) {
+    .dash-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Dashboard Cards */
+.dash-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 25px;
+}
+
+.dash-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* List Items */
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-radius: var(--radius);
+    background: var(--gray-50);
+    margin-bottom: 10px;
+    transition: all 0.2s;
+}
+
+.list-item:hover {
+    background: var(--gray-100);
+}
+
+.list-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.list-item-title {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.list-item-sub {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+    margin-top: 3px;
+}
+
+/* Button Actions */
+.btn-action {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Profile Rows */
+.profile-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.profile-row:last-child {
+    border: none;
+}
+
+.profile-label {
+    color: var(--gray-500);
+}
+
+.profile-value {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-box {
+    background: white;
+    padding: 30px;
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 450px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Form elements in modal */
+.modal-box .form-group {
+    margin-bottom: 15px;
+}
+
+.modal-box .form-group label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+    color: var(--gray-700);
+    font-size: 0.9em;
+}
+
+.modal-box .form-group input,
+.modal-box .form-group select,
+.modal-box .form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 0.9em;
+    transition: border-color 0.2s;
+}
+
+.modal-box .form-group input:focus,
+.modal-box .form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.modal-box .form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.modal-box .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Alert in dashboard */
+.dash-card .alert {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    margin: 12px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.dash-card .alert-warning {
+    background: var(--warning-light);
+    color: var(--warning);
+}
+
+/* Pending invitations card highlight */
+.dash-card.pending-invitations {
+    border-left: 4px solid var(--warning);
+}
+
+.dash-card.pending-invitations .list-item {
+    background: var(--warning-light);
+}
+
+.dash-card.pending-invitations .list-item:hover {
+    background: var(--warning-light);
+    opacity: 0.9;
+}
+
+/* Assigned tournaments card */
+.dash-card.assigned-tournaments {
+    border-left: 4px solid var(--primary);
+}
+
+/* My participations card */
+.dash-card.my-participations {
+    border-left: 4px solid var(--primary);
+}
+
+/* Text muted */
+.text-muted {
+    color: var(--gray-500);
+}
+
+/* MT-3 / MB-3 utilities */
+.mt-3 {
+    margin-top: 1rem !important;
+}
+
+.mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.btn-outline-primary {
+    background: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-light {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.btn-light:hover {
+    background: var(--gray-200);
+    color: var(--gray-700);
+    text-decoration: none;
+}
+
+/* Registration Status Colors */
+.status-pending { color: #d97706; }
+.status-payment-pending { color: #4338ca; }
+.status-receipt-submitted { color: #b45309; }
+.status-paid { color: #2563eb; }
+.status-approved { color: #059669; }
+.status-rejected { color: #dc2626; }
+.status-active { color: var(--success); }

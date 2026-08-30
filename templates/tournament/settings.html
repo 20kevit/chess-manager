@@ -99,9 +99,8 @@
             {% endfor %}
 
             {% for tb_key, tb_name, is_checked in ordered_tbs %}
-            <div class="tiebreak-item {% if is_checked %}tiebreak-active{% endif %}" data-key="{{ tb_key }}" 
-                 style="display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #e2e8f0; margin-bottom:5px; border-radius:8px; cursor:grab; background:#fff;">
-                <span style="color:#94a3b8;">☰</span>
+            <div class="tiebreak-item {% if is_checked %}tiebreak-active{% endif %}" data-key="{{ tb_key }}">
+                <span class="drag-handle" style="color:#94a3b8;">☰</span>
                 <input type="checkbox" name="tiebreaks" value="{{ tb_key }}" {% if is_checked %}checked{% endif %}>
                 <span style="flex-grow:1; font-size:0.95em;">{{ tb_name }}</span>
             </div>
@@ -114,51 +113,8 @@
         <a href="/{{ tournament.public_id }}" class="btn btn-secondary">انصراف</a>
     </div>
 </form>
+{% endblock %}
 
-<!-- Include standard Drag & Drop JS logic here or in main.js -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const list = document.getElementById('tiebreak-list');
-    let draggedItem = null;
-
-    document.querySelectorAll('.tiebreak-item').forEach(item => {
-        item.setAttribute('draggable', 'true');
-        
-        item.addEventListener('dragstart', function(e) {
-            draggedItem = this;
-            setTimeout(() => this.classList.add('tb-dragging'), 0);
-        });
-
-        item.addEventListener('dragend', function() {
-            this.classList.remove('tb-dragging');
-            draggedItem = null;
-        });
-    });
-
-    list.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        const afterElement = getDragAfterElement(list, e.clientY);
-        if (draggedItem) {
-            if (afterElement == null) {
-                list.appendChild(draggedItem);
-            } else {
-                list.insertBefore(draggedItem, afterElement);
-            }
-        }
-    });
-
-    function getDragAfterElement(container, y) {
-        const draggableElements = [...container.querySelectorAll('.tiebreak-item:not(.tb-dragging)')];
-        return draggableElements.reduce((closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset) {
-                return { offset: offset, element: child };
-            } else {
-                return closest;
-            }
-        }, { offset: Number.NEGATIVE_INFINITY }).element;
-    }
-});
-</script>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/tiebreak-dnd.js') }}"></script>
 {% endblock %}
