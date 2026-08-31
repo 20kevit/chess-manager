@@ -10,7 +10,7 @@ from application.verification.verification_request_service import VerificationRe
 from application.verification.verification_approver import VerificationApprover
 from application.verification.verification_status_updater import VerificationStatusUpdater
 
-from interfaces.web.decorators import role_required
+from interfaces.web.decorators import admin_required
 
 from infrastructure.repositories.fide import FideImportRepository
 fide_bp = Blueprint("fide", __name__)
@@ -19,7 +19,7 @@ fide_bp = Blueprint("fide", __name__)
 
 @fide_bp.route("/admin/fide")
 @login_required
-@role_required('admin')
+@admin_required
 def fide_dashboard():
     """Main FIDE management dashboard."""
     # Get latest imports
@@ -34,7 +34,7 @@ def fide_dashboard():
 
 @fide_bp.route("/admin/fide/import", methods=["POST"])
 @login_required
-@role_required('admin')
+@admin_required
 def trigger_import():
     """Spawns the FIDE import on a background thread; the dashboard polls
     /admin/fide/import/status for live stage/percent progress (P1-G)."""
@@ -53,14 +53,14 @@ def trigger_import():
 
 @fide_bp.route("/admin/fide/import/status")
 @login_required
-@role_required('admin')
+@admin_required
 def import_status():
     """JSON progress payload for the dashboard poller."""
     return jsonify(FideImportOrchestrator.latest_status())
 
 @fide_bp.route("/admin/fide/search")
 @login_required
-@role_required('admin')
+@admin_required
 def search():
     """API endpoint for searching local FIDE players."""
     query = request.args.get("q", "")
@@ -74,7 +74,7 @@ def search():
 
 @fide_bp.route("/admin/fide/verifications")
 @login_required
-@role_required('admin')
+@admin_required
 def verifications_list():
     """View all pending verification requests."""
     pending = VerificationRequestService.get_pending_requests()
@@ -82,7 +82,7 @@ def verifications_list():
 
 @fide_bp.route("/admin/fide/verifications/<int:req_id>/approve", methods=["POST"])
 @login_required
-@role_required('admin')
+@admin_required
 def approve_verification(req_id):
     """Approve a verification request."""
     try:
@@ -94,7 +94,7 @@ def approve_verification(req_id):
 
 @fide_bp.route("/admin/fide/verifications/<int:req_id>/reject", methods=["POST"])
 @login_required
-@role_required('admin')
+@admin_required
 def reject_verification(req_id):
     """Reject a verification request (legacy overall reject)."""
     reason = request.form.get("reason", "")
@@ -107,7 +107,7 @@ def reject_verification(req_id):
 
 @fide_bp.route("/admin/fide/verifications/<int:req_id>/verify_fide_id", methods=["POST"])
 @login_required
-@role_required('admin')
+@admin_required
 def verify_fide_id(req_id):
     """Verify or reject FIDE ID ownership."""
     verified = request.form.get("verified") == "true"
@@ -124,7 +124,7 @@ def verify_fide_id(req_id):
 
 @fide_bp.route("/admin/fide/verifications/<int:req_id>/verify_dob", methods=["POST"])
 @login_required
-@role_required('admin')
+@admin_required
 def verify_dob(req_id):
     """Verify or reject date of birth/age."""
     verified = request.form.get("verified") == "true"
@@ -141,7 +141,7 @@ def verify_dob(req_id):
 
 @fide_bp.route("/admin/fide/verifications/<int:req_id>/verify_photo", methods=["POST"])
 @login_required
-@role_required('admin')
+@admin_required
 def verify_photo(req_id):
     """Verify or reject profile photo vs ID document match."""
     verified = request.form.get("verified") == "true"

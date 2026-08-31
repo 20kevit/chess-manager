@@ -150,6 +150,33 @@ def create_app(config_class=None) -> Flask:
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        # Narrow CSP compatible with vanilla-JS/Jinja + inline shim/handlers + Vazirmatn CDN.
+        # 'unsafe-inline' retained — extracting all inline handlers would be a broad refactor
+        # out of scope for the release candidate phase.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "font-src 'self' https://cdn.jsdelivr.net data:; "
+            "img-src 'self' data: blob:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'self'; "
+            "base-uri 'self'; "
+            "form-action 'self'"
+        )
+        # Prevent caching of private/authenticated responses.
+        # Public anonymous responses (e.g. tournament view) remain cacheable.
+        try:
+            is_private = False
+            if current_user.is_authenticated:
+                is_private = True
+            elif request.path.startswith(("/dashboard", "/admin", "/notifications", "/api/notifications")):
+                is_private = True
+            if is_private:
+                response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                response.headers["Pragma"] = "no-cache"
+        except Exception:
+            pass
         # HSTS only in production (HTTPS)
         if flask_app.config.get("ENV") == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"

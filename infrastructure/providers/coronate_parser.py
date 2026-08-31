@@ -16,9 +16,15 @@ class CoronateFormatError(Exception):
 def _map_coronate_result_to_internal(result: str, black_id: Optional[str]) -> str:
     """
     Map Coronate result strings to internal 9 result types.
-    
+
     Coronate only supports: whiteWon, blackWon, draw.
     For byes, blackId is " DUMMY ".
+
+    LIMITATION: This mapping is intentionally lossy. Forfeit results
+    ("+/-", "-/+") collapse to "1-0"/"0-1" and double-forfeit "+/+"
+    collapses to "bye" on import. Callers must not assume lossless
+    round-trip of the 9-type vocabulary via Coronate. See
+    docs/INFRASTRUCTURE.md §6 for the full contract.
     """
     is_bye = black_id == " DUMMY "
     

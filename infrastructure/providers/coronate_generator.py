@@ -25,9 +25,14 @@ def _sanitize_name(name: str) -> str:
 def _map_internal_result_to_coronate(result: str) -> Dict[str, Any]:
     """
     Map internal 9 result types to Coronate format.
-    
+
     Coronate only supports: whiteWon, blackWon, draw.
     For byes, blackId is " DUMMY ".
+
+    LIMITATION: "+/-" and "-/+" collapse to "1-0"/"0-1" (no forfeit
+    distinction) and "+/+" collapses to "bye" (DUMMY whiteWon). This is
+    lossy by design — Coronate has no forfeit vocabulary. Export is not
+    a lossless backup of the 9-type vocabulary; see docs/INFRASTRUCTURE.md §6.
     """
     if result == "1-0" or result == "+/-":
         return {"result": "whiteWon", "is_bye": False}

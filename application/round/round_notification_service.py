@@ -8,6 +8,8 @@ import time
 import logging
 from typing import List
 
+from app.extensions import db
+
 from infrastructure.models.participant import TournamentParticipantModel
 from infrastructure.models.tournament import TournamentModel, RoundModel, PairingModel
 from application.notification_policy import tournament_allows
@@ -103,9 +105,26 @@ class RoundNotificationService:
                             message=msg_bye,
                             link_url=f"/{tournament.public_id}"
                         )
-                        
+
+            # P0-1: Persist all WebProvider flushes produced above.
+            # The round itself was already committed before this fan-out;
+            # this second commit only persists notifications and must not
+            # roll back the round on failure.
+            try:
+                db.session.commit()
+            except Exception as commit_exc:
+                logging.error(f"Round notification commit failed: {commit_exc}")
+                try:
+                    db.session.rollback()
+                except Exception:
+                    pass
+
         except Exception as e:
             logging.error(f"Failed to send round notifications: {str(e)}")
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
         finally:
             _fanout_seconds = time.monotonic() - _fanout_started
             logging.info(

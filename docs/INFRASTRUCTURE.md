@@ -91,17 +91,25 @@ External clients handle data transformation only. They must not make business de
 - `coronate_parser.py` — parses Coronate JSON format to internal `BackupFileData`.
 - `coronate_generator.py` — generates Coronate JSON from internal `BackupFileData`.
 
-**Strict Result Mapping Contract (Coronate):**
+**Strict Result Mapping Contract (Coronate) — LOSSY:**
 
-| Internal Result | Coronate Result | Coronate Opponent |
-|-----------------|-----------------|-------------------|
-| `1-0`, `+/-`    | `whiteWon`      | Actual ID         |
-| `0-1`, `-/+`    | `blackWon`      | Actual ID         |
-| `1/2`           | `draw`          | Actual ID         |
-| `bye`           | `whiteWon`      | `" DUMMY "`       |
-| `half-bye`      | `draw`          | `" DUMMY "`       |
-| `zero-bye`      | `blackWon`      | `" DUMMY "`       |
-| `+/+` (Double F)| `whiteWon` (Fallback)| `" DUMMY "` |
+Coronate has no forfeit vocabulary. Export/import via Coronate is **not
+lossless** for the internal 9-type result set. Forfeits collapse on
+round-trip and `+/+` is indistinguishable from `bye`:
+
+| Internal Result | Coronate Result | Coronate Opponent | Round-trip |
+|-----------------|-----------------|-------------------|------------|
+| `1-0`, `+/-`    | `whiteWon`      | Actual ID         | `+/-` → `1-0` (forfeit flag lost) |
+| `0-1`, `-/+`    | `blackWon`      | Actual ID         | `-/+` → `0-1` (forfeit flag lost) |
+| `1/2`           | `draw`          | Actual ID         | lossless |
+| `bye`           | `whiteWon`      | `" DUMMY "`       | lossless |
+| `half-bye`      | `draw`          | `" DUMMY "`       | lossless |
+| `zero-bye`      | `blackWon`      | `" DUMMY "`       | lossless |
+| `+/+` (Double F)| `whiteWon` (Fallback)| `" DUMMY "` | `+/+` → `bye` (double-forfeit lost) |
+
+Do not rely on Coronate as a lossless backup for tournaments that use
+forfeit results. For full-fidelity backup, use the authoritative
+internal format (not Coronate).
 
 **File Storage (`infrastructure/file_storage.py`):**
 - Private file storage for receipts, profile photos, ID documents, rulebook PDFs.
