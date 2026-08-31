@@ -35,6 +35,8 @@ function initNotificationDropdown() {
 
     bell.addEventListener('click', function(e) {
         e.preventDefault();
+        const expanded = bell.getAttribute('aria-expanded') === 'true';
+        bell.setAttribute('aria-expanded', !expanded);
         if (dropdown.style.display === 'none') {
             dropdown.style.display = 'block';
             if (!isLoaded) {
@@ -82,10 +84,18 @@ function initNotificationDropdown() {
         }
     });
 
-    // Close dropdown when clicking outside
+    // Close dropdown when clicking outside or ESC
     document.addEventListener('click', function(e) {
         if (!bell.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.style.display = 'none';
+            bell.setAttribute('aria-expanded', 'false');
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && dropdown.style.display === 'block') {
+            dropdown.style.display = 'none';
+            bell.setAttribute('aria-expanded', 'false');
+            bell.focus();
         }
     });
 }
@@ -115,11 +125,27 @@ function initToggleHandlers() {
     });
 }
 
+// Double-submit protection
+function initDoubleSubmitProtection() {
+    document.querySelectorAll('form[method="POST"]').forEach(form => {
+        form.addEventListener('submit', function() {
+            const btn = form.querySelector('button[type="submit"]');
+            if (btn && !btn.dataset.noDisable) {
+                btn.disabled = true;
+                btn.dataset.originalText = btn.textContent;
+                btn.innerHTML = '<span class="loading-spinner" aria-hidden="true"></span> در حال ارسال...';
+                setTimeout(() => { btn.disabled = false; if (btn.dataset.originalText) btn.textContent = btn.dataset.originalText; }, 5000);
+            }
+        });
+    });
+}
+
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', function() {
     injectCSRFToken();
     initNotificationDropdown();
     initToggleHandlers();
+    initDoubleSubmitProtection();
 });
 
 // Expose utilities globally for other scripts

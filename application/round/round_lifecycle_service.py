@@ -194,11 +194,18 @@ class RoundLifecycleService:
         # one dispatch per player, each Telegram/Bale send being an external
         # HTTP call. Fine for beta-scale fields (~<=50 linked players);
         # revisit with an async strategy if round sizes grow.
-        RoundNotificationService.notify_round_created(
-            round_obj=new_round,
-            tournament=tournament,
-            pairing_models=pairing_models
-        )
+        # Failure must not break the already-committed business transaction.
+        try:
+            RoundNotificationService.notify_round_created(
+                round_obj=new_round,
+                tournament=tournament,
+                pairing_models=pairing_models
+            )
+        except Exception:
+            logging.getLogger(__name__).exception(
+                "Round notification fan-out failed for tournament %s round %s",
+                tournament.id, new_round.round_number,
+            )
 
         return new_round
 

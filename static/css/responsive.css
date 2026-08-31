@@ -185,6 +185,8 @@
    ============================================ */
 .table-responsive {
     position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .table-responsive::after {
@@ -201,5 +203,66 @@
 @media (max-width: 968px) {
     .table-responsive::after {
         display: block;
+    }
+}
+
+/* 360px ultra-mobile */
+@media (max-width: 390px) {
+    .tabs {
+        gap: 4px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    .tab {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .dash-grid {
+        grid-template-columns: 1fr;
+    }
+    .modal-box {
+        margin: 12px;
+        width: calc(100% - 24px);
+    }
+    .page-header {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .admin-toolbar {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .admin-toolbar .search-form {
+        width: 100%;
+    }
+}
+
+/* 1024px+ large */
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1100px;
+    }
+    .dash-grid {
+        gap: var(--spacing-lg);
+    }
+}
+
+/* Ensure touch targets >=44px on mobile */
+@media (max-width: 600px) {
+    .btn, .tab, .filter-btn, .nav a {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .notification-bell-container {
+        position: relative;
+    }
+    .notification-dropdown {
+        left: 0;
+        right: auto;
+        width: 92vw;
+        max-width: 360px;
     }
 }
