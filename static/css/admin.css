@@ -8,7 +8,7 @@
 }
 
 .admin-sidebar-toggle {
-    display: block;
+    display: none;
     width: 100%;
     padding: 12px;
     background: var(--gray-800);
@@ -34,19 +34,6 @@
     flex-shrink: 0;
     transition: width 0.3s ease, padding 0.3s ease;
     overflow: hidden;
-}
-
-@media (min-width: 769px) {
-    .admin-sidebar.open {
-        width: 0;
-        padding-left: 0;
-        padding-right: 0;
-    }
-    .admin-sidebar.open .admin-sidebar-header,
-    .admin-sidebar.open .admin-nav,
-    .admin-sidebar.open .admin-sidebar-footer {
-        display: none;
-    }
 }
 
 .admin-sidebar-header {
