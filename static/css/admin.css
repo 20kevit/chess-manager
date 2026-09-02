@@ -92,6 +92,9 @@
 }
 
 @media (max-width: 768px) {
+    .admin-sidebar-toggle {
+        display: block;
+    }
     .admin-sidebar {
         position: fixed;
         top: 60px;
