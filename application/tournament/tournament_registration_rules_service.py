@@ -9,6 +9,7 @@ import json
 
 from app.extensions import db
 
+from infrastructure.models.tournament import TournamentModel
 from domain.registration import (
     RequirementSet, serialize_requirements,
 )
