@@ -136,11 +136,18 @@ updates with 403s visible only in `<instance>/telegram_debug.log`.
 4. Test cancel path once (`Status=NOK`) → payment `cancelled`, registration back
    to `pending`.
 
-## 14. Database schema: the three paths (Phase-8 checkpoint)
+## 14. Database schema: migration chain (Beta baseline + deltas)
 
-The schema is maintained by ONE squashed baseline revision
-(`bb0160eefd6b`, `down_revision = None`, 22 tables). Post-launch changes
-folded into that same baseline in place:
+The schema is maintained by a linear Alembic chain in
+`migrations/versions/` (current head: `f3d8a1c47e2b`):
+
+| Revision | Content |
+|---|---|
+| `bb0160eefd6b` (base, `down_revision = None`) | Squashed baseline, 22 tables (utf8mb4) |
+| `c41a9e2b07d3` | Beta delta: `user_role_requests` + `system_settings` |
+| `f3d8a1c47e2b` | Healing delta: reviewer FKs on `player_verifications` (conditional — no-op where already present) |
+
+Post-launch changes folded into that same baseline in place:
 
 | Table | Added columns |
 |---|---|
@@ -155,7 +162,8 @@ pre-P0 database from a post-P0 one — both are stamped
 ### Path A — Fresh installation (empty MySQL database)
 1. Create empty DB + user; fill `.env` (`DB_*`, `SECRET_KEY`,
    `FLASK_ENV=production`).
-2. `flask --app run.py db upgrade` → creates all 22 tables at current shape.
+2. `flask --app run.py db upgrade` → runs the whole chain, creates all
+   24 tables at current shape (baseline 22 + 2 Beta tables).
 3. Verify: `flask --app run.py db check` reports no pending operations;
    log in and create a tournament.
 
@@ -294,9 +302,18 @@ Post-checks:
 `python reset_db.py` performs `drop_all()` + `create_all()` from the models
 directly (no migration involved). Local SQLite/throwaway environments only.
 
-> Rule of thumb for future schema work: additive nullable columns may keep
-> being folded into the baseline WITH their ALTER statements added to this
-> section. Anything destructive requires a NEW alembic revision instead.
+> Rule of thumb for future schema work: NEVER edit a released revision.
+> Model changes go through `flask --app run.py db migrate -m "..."`
+> (review the generated file, especially on SQLite where some ALTERs
+> need batch mode), then `db upgrade`. Verify with `db check` (must
+> report no pending operations) before deploying.
+>
+> Beta cutover note (2026-09-04): the Beta database was stamped with the
+> deleted pre-squash revision `82251659c3a2`, so `db stamp/upgrade`
+> could not resolve it. It was re-stamped to `bb0160eefd6b` (schema
+> verified identical) and upgraded through the chain; row counts
+> verified identical before/after. A file backup
+> (`instance/local.db.pre-migration-backup-2026-09-04`) was kept.
 
 ## 15. Manual FIDE update via cPanel (no web upload by design)
 

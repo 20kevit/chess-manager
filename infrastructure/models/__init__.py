@@ -6,6 +6,10 @@ This package contains all SQLAlchemy models organized by domain.
 # User & Authentication
 from infrastructure.models.user import UserModel, UserRoleModel
 
+# Beta: role requests + system settings
+from infrastructure.models.role_request import UserRoleRequestModel
+from infrastructure.models.system_setting import SystemSettingModel
+
 # Player Profile
 from infrastructure.models.profile import PlayerProfileModel
 
@@ -60,6 +64,8 @@ __all__ = [
     # User
     "UserModel",
     "UserRoleModel",
+    "UserRoleRequestModel",
+    "SystemSettingModel",
     # Profile
     "PlayerProfileModel",
     # Tournament

@@ -91,9 +91,24 @@ def run_migrations_online():
                 directives[:] = []
                 logger.info('No changes in schema detected.')
 
+    def include_object(object, name, type_, reflected, compare_to):
+        # The Beta database carries a leftover VIRTUAL generated column
+        # (chief_arbiter_user_id) + unique index on tournament_staff from
+        # its pre-baseline initialization. The model deliberately does NOT
+        # contain them: the single-chief invariant is enforced at the
+        # application layer, and the DB-level variant is documented in
+        # infrastructure/models/staff.py as optional production-MySQL-only.
+        # Ignore both so autogenerate/check stay clean without touching
+        # the existing database.
+        if name in ("chief_arbiter_user_id", "uq_tournament_chief_arbiter"):
+            return False
+        return True
+
     conf_args = current_app.extensions['migrate'].configure_args
     if conf_args.get("process_revision_directives") is None:
         conf_args["process_revision_directives"] = process_revision_directives
+    if conf_args.get("include_object") is None:
+        conf_args["include_object"] = include_object
 
     connectable = get_engine()
 

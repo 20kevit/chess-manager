@@ -134,3 +134,70 @@ def system_health():
     """System health check page."""
     health = SystemHealthService.get_system_health()
     return render_template("admin/system.html", health=health, active_section="system")
+
+# --- Beta: role requests + auto-approve setting ----------------------
+
+@admin_bp.route("/admin/role-requests")
+@login_required
+@admin_required
+def role_requests():
+    """Pending arbiter/organizer requests + auto-approve toggle."""
+    from application.roles.role_request_service import RoleRequestService
+    from application.roles.system_settings_service import SystemSettingsService
+    from infrastructure.models.user import UserModel as _UserModel
+    pending = RoleRequestService.get_pending_requests()
+    users_by_id = {
+        u.id: u
+        for u in _UserModel.query.filter(
+            _UserModel.id.in_([r.user_id for r in pending])
+        ).all()
+    } if pending else {}
+    return render_template(
+        "admin/role_requests.html",
+        pending=pending,
+        users_by_id=users_by_id,
+        auto_approve=SystemSettingsService.get_auto_approve_roles(),
+        pending_count=len(pending),
+        active_section="roles",
+    )
+
+
+@admin_bp.route("/admin/role-requests/<int:request_id>/approve", methods=["POST"])
+@login_required
+@admin_required
+def approve_role_request(request_id):
+    from application.roles.role_request_service import RoleRequestService
+    try:
+        RoleRequestService.approve_request(request_id, current_user.id)
+        flash("درخواست نقش تأیید شد.", "success")
+    except ValueError as e:
+        flash(str(e), "error")
+    return redirect(url_for("admin.role_requests"))
+
+
+@admin_bp.route("/admin/role-requests/<int:request_id>/reject", methods=["POST"])
+@login_required
+@admin_required
+def reject_role_request(request_id):
+    from application.roles.role_request_service import RoleRequestService
+    try:
+        RoleRequestService.reject_request(request_id, current_user.id)
+        flash("درخواست نقش رد شد.", "info")
+    except ValueError as e:
+        flash(str(e), "error")
+    return redirect(url_for("admin.role_requests"))
+
+
+@admin_bp.route("/admin/settings/auto-approve-roles", methods=["POST"])
+@login_required
+@admin_required
+def update_auto_approve_roles():
+    """Toggle automatic approval of arbiter/organizer requests (Beta ON)."""
+    from application.roles.system_settings_service import SystemSettingsService
+    enabled = request.form.get("auto_approve") in ("on", "true", "1", "yes")
+    SystemSettingsService.set_auto_approve_roles(enabled)
+    flash(
+        "تأیید خودکار درخواست‌های نقش {}.".format("فعال شد" if enabled else "غیرفعال شد"),
+        "success",
+    )
+    return redirect(url_for("admin.role_requests"))

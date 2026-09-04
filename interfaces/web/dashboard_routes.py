@@ -34,12 +34,26 @@ from infrastructure.repositories.verification import PlayerVerificationRepositor
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
+def _role_request_context(user):
+    """Beta role-request card context: existing requests keyed by role."""
+    try:
+        from application.roles.role_request_service import RoleRequestService
+        rows = RoleRequestService.get_user_requests(user.id)
+        by_role = {r.role: r.status for r in rows}
+    except Exception:
+        by_role = {}
+    return {
+        "arbiter": by_role.get("arbiter"),
+        "organizer": by_role.get("organizer"),
+    }
+
 @dashboard_bp.route("/dashboard")
 @login_required
 def index():
     profile = current_user.profile
     is_organizer = current_user.has_role('organizer')
     is_player = current_user.has_role('player')
+    is_arbiter = current_user.has_role('arbiter')
     
     my_tournaments = []
     my_registrations = []
@@ -87,6 +101,7 @@ def index():
         user=current_user,
         is_organizer=is_organizer,
         is_player=is_player,
+        is_arbiter=is_arbiter,
         my_tournaments=my_tournaments,
         pending_invitations=pending_invitations,
         assigned_tournaments=assigned_tournaments,
@@ -94,6 +109,7 @@ def index():
         available_tournaments=available_tournaments,
         search_results=None,
         my_participations=my_participations,
+        role_requests=_role_request_context(current_user),
     )
 
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage")
@@ -167,11 +183,13 @@ def search_profile():
         search_results=search_results,
         is_organizer=current_user.has_role('organizer'),
         is_player=current_user.has_role('player'),
+        is_arbiter=current_user.has_role('arbiter'),
         my_tournaments=TournamentModel.query.filter_by(organizer_id=current_user.id).all(),
         pending_invitations=pending_invitations,
         assigned_tournaments=assigned_tournaments,
         my_registrations=my_registrations,
-        available_tournaments=available_tournaments
+        available_tournaments=available_tournaments,
+        role_requests=_role_request_context(current_user),
     )
 
 @dashboard_bp.route("/dashboard/profile/link/<int:profile_id>", methods=["POST"])
@@ -196,12 +214,52 @@ def create_profile():
     if request.method == "POST":
         try:
             AuthService.create_profile_for_user(current_user.id, request.form)
+            # Beta: optional role checkboxes on the completion page create
+            # the corresponding arbiter/organizer requests (never mandatory).
+            _handle_beta_role_checkboxes(current_user.id, request.form)
             flash("پروفایل شما با موفقیت ایجاد شد.", "success")
             return redirect(url_for("dashboard.index"))
         except ValueError as e:
             flash(str(e), "error")
             
     return render_template("dashboard/create_profile.html")
+
+
+def _handle_beta_role_checkboxes(user_id: int, form) -> None:
+    """Create optional arbiter/organizer requests from profile checkboxes."""
+    from application.roles.role_request_service import RoleRequestService
+    for field, role in (("request_arbiter", "arbiter"), ("request_organizer", "organizer")):
+        if form.get(field):
+            try:
+                _req, auto = RoleRequestService.request_role(user_id, role)
+                if auto:
+                    flash(
+                        "نقش {} به صورت خودکار فعال شد.".format(
+                            "داوری" if role == "arbiter" else "برگزاری"
+                        ),
+                        "success",
+                    )
+                else:
+                    flash("درخواست نقش شما ثبت شد و در انتظار تأیید مدیر است.", "info")
+            except ValueError as exc:
+                flash(str(exc), "error")
+
+
+@dashboard_bp.route("/dashboard/roles/request", methods=["POST"])
+@login_required
+def request_role():
+    """Request arbiter/organizer role later from dashboard/profile."""
+    from application.roles.role_request_service import RoleRequestService
+    role = request.form.get("role", "").strip().lower()
+    try:
+        _req, auto = RoleRequestService.request_role(current_user.id, role)
+        if auto:
+            flash("نقش درخواستی به صورت خودکار فعال شد.", "success")
+        else:
+            flash("درخواست شما ثبت شد و در انتظار تأیید مدیر سیستم است.", "info")
+    except ValueError as e:
+        flash(str(e), "error")
+    return redirect(url_for("dashboard.index"))
 
 @dashboard_bp.route("/dashboard/profile/update", methods=["POST"])
 @login_required
@@ -228,6 +286,9 @@ def update_profile():
     profile.first_name = request.form.get("first_name", "").strip()
     profile.last_name = request.form.get("last_name", "").strip()
     profile.federation = request.form.get("federation", "IRI").strip() or "IRI"
+    gender = request.form.get("gender", "").strip().upper()
+    if gender in ("M", "F"):
+        profile.gender = gender
     # P0-F: fide_title is deliberately NOT accepted here. The official
     # title is owned by the FIDE verification workflow (sync on approval);
     # players must never be able to self-declare or modify it.
@@ -621,9 +682,11 @@ def request_verification():
         return redirect(url_for("dashboard.create_profile"))
 
     if request.method == "POST":
-        fide_id = request.form.get("fide_id", "").strip()
+        # Beta: reuse the profile's FIDE ID automatically when present;
+        # only ask the user when the profile has none stored.
+        fide_id = request.form.get("fide_id", "").strip() or (profile.fide_id or "").strip()
         if not fide_id:
-            flash("کد فیده الزامی است.", "error")
+            flash("کد فیده الزامی است. لطفاً ابتدا آن را وارد کنید.", "error")
             return redirect(request.url)
             
         try:

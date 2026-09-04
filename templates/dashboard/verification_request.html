@@ -85,6 +85,22 @@
                     </div>
                     
                     <hr>
+                    {% if profile.fide_id %}
+                    {# Beta: profile already holds a FIDE ID — reuse it automatically. #}
+                    <div class="alert alert-info">
+                        کد فیده <strong dir="ltr">{{ profile.fide_id }}</strong> از پروفایل شما به صورت خودکار استفاده می‌شود؛ نیازی به وارد کردن مجدد نیست.
+                    </div>
+                    <form action="{{ url_for('dashboard.request_verification') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="fide_id" value="{{ profile.fide_id }}">
+                        <button type="submit" class="btn btn-primary btn-block">ثبت درخواست تأیید هویت برای کد {{ profile.fide_id }}</button>
+                    </form>
+                    <p class="text-muted small mt-3">اگر این کد اشتباه است، ابتدا آن را از طریق ویرایش پروفایل اصلاح کنید (تغییر کد فیده توسط ادمین سیستم انجام می‌شود).</p>
+                    {% else %}
+                    {# No FIDE ID on the profile yet — explain why we ask for it. #}
+                    <div class="alert alert-info">
+                        پروفایل شما هنوز کد فیده ندارد. برای تأیید هویت، ابتدا کد فیده خود را از فهرست رسمی زیر پیدا و انتخاب کنید؛ همین کد در پروفایل شما هم ذخیره می‌شود.
+                    </div>
                     <form action="{{ url_for('dashboard.request_verification') }}" method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-group position-relative mb-3">
@@ -98,6 +114,7 @@
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">ثبت درخواست تأیید هویت</button>
                     </form>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -105,7 +122,10 @@
 </div>
 
 <script>
-document.getElementById('fideSearch').addEventListener('input', function() {
+(function() {
+var searchInput = document.getElementById('fideSearch');
+if (!searchInput) return; // Beta: profile already has a FIDE ID — no search box.
+searchInput.addEventListener('input', function() {
     const query = this.value.trim();
     const resultsDiv = document.getElementById('searchResults');
     
@@ -152,9 +172,13 @@ document.getElementById('fideSearch').addEventListener('input', function() {
 
 // Hide dropdown when clicking outside
 document.addEventListener('click', function(e) {
-    if (!document.getElementById('fideSearch').contains(e.target) && !document.getElementById('searchResults').contains(e.target)) {
-        document.getElementById('searchResults').style.display = 'none';
+    var s = document.getElementById('fideSearch');
+    var r = document.getElementById('searchResults');
+    if (!s || !r) return;
+    if (!s.contains(e.target) && !r.contains(e.target)) {
+        r.style.display = 'none';
     }
 });
+})();
 </script>
 {% endblock %}

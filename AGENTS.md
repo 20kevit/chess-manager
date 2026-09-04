@@ -186,9 +186,11 @@ pytest tests/test_eligibility.py::TestX -v
 
 - `tests/conftest.py`: `TestConfig` (in-memory SQLite, `TESTING=True`, `WTF_CSRF_ENABLED=False`), function-scoped fresh app.
 - Styles: integration tests per phase (`test_phase8..10`, `test_fide_parser`, etc.) — class-based; plus service/route integrity tests (`test_pairing_flow`, `test_payment_flow`, `test_tournament_service`, …). No linter/CI.
-- Baseline mirrors `docs/APPLICATION.md` §11 / `tests/conftest.py`: **8 pre-existing failures** are unrelated to recent refactors and need contract/migration fixes, not product changes:
-  - `test_deployment_schema::test_upgrade_produces_exactly_the_model_schema` + `test_flask_db_check_reports_no_pending_operations` — baseline migration drift (models vs `bb0160eefd6b`).
-  - `test_phase9a::test_create_notification/create`, `test_phase9a::test_mark_as_read`, `test_phase9a::test_user_isolation_on_read`, `test_phase9d::test_default_preferences`, `test_phase9h::test_user_isolation_mark_read`, `test_phase10::test_self_demotion_protection` — predate provider-based dispatch redesign (`create_notification` is fire-and-forget → `None`, wording changed).
+- Baseline mirrors `docs/APPLICATION.md` §11 / `tests/conftest.py`: **5 pre-existing failures** (re-characterized 2026-09-04 against a clean tree; unrelated to recent refactors, not product changes):
+  - `test_fide_import_flow::TestRoutes::test_status_endpoint_authz_matrix` — expects 302, route returns 403.
+  - `test_data_integrity::TestC1BackupSwissState` (3 tests: replace/old-backup/merge) — backup-restore expectations drift.
+  - `test_baseline_checkpoint::test_existing_db_upgrade_adds_p0_columns_without_data_loss` — hardcoded old shape lacks P1-G `download_progress`/`processing_progress`.
+  - Fixed by the migration-chain cutover: both `test_deployment_schema` drift tests, `test_baseline_checkpoint::test_fresh_install_from_baseline_is_usable`, and the phase9/10 notification tests all pass.
 - New tests: follow existing class-based integration style; prefer service-layer SQLite fixtures. Unit tests for `domain/pairing`, `tiebreak`, `rating`, `pricing` are still absent — add when touching those areas.
 
 ## Frontend-Specific Development Rules

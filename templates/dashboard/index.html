@@ -197,7 +197,7 @@
 
     <!-- Left Column (Profile) -->
     <div>
-        <div class="dash-card">
+        <div class="dash-card profile-card">
             <div class="dash-card-title">
                 پروفایل شطرنج
                 {% if profile %}
@@ -206,75 +206,87 @@
             </div>
             
             {% if profile %}
-                <div class="profile-row">
-                    <span class="profile-label">نام:</span>
-                    <span class="profile-value">{{ profile.first_name }} {{ profile.last_name }}</span>
-                </div>
-                <div class="profile-row">
-                    <span class="profile-label">کد فیده:</span>
-                    <span class="profile-value">
-                        {{ profile.fide_id or 'ندارد' }}
-                        {% if profile.fide_verification_status == 'verified' %}
-                            <span class="badge badge-success" style="font-size: 0.7rem;">تأیید شده</span>
-                        {% elif profile.fide_verification_status == 'pending' %}
-                            <span class="badge badge-warning" style="font-size: 0.7rem;">در انتظار</span>
-                        {% elif profile.fide_verification_status == 'rejected' %}
-                            <span class="badge badge-error" style="font-size: 0.7rem;">رد شده</span>
-                        {% else %}
-                            <span class="badge" style="font-size: 0.7rem; background: var(--gray-200); color: var(--gray-700);">تأیید نشده</span>
-                        {% endif %}
-                    </span>
-                </div>
-                <div class="profile-row">
-                    <span class="profile-label">فدراسیون:</span>
-                    <span class="profile-value">{{ profile.federation }}</span>
-                </div>
-                <div class="profile-row">
-                    <span class="profile-label">عنوان:</span>
-                    <span class="profile-value">{{ profile.fide_title or 'بدون عنوان' }}</span>
-                </div>
-                <div class="profile-row">
-                    <span class="profile-label">کد ملی:</span>
-                    <span class="profile-value">{{ profile.national_id or 'وارد نشده' }}</span>
-                </div>
-                <div class="profile-row">
-                    <span class="profile-label">موبایل:</span>
-                    <span class="profile-value" dir="ltr">{{ profile.phone or 'وارد نشده' }}</span>
-                </div>
-                <div class="profile-row">
-                    <span class="profile-label">عکس پروفایل:</span>
-                    <span class="profile-value">
+                <!-- Profile header: avatar + name + badges -->
+                <div class="profile-header">
+                    <div class="profile-avatar">
                         {% if profile.photo_path %}
                             <a href="{{ url_for('dashboard.serve_profile_photo', profile_id=profile.id) }}" target="_blank">
-                                <img src="{{ url_for('dashboard.serve_profile_photo', profile_id=profile.id) }}" alt="عکس پروفایل" style="width:48px; height:48px; border-radius:50%; object-fit:cover; vertical-align:middle;">
+                                <img src="{{ url_for('dashboard.serve_profile_photo', profile_id=profile.id) }}" alt="عکس پروفایل">
                             </a>
                         {% else %}
-                            بارگذاری نشده
+                            <span class="profile-avatar-fallback" aria-hidden="true">♟</span>
                         {% endif %}
-                    </span>
-                </div>
-                <div class="profile-row">
-                    <span class="profile-label">مدرک هویتی:</span>
-                    <span class="profile-value">
-                        {% if profile.id_document_path %}
-                            <a href="{{ url_for('dashboard.serve_id_document', profile_id=profile.id) }}" target="_blank">مشاهده مدرک</a>
-                        {% else %}
-                            بارگذاری نشده
-                        {% endif %}
-                    </span>
-                </div>
-                <div class="profile-row">
-                    <span class="profile-label">شماره کارت بانکی:</span>
-                    <span class="profile-value">{{ profile.bank_card_number or 'وارد نشده' }}</span>
-                </div>
-                <div class="profile-row">
-                    <span class="profile-label">نام صاحب حساب:</span>
-                    <span class="profile-value">{{ profile.bank_account_name or 'وارد نشده' }}</span>
+                    </div>
+                    <div class="profile-identity">
+                        <div class="profile-name">{{ profile.first_name }} {{ profile.last_name }}</div>
+                        <div class="profile-badges">
+                            {% if profile.fide_verification_status == 'verified' %}
+                                <span class="badge badge-success">فیده تأیید شده</span>
+                            {% elif profile.fide_verification_status == 'pending' %}
+                                <span class="badge badge-warning">فیده در انتظار</span>
+                            {% elif profile.fide_verification_status == 'rejected' %}
+                                <span class="badge badge-error">فیده رد شده</span>
+                            {% else %}
+                                <span class="badge badge-muted">فیده تأیید نشده</span>
+                            {% endif %}
+                            {% if profile.fide_title %}
+                                <span class="badge badge-title" dir="ltr">{{ profile.fide_title }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Private media uploads (photos/documents are never public) -->
-                <div style="margin-top: 20px; border-top: 1px dashed var(--gray-200); padding-top: 15px;">
-                    <h4 style="margin: 0 0 10px 0; font-size: 0.95em;">مدارک خصوصی پروفایل</h4>
+                <!-- FIDE section -->
+                <div class="profile-section">
+                    <h4 class="profile-section-title">اطلاعات فیده</h4>
+                    <div class="profile-row">
+                        <span class="profile-label">کد فیده:</span>
+                        <span class="profile-value" dir="ltr">{{ profile.fide_id or '—' }}</span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="profile-label">فدراسیون:</span>
+                        <span class="profile-value">{{ profile.federation }}</span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="profile-label">عنوان رسمی:</span>
+                        <span class="profile-value">{{ profile.fide_title or 'بدون عنوان' }}</span>
+                    </div>
+                </div>
+
+                <!-- Personal section -->
+                <div class="profile-section">
+                    <h4 class="profile-section-title">اطلاعات شخصی</h4>
+                    <div class="profile-row">
+                        <span class="profile-label">کد ملی:</span>
+                        <span class="profile-value">{{ profile.national_id or 'وارد نشده' }}</span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="profile-label">موبایل:</span>
+                        <span class="profile-value" dir="ltr">{{ profile.phone or 'وارد نشده' }}</span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="profile-label">مدرک هویتی:</span>
+                        <span class="profile-value">
+                            {% if profile.id_document_path %}
+                                <a href="{{ url_for('dashboard.serve_id_document', profile_id=profile.id) }}" target="_blank">مشاهده مدرک</a>
+                            {% else %}
+                                بارگذاری نشده
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="profile-label">شماره کارت بانکی:</span>
+                        <span class="profile-value">{{ profile.bank_card_number or 'وارد نشده' }}</span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="profile-label">نام صاحب حساب:</span>
+                        <span class="profile-value">{{ profile.bank_account_name or 'وارد نشده' }}</span>
+                    </div>
+                </div>
+
+                <!-- Private media uploads (photos/documents are never public; all optional) -->
+                <div class="profile-section profile-media">
+                    <h4 class="profile-section-title">مدارک خصوصی پروفایل <span class="optional-tag">(اختیاری)</span></h4>
                     <form method="POST" enctype="multipart/form-data" action="{{ url_for('dashboard.upload_profile_photo') }}" style="margin-bottom: 8px;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <label style="font-size: 0.85em;">عکس پروفایل (JPG/PNG، حداکثر ۵ مگابایت):</label>
@@ -303,7 +315,7 @@
                 </div>
 
                 <!-- Phase 7: FIDE Verification Button -->
-                <div style="margin-top: 20px;">
+                <div class="profile-actions">
                     <a href="{{ url_for('dashboard.request_verification') }}" class="btn btn-outline-primary btn-block">
                         {% if profile.fide_verification_status == 'verified' %}
                             مشاهده جزئیات هویت
@@ -311,6 +323,47 @@
                             درخواست تأیید هویت فیده (FIDE)
                         {% endif %}
                     </a>
+                </div>
+
+                <!-- Beta: optional arbiter/organizer role requests -->
+                <div class="profile-section profile-roles">
+                    <h4 class="profile-section-title">نقش‌های تکمیلی (اختیاری)</h4>
+                    {% if is_arbiter %}
+                        <p class="role-state role-state-active">✔ نقش داوری فعال است.</p>
+                    {% elif role_requests and role_requests.arbiter == 'pending' %}
+                        <p class="role-state role-state-pending">درخواست داوری در انتظار تأیید مدیر است.</p>
+                    {% elif role_requests and role_requests.arbiter == 'rejected' %}
+                        <p class="role-state role-state-rejected">درخواست قبلی داوری رد شد؛ می‌توانید دوباره تلاش کنید.</p>
+                        <form method="POST" action="{{ url_for('dashboard.request_role') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="role" value="arbiter">
+                            <button type="submit" class="btn btn-secondary btn-block">درخواست مجدد نقش داوری</button>
+                        </form>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('dashboard.request_role') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="role" value="arbiter">
+                            <button type="submit" class="btn btn-secondary btn-block">درخواست نقش داوری</button>
+                        </form>
+                    {% endif %}
+                    {% if is_organizer %}
+                        <p class="role-state role-state-active">✔ نقش برگزاری فعال است.</p>
+                    {% elif role_requests and role_requests.organizer == 'pending' %}
+                        <p class="role-state role-state-pending">درخواست برگزاری در انتظار تأیید مدیر است.</p>
+                    {% elif role_requests and role_requests.organizer == 'rejected' %}
+                        <p class="role-state role-state-rejected">درخواست قبلی برگزاری رد شد؛ می‌توانید دوباره تلاش کنید.</p>
+                        <form method="POST" action="{{ url_for('dashboard.request_role') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="role" value="organizer">
+                            <button type="submit" class="btn btn-secondary btn-block">درخواست مجدد نقش برگزاری</button>
+                        </form>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('dashboard.request_role') }}" style="margin-top: 8px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="role" value="organizer">
+                            <button type="submit" class="btn btn-secondary btn-block">درخواست نقش برگزاری</button>
+                        </form>
+                    {% endif %}
                 </div>
 
                 <!-- Phase 8H: View Public Profile Link -->
@@ -340,8 +393,8 @@
 </div>
 
 <!-- Edit Profile Modal -->
-<div id="editModal" class="modal-overlay" data-modal-close="editModal">
-    <div class="modal-box">
+<div id="editModal" class="modal-overlay">
+    <div class="modal-box" role="dialog" aria-modal="true">
         <h4 style="margin-bottom: 20px;">ویرایش پروفایل</h4>
         <form method="POST" action="{{ url_for('dashboard.update_profile') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -371,6 +424,13 @@
             </div>
             {% endif %}
             <div class="form-group">
+                <label>جنسیت:</label>
+                <select name="gender" class="form-control">
+                    <option value="M" {% if profile.gender == 'M' %}selected{% endif %}>آقا</option>
+                    <option value="F" {% if profile.gender == 'F' %}selected{% endif %}>خانم</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>تاریخ تولد:</label>
                 <input type="date" name="birth_date" class="form-control" value="{{ profile.birth_date.strftime('%Y-%m-%d') if profile.birth_date else '' }}">
             </div>
@@ -399,8 +459,8 @@
 </div>
 
 <!-- Claim Profile Modal -->
-<div id="claimModal" class="modal-overlay" data-modal-close="claimModal">
-    <div class="modal-box">
+<div id="claimModal" class="modal-overlay">
+    <div class="modal-box" role="dialog" aria-modal="true">
         <h4 style="margin-bottom: 20px;">جستجوی پروفایل موجود</h4>
         <form method="POST" action="{{ url_for('dashboard.search_profile') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

@@ -34,12 +34,29 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MIGRATIONS_DIR = os.path.join(PROJECT_ROOT, "migrations")
 
 
-def _baseline_path():
+def _chain_paths():
+    """Migration chain files ordered base -> head via down_revision links."""
+    import re
     versions = os.path.join(MIGRATIONS_DIR, "versions")
-    candidates = [f for f in os.listdir(versions)
-                  if f.endswith(".py") and not f.startswith("__")]
-    assert len(candidates) == 1, f"expected exactly one baseline migration, got {candidates}"
-    return os.path.join(versions, candidates[0])
+    revs = {}
+    for f in os.listdir(versions):
+        if not f.endswith(".py") or f.startswith("__"):
+            continue
+        src = open(os.path.join(versions, f), encoding="utf-8").read()
+        rev = re.search(r"^revision\s*=\s*['\"]([^'\"]+)['\"]", src, re.M).group(1)
+        down = re.search(r"^down_revision\s*=\s*['\"]([^'\"]+)['\"]", src, re.M)
+        revs[rev] = (f, down.group(1) if down else None)
+    assert revs, "no migrations found"
+    # Base = the revision with no parent; then follow down_revision links.
+    bases = [r for r, (_, down) in revs.items() if down is None]
+    assert len(bases) == 1, f"expected exactly one chain base, got {bases}"
+    ordered, current = [], bases[0]
+    while current is not None:
+        ordered.append(os.path.join(versions, revs[current][0]))
+        nxt = [r for r, (_, down) in revs.items() if down == current]
+        assert len(nxt) <= 1, f"branch detected at {current}"
+        current = nxt[0] if nxt else None
+    return ordered
 
 
 @pytest.fixture
@@ -135,28 +152,30 @@ class TestMySQLDialectRender:
         )
         mysql_op = Operations(mctx)
 
-        spec = importlib.util.spec_from_file_location(
-            "k_baseline_module", _baseline_path())
-        module = importlib.util.module_from_spec(spec)
-
         real_alembic = sys.modules.get("alembic")
         stub = types.ModuleType("alembic")
         stub.op = mysql_op
         sys.modules["alembic"] = stub
         try:
-            spec.loader.exec_module(module)
+            # Render the whole chain in order (baseline + additive deltas).
+            for i, path in enumerate(_chain_paths()):
+                spec = importlib.util.spec_from_file_location(
+                    f"k_chain_module_{i}", path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                with contextlib.redirect_stdout(buf):
+                    module.upgrade()
         finally:
             if real_alembic is not None:
                 sys.modules["alembic"] = real_alembic
 
-        with contextlib.redirect_stdout(buf):
-            module.upgrade()
         return buf.getvalue()
 
     def test_mysql_ddl_is_complete(self):
         ddl = self._render_mysql_ddl()
 
-        assert ddl.count("CREATE TABLE") == 22
+        # Baseline (22) + Beta role-request/settings tables (2).
+        assert ddl.count("CREATE TABLE") == 24
         # Every previously-missing structure is present in MySQL DDL form.
         for probe in ("telegram_chat_id", "bank_transfer_notes",
                       "enable_online_payment", "rejection_reason",
@@ -165,6 +184,93 @@ class TestMySQLDialectRender:
                       "CREATE TABLE player_verifications",
                       "CREATE TABLE temp_import_data",
                       "CREATE TABLE tournament_prizes",
-                      "CREATE TABLE prize_allocations"):
+                      "CREATE TABLE prize_allocations",
+                      "CREATE TABLE user_role_requests",
+                      "CREATE TABLE system_settings"):
             assert probe in ddl, f"MySQL DDL missing: {probe}"
         assert "admin_code" not in ddl
+
+
+class TestReviewerFkHealing:
+    """The f3d8a1c47e2b healing migration: old-shape databases (built
+    from the pre-squash chain, like the Beta DB) gain the three reviewer
+    FKs with all rows preserved; fresh installs are a verified no-op."""
+
+    @staticmethod
+    def _old_shape_db(path):
+        import sqlite3
+        conn = sqlite3.connect(path)
+        conn.executescript("""
+            CREATE TABLE alembic_version (
+                version_num VARCHAR(32) NOT NULL PRIMARY KEY
+            );
+            INSERT INTO alembic_version VALUES ('c41a9e2b07d3');
+            CREATE TABLE users (
+                id INTEGER NOT NULL PRIMARY KEY,
+                email VARCHAR(255) NOT NULL,
+                password_hash VARCHAR(255) NOT NULL
+            );
+            CREATE TABLE player_profiles (
+                id INTEGER NOT NULL PRIMARY KEY,
+                first_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100) NOT NULL
+            );
+            CREATE TABLE player_verifications (
+                id INTEGER NOT NULL PRIMARY KEY,
+                player_profile_id INTEGER NOT NULL,
+                requested_fide_id VARCHAR(20) NOT NULL,
+                status VARCHAR(20),
+                reviewer_id INTEGER,
+                fide_id_reviewer_id INTEGER,
+                dob_reviewer_id INTEGER,
+                photo_reviewer_id INTEGER,
+                FOREIGN KEY(player_profile_id)
+                    REFERENCES player_profiles (id),
+                FOREIGN KEY(reviewer_id) REFERENCES users (id)
+            );
+            INSERT INTO users (id, email, password_hash)
+                VALUES (1, 'heal@test.com', 'x');
+            INSERT INTO player_profiles (id, first_name, last_name)
+                VALUES (1, 'Heal', 'Me');
+            INSERT INTO player_verifications
+                (id, player_profile_id, requested_fide_id, status)
+                VALUES (1, 1, '12500001', 'pending');
+        """)
+        conn.commit()
+        conn.close()
+
+    def test_upgrade_adds_missing_fks_and_keeps_rows(self, tmp_path):
+        from sqlalchemy import create_engine, inspect as sa_inspect
+        db_file = tmp_path / "heal.db"
+        self._old_shape_db(str(db_file))
+
+        class HealConfig:
+            SECRET_KEY = "heal-test"
+            TESTING = True
+            SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_file.as_posix()}"
+            WTF_CSRF_ENABLED = False
+
+        app = create_app(HealConfig)
+        with app.app_context():
+            from flask_migrate import upgrade as fm_upgrade
+            fm_upgrade()  # runs only f3d8a1c47e2b on this stamp
+
+            eng = create_engine(f"sqlite:///{db_file.as_posix()}")
+            fks = sa_inspect(eng).get_foreign_keys("player_verifications")
+            constrained = {tuple(f["constrained_columns"]) for f in fks}
+            assert ("fide_id_reviewer_id",) in constrained
+            assert ("dob_reviewer_id",) in constrained
+            assert ("photo_reviewer_id",) in constrained
+
+            with eng.connect() as conn:
+                row = conn.exec_driver_sql(
+                    "SELECT player_profile_id, requested_fide_id, status"
+                    " FROM player_verifications WHERE id = 1"
+                ).fetchone()
+            assert tuple(row) == (1, "12500001", "pending")
+
+            with eng.connect() as conn:
+                version = conn.exec_driver_sql(
+                    "SELECT version_num FROM alembic_version"
+                ).fetchone()[0]
+            assert version == "f3d8a1c47e2b"

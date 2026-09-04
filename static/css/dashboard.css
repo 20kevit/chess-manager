@@ -291,3 +291,131 @@
 .status-approved { color: #059669; }
 .status-rejected { color: #dc2626; }
 .status-active { color: var(--success); }
+
+/* ============================================
+   Beta profile card refresh (scoped to dashboard)
+   ============================================ */
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 6px 0 14px 0;
+    border-bottom: 2px solid var(--gray-200);
+    margin-bottom: 6px;
+}
+
+.profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--gray-200);
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-avatar-fallback {
+    font-size: 1.8rem;
+    color: var(--gray-400);
+}
+
+.profile-identity {
+    min-width: 0;
+}
+
+.profile-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.profile-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.profile-badges .badge {
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.badge-success { background: #dcfce7; color: #15803d; }
+.badge-warning { background: #fef3c7; color: #b45309; }
+.badge-error { background: #fee2e2; color: #b91c1c; }
+.badge-muted { background: var(--gray-200); color: var(--gray-700); }
+.badge-title { background: var(--gray-800); color: #fff; }
+
+.profile-section {
+    padding: 12px 0 4px 0;
+    border-bottom: 1px dashed var(--gray-200);
+}
+
+.profile-section:last-child {
+    border-bottom: none;
+}
+
+.profile-section-title {
+    margin: 0 0 8px 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--gray-700);
+}
+
+.optional-tag {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--gray-500);
+}
+
+.profile-media label {
+    font-size: 0.85em;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.profile-media input[type="file"] {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.85em;
+}
+
+.profile-actions {
+    margin-top: 16px;
+}
+
+.profile-roles .role-state {
+    font-size: 0.88rem;
+    margin: 8px 0;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+}
+
+.role-state-active { background: #dcfce7; color: #15803d; }
+.role-state-pending { background: #fef3c7; color: #b45309; }
+.role-state-rejected { background: #fee2e2; color: #b91c1c; }
+
+@media (max-width: 480px) {
+    .profile-header {
+        gap: 10px;
+    }
+    .profile-avatar {
+        width: 52px;
+        height: 52px;
+    }
+    .profile-name {
+        font-size: 1.02rem;
+    }
+}

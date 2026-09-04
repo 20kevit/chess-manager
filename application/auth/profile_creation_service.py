@@ -60,5 +60,12 @@ class ProfileCreationService:
             phone=phone,
         )
         db.session.add(new_profile)
+        db.session.flush()
+        # Beta: completing the minimal profile guarantees the Player role
+        # (registration already grants it; this covers legacy/imported
+        # accounts that may lack it). No admin approval is required.
+        from infrastructure.models.user import UserRoleModel
+        if not UserRoleModel.query.filter_by(user_id=user_id, role="player").first():
+            db.session.add(UserRoleModel(user_id=user_id, role="player"))
         db.session.commit()
         return new_profile

@@ -5,6 +5,7 @@
 {% block content %}
 <div class="form-container" style="max-width: 600px; margin: 20px auto;">
     <h2 class="section-title">ساخت پروفایل جدید</h2>
+    <p class="text-muted" style="margin-bottom: 20px;">فقط <strong>نام و نام خانوادگی</strong> الزامی است؛ بقیه موارد اختیاری‌اند و بعداً هم قابل تکمیل‌اند. با ساخت پروفایل، نقش بازیکن به صورت خودکار فعال می‌شود.</p>
     
     <form method="POST" action="{{ url_for('dashboard.create_profile') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -75,6 +76,22 @@
                 <label>نام صاحب حساب</label>
                 <input type="text" name="bank_account_name" class="form-control">
             </div>
+        </div>
+
+        <hr style="margin: 20px 0;">
+        <h4>نقش‌های تکمیلی (اختیاری)</h4>
+        <p class="text-muted" style="font-size: 0.85rem;">در صورت تمایل، هم‌زمان درخواست نقش داوری یا برگزاری هم ثبت کنید. این موارد اختیاری‌اند و بعداً از داشبورد هم قابل درخواست‌اند.</p>
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal;">
+                <input type="checkbox" name="request_arbiter" value="on">
+                من همچنین می‌خواهم از وب‌سایت به عنوان داور استفاده کنم
+            </label>
+        </div>
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal;">
+                <input type="checkbox" name="request_organizer" value="on">
+                من همچنین می‌خواهم از وب‌سایت به عنوان برگزارکننده استفاده کنم
+            </label>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block mt-3">ایجاد پروفایل</button>

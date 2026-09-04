@@ -26,6 +26,9 @@
                 <a href="{{ url_for('admin.manage_users') }}" class="admin-nav-item {% if active_section == 'users' %}active{% endif %}">
                     👥 کاربران
                 </a>
+                <a href="{{ url_for('admin.role_requests') }}" class="admin-nav-item {% if active_section == 'roles' %}active{% endif %}">
+                    🛡️ درخواست‌های نقش
+                </a>
                 <a href="{{ url_for('admin.manage_tournaments') }}" class="admin-nav-item {% if active_section == 'tournaments' %}active{% endif %}">
                     🏆 مسابقات
                 </a>

@@ -94,7 +94,14 @@ const Modal = (function() {
         });
 
         document.querySelectorAll('[data-modal-close]').forEach(closeBtn => {
-            closeBtn.addEventListener('click', function() {
+            // Overlays close only via direct overlay clicks (see handler
+            // above): never wire an overlay element itself as a close
+            // button, otherwise every bubbled click from inside .modal-box
+            // would immediately close the menu. This guard keeps the modal
+            // usable even if the attribute is ever re-added to an overlay.
+            if (closeBtn.classList.contains('modal-overlay')) return;
+            closeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
                 const modalId = this.getAttribute('data-modal-close');
                 close(modalId);
             });

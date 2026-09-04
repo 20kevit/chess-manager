@@ -17,6 +17,10 @@ from application.auth.authentication_service import AuthenticationService
 from application.auth.profile_linking_service import ProfileLinkingService
 from application.auth.profile_creation_service import ProfileCreationService
 
+# Roles (Beta: arbiter/organizer requests + auto-approve setting)
+from application.roles.role_request_service import RoleRequestService
+from application.roles.system_settings_service import SystemSettingsService
+
 # Tournament services
 from application.tournament.tournament_config_service import TournamentConfigService
 from application.tournament.tournament_pricing_service import TournamentPricingService
@@ -120,6 +124,10 @@ __all__ = [
     "AuthenticationService",
     "ProfileLinkingService",
     "ProfileCreationService",
+
+    # Roles (Beta)
+    "RoleRequestService",
+    "SystemSettingsService",
 
     # Tournament
     "TournamentConfigService",
