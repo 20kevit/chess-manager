@@ -5,6 +5,7 @@ Handles participant CRUD operations, snapshots, and FIDE rating auto-fetch.
 """
 from datetime import datetime, date
 from typing import Optional
+from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 
@@ -62,6 +63,14 @@ class ParticipantManagement:
         else:
             profile.fide_title = form_data.get("fide_title", "").strip() or profile.fide_title
 
+        # Guard: raise before hitting the DB unique constraint so callers
+        # get a clear ValueError (not an IntegrityError that poisons the session).
+        existing = TournamentParticipantModel.query.filter_by(
+            tournament_id=tournament.id, player_profile_id=profile.id,
+        ).first()
+        if existing:
+            raise ValueError("این بازیکن قبلاً در این مسابقه ثبت نام شده است.")
+
         # 2. Create Participant with Snapshot
         age_category = form_data.get("age_category", "").strip()
         if not age_category and profile.birth_date:
@@ -96,8 +105,12 @@ class ParticipantManagement:
             joined_from_round=max(1, tournament.current_round + 1) if tournament.current_round > 0 else 1,
         )
         
-        participant = ParticipantRepository.save(participant)
-        db.session.commit()
+        try:
+            participant = ParticipantRepository.save(participant)
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            raise ValueError("این بازیکن قبلاً در این مسابقه ثبت نام شده است.")
         return participant
 
     @staticmethod

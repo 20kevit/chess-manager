@@ -51,7 +51,11 @@ def player_add(public_id):
             ParticipantManagement.create(tournament, request.form)
             flash("بازیکن جدید با موفقیت اضافه شد.", "success")
             return redirect(url_for("player.player_add", public_id=public_id))
+        except ValueError as e:
+            db.session.rollback()
+            flash(str(e), "error")
         except Exception as e:
+            db.session.rollback()
             flash(f"خطا: {str(e)}", "error")
 
     return render_template("tournament/player_add.html", tournament=tournament, is_admin=True)
