@@ -1,108 +1,50 @@
 """
-FIDE Dutch Swiss Pairing Engine.
+Backward-compatibility shim — canonical implementation lives in
+``pairing-core`` (``pairing_core`` package, versioned dependency).
 
-A fully self-contained, deterministic implementation of the
-FIDE Dutch pairing system (C.04.2 + C.04.3), effective from
-1 July 2025.
+New code must import from ``pairing_core`` directly::
 
-Quick Start:
-    from domain.pairing import pair_round, PlayerData
+    from pairing_core import SwissEngine, PlayerData, pair_round, validate_round
 
-    players = [
-        PlayerData(id=1, pairing_no=1, rating=2400, points=3.0),
-        PlayerData(id=2, pairing_no=2, rating=2350, points=3.0),
-        PlayerData(id=3, pairing_no=3, rating=2300, points=2.5),
-        PlayerData(id=4, pairing_no=4, rating=2250, points=2.5),
-    ]
-
-    result = pair_round(players, round_number=4)
-
-    for card in result.pairings:
-        if card.is_bye:
-            print(f"Board {card.board}: Player {card.white_id} gets bye")
-        else:
-            print(f"Board {card.board}: {card.white_id} (W) vs {card.black_id} (B)")
-
-Class-based API (backward compatible):
-    from domain.pairing import SwissEngine
-
-    engine = SwissEngine(players, round_number=4)
-    result = engine.generate()
-
-Validation API:
-    from domain.pairing import validate_round
-
-    report = validate_round(result, players)
-    if not report.is_valid:
-        for error in report.errors:
-            print(error)
-
-Features:
-    - 100% FIDE Dutch System compliance (C.04.2 + C.04.3)
-    - Fully deterministic (zero randomness)
-    - Systematic lexicographic transpositions
-    - Systematic FIDE-ordered exchanges
-    - Cross-bracket recursive backtracking
-    - Two-pass float relaxation (strict → relaxed)
-    - Absolute rules never relaxed (no-repeat, color limits)
-    - Independent compliance validator
-    - Zero external dependencies (pure Python stdlib)
-    - Backward compatible with legacy PlayerSnapshot interface
-
-Modules:
-    models.py          — Data contracts (input/output/internal)
-    engine.py          — Orchestrator (public entry point)
-    bracket.py         — Score bracket construction & management
-    color.py           — Color preference & assignment (C.04.2)
-    floats.py          — Float state & restrictions (C.04.2)
-    bye.py             — Bye selection (C.04.2)
-    pairer.py          — Core Dutch algorithm (C.04.3)
-    exchange.py        — Systematic exchange generator
-    validator.py       — Independent compliance checker
+This module re-exports the public contract so existing imports
+(``from domain.pairing import ...``) keep working during migration.
+No pairing logic lives here.
 """
 
-# ── Public Input/Output Models ────────────────────────────────────
-from domain.pairing.models import (
+from pairing_core import (
     PlayerData,
+    PlayerSnapshot,
     PairingCard,
     RoundResult,
+    PairingRequest,
+    PairingEngine,
+    NativeDutchEngine,
+    SwissEngine,
+    pair_round,
+    validate_round,
+    ValidationReport,
+    Finding,
+    __version__ as __pairing_core_version__,
+    __fide_reference__,
 )
 
-# ── Legacy Aliases ────────────────────────────────────────────────
-from .models import PlayerData as PlayerSnapshot
+from pairing_core.models import compute_color, make_engine_players
 
-# ── Public API — Functional ───────────────────────────────────────
-from .engine import pair_round
-
-# ── Public API — Class-based ──────────────────────────────────────
-from .engine import SwissEngine
-
-# ── Public API — Validation ───────────────────────────────────────
-from .validator import validate_round, ValidationReport
-
-# ── Public API — Validation Report Types ──────────────────────────
-from .validator import Finding
-
-# ── Version ───────────────────────────────────────────────────────
-__version__ = "1.0.0"
-__fide_reference__ = "C.04.2 + C.04.3 (effective 1 July 2025)"
-
-# ── Public API Summary ────────────────────────────────────────────
 __all__ = [
-    # Input model
     "PlayerData",
-    "PlayerSnapshot",    # legacy alias
-    # Output models
+    "PlayerSnapshot",
     "PairingCard",
     "RoundResult",
-    # Engine
-    "pair_round",
+    "PairingRequest",
+    "PairingEngine",
+    "NativeDutchEngine",
     "SwissEngine",
-    # Validation
+    "pair_round",
     "validate_round",
     "ValidationReport",
     "Finding",
-    # Metadata
-    "__version__",
+    "compute_color",
+    "make_engine_players",
+    "__pairing_core_version__",
     "__fide_reference__",
 ]

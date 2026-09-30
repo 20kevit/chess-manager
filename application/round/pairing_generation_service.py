@@ -9,8 +9,8 @@ from typing import List, Optional, Set, FrozenSet
 
 from app.extensions import db
 
-from domain.pairing import SwissEngine, PlayerData
-from domain.pairing.models import compute_color
+from pairing_core import SwissEngine, PlayerData
+from pairing_core.models import compute_color
 
 from infrastructure.models.participant import TournamentParticipantModel
 from infrastructure.models.tournament import (ByeRequestModel, ManualPairingModel, PairingModel, RoundModel, TournamentModel)
@@ -91,7 +91,7 @@ class PairingGenerationService:
         # are logged for review. Valid pairings pass through untouched.
         _log = logging.getLogger(__name__)
         try:
-            from domain.pairing import validate_round
+            from pairing_core import validate_round
             report = validate_round(result, pairing_players)
             for finding in report.findings:
                 if finding.level == "ERROR":
@@ -213,7 +213,7 @@ class PairingGenerationService:
     @staticmethod
     def _validate_color_swap(participant_id, new_color, tournament_id):
         from infrastructure.models.participant import TournamentParticipantModel
-        from domain.pairing.models import compute_color
+        from pairing_core.models import compute_color
         
         p = TournamentParticipantModel.query.get(participant_id)
         state = compute_color(p.color_history or "")

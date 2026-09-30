@@ -9,8 +9,8 @@ from typing import List, Optional
 
 from app.extensions import db
 
-from domain.pairing import SwissEngine, PlayerData
-from domain.pairing.models import compute_color
+from pairing_core import SwissEngine, PlayerData
+from pairing_core.models import compute_color
 
 from infrastructure.models.participant import TournamentParticipantModel
 from infrastructure.models.tournament import (ByeRequestModel, ManualPairingModel, PairingModel, RoundModel, TournamentModel)
@@ -111,7 +111,7 @@ class RoundLifecycleService:
         # are logged for review. Valid pairings pass through untouched.
         _log = logging.getLogger(__name__)
         try:
-            from domain.pairing import validate_round
+            from pairing_core import validate_round
             report = validate_round(result, pairing_players)
             for finding in report.findings:
                 if finding.level == "ERROR":
