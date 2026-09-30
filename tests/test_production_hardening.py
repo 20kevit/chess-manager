@@ -34,7 +34,7 @@ class TestTransactionBoundaries:
     def test_round_create_rollback_on_validation_failure(self, app, db):
         from application.round import RoundLifecycleService
         from domain.pairing import SwissEngine
-        from domain.pairing.models import PairingCard, RoundResult
+        from pairing_core.models import PairingCard, RoundResult
         t=_tournament()
         _add_players(t,4)
         db.session.commit()

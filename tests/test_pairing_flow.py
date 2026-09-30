@@ -17,10 +17,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.extensions import db
 from application.round_service import RoundService
 from domain.pairing import SwissEngine
-from domain.pairing.models import (
+from pairing_core.models import (
     EnginePlayer, PlayerData, PairingCard, RoundResult, make_engine_players,
 )
-from domain.pairing.bye import select_bye_player
+from pairing_core.bye import select_bye_player
 
 from infrastructure.models.participant import TournamentParticipantModel
 from infrastructure.models.profile import PlayerProfileModel

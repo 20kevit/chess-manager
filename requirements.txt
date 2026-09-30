@@ -31,8 +31,6 @@ urllib3==2.7.0
 Werkzeug==3.1.8
 WTForms==3.2.2
 Flask-Login==0.6.3
-# pairing-core: standalone FIDE Dutch engine (local path until
-# 20kevit/pairing-core is published; pin exact version for reproducibility).
-# Local dev: pip install -e /opt/projects/pairing-core
-# Prod (after publish): replace with pairing-core==0.1.0 from index.
-pairing-core==0.1.0
+# pairing-core: standalone FIDE Dutch engine, pinned to Git tag v0.1.0
+# for reproducible installs (no local path / editable / PYTHONPATH).
+pairing-core @ git+https://github.com/20kevit/pairing-core.git@v0.1.0
