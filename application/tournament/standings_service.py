@@ -9,8 +9,9 @@ import json
 
 from app.extensions import db
 
-from domain.tiebreak.calculators import calculate_all, TIEBREAK_NAMES_FA
-from domain.tiebreak.models import PlayerTiebreakData, GameRecord
+from tiebreak_core import calculate_all
+from tiebreak_core.display import TIEBREAK_NAMES_FA
+from application.tournament.tiebreak_adapter import build_tiebreak_data
 from domain.rating.calculator import calculate_tournament_ratings
 from domain.rating.models import RatingPlayerData, RatingGameRecord
 
@@ -84,73 +85,18 @@ class StandingsService:
 
     @staticmethod
     def _build_tiebreak_data(participants, pairings) -> dict:
-        """Build PlayerTiebreakData dict from DB models."""
-        result_scores = {
-            "1-0": (1.0, 0.0), "0-1": (0.0, 1.0),
-            "1/2": (0.5, 0.5), "+/-": (1.0, 0.0),
-            "-/+": (0.0, 1.0), "+/+": (0.0, 0.0),
-            "bye": (1.0, 0.0), "half-bye": (0.5, 0.0), "zero-bye": (0.0, 0.0)
-        }
-        # Map participants by their ID (which is now the pairing engine ID)
-        participants_map = {p.id: p for p in participants}
-        all_pairings = [p for p in pairings if p.result in result_scores]
+        """Build PlayerTiebreakData dict from DB models.
+
+        Delegates to the thin tiebreak-core adapter (identical mapping;
+        kept as a method for backward-compatible imports/tests).
+        """
         round_ids = {p.round_id for p in pairings}
         round_number_map = {}
         if round_ids:
             from infrastructure.models.tournament import RoundModel
             round_objs = RoundModel.query.filter(RoundModel.id.in_(round_ids)).all()
             round_number_map = {r.id: r.round_number for r in round_objs}
-
-        tb_map = {}
-        for p in participants:
-            # Use rating_snapshot for tiebreak calculations
-            rating = p.rating_snapshot or 0
-            tb_map[p.id] = PlayerTiebreakData(
-                player_id=p.id,
-                rating=rating,
-                points=p.points or 0.0,
-            )
-
-        VIRTUAL_OPPONENT_ID = -1
-
-        for pairing in pairings:
-            if pairing.result not in result_scores:
-                continue
-
-            w_score, b_score = result_scores[pairing.result]
-            w_id = pairing.white_participant_id
-            b_id = pairing.black_participant_id
-            actual_round_number = round_number_map.get(pairing.round_id, 0)
-
-            is_unplayed = pairing.result in ["+/-", "-/+", "+/+", "bye", "half-bye", "zero-bye"]
-
-            if w_id and w_id in tb_map:
-                if is_unplayed or not b_id:
-                    tb_map[w_id].games.append(GameRecord(
-                        opponent_id=VIRTUAL_OPPONENT_ID, opponent_rating=0,
-                        score=w_score, color="white", round_number=actual_round_number
-                    ))
-                elif b_id in participants_map:
-                    b_rating = participants_map[b_id].rating_snapshot or 0
-                    tb_map[w_id].games.append(GameRecord(
-                        opponent_id=b_id, opponent_rating=b_rating,
-                        score=w_score, color="white", round_number=actual_round_number
-                    ))
-
-            if b_id and b_id in tb_map:
-                if is_unplayed or not w_id:
-                    tb_map[b_id].games.append(GameRecord(
-                        opponent_id=VIRTUAL_OPPONENT_ID, opponent_rating=0,
-                        score=b_score, color="black", round_number=actual_round_number
-                    ))
-                elif w_id in participants_map:
-                    w_rating = participants_map[w_id].rating_snapshot or 0
-                    tb_map[b_id].games.append(GameRecord(
-                        opponent_id=w_id, opponent_rating=w_rating,
-                        score=b_score, color="black", round_number=actual_round_number
-                    ))
-
-        return tb_map
+        return build_tiebreak_data(participants, pairings, round_number_map)
 
     @staticmethod
     def _calculate_rating_changes(participants, pairings, time_control_type):
