@@ -130,7 +130,7 @@ class TestRoundLifecycleCreate:
         t=_make_tournament()
         _add_participants(t,4)
         # monkeypatch SwissEngine to return illegal pairing
-        from domain.pairing import SwissEngine
+        from pairing_core import SwissEngine
         from pairing_core.models import PairingCard, RoundResult
         orig=SwissEngine.generate
         def bad(self):

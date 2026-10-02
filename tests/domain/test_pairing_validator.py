@@ -1,6 +1,6 @@
-"""Validator tests — domain.pairing.validator.validate_round"""
+"""Validator tests — pairing_core.validate_round"""
 import pytest
-from domain.pairing import PlayerData, PairingCard, RoundResult, validate_round, pair_round
+from pairing_core import PlayerData, PairingCard, RoundResult, validate_round, pair_round
 
 def pd(pid, pno, rating=2000, points=0.0, color_hist="", opponents=None, float_hist="", received_bye=False):
     opp = frozenset(opponents or [])

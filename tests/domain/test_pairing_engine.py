@@ -3,7 +3,7 @@ Domain pairing engine tests — FIDE Dutch System (C.04.2 + C.04.3).
 Pure Python, no Flask/DB. Uses public API: PlayerData, pair_round, SwissEngine, validate_round.
 """
 import pytest
-from domain.pairing import PlayerData, PairingCard, RoundResult, pair_round, SwissEngine, validate_round
+from pairing_core import PlayerData, PairingCard, RoundResult, pair_round, SwissEngine, validate_round
 
 
 # ── Helpers ──────────────────────────────────────────────────────────

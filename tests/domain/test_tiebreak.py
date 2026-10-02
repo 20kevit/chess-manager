@@ -1,12 +1,13 @@
-"""Tiebreak calculators — domain/tiebreak/calculators.py"""
+"""Tiebreak calculators — canonical implementation in tiebreak-core."""
 import pytest
-from domain.tiebreak.calculators import (
+from tiebreak_core.calculators import (
     buchholz, buchholz_cut1, buchholz_cut2, median_buchholz,
     sonneborn_berger, progressive, wins_count, wins_with_black,
     games_with_black, average_rating_opponents, koya, direct_encounter,
-    buchholz_sum, arpo, calculate_all, ALL_TIEBREAKS, TIEBREAK_REGISTRY
+    buchholz_sum, arpo, calculate_all, TIEBREAK_REGISTRY
 )
-from domain.tiebreak.models import PlayerTiebreakData, GameRecord
+from tiebreak_core.display import ALL_TIEBREAKS
+from tiebreak_core.models import PlayerTiebreakData, GameRecord
 
 def rec(opp, score, color='white', rnd=1, opp_rating=1500):
     return GameRecord(opponent_id=opp, opponent_rating=opp_rating, score=score, color=color, round_number=rnd)
