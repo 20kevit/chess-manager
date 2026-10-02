@@ -65,8 +65,8 @@ Details: `docs/AGENT_INSTRUCTIONS.txt`, `docs/DOMAIN.md`, `docs/APPLICATION.md`,
 
 ### `domain/` — pure business rules
 
-- `pairing/` — FIDE Dutch engine. Public API (`__init__.py`): `PlayerData`, `PairingCard`, `RoundResult`, `pair_round(...)`, `SwissEngine(...).generate()`, `validate_round(...)`. `engine.py` = orchestrator; `pairer.py` = C.04.3 solver (bracket recursion, lazy lexicographic transpositions w/ bipartite-matching pruning, exchanges, downfloaters, 2M-node cap); `bracket.py`, `color.py`, `floats.py`, `exchange.py`, `transposition.py`, `bye.py`, `validator.py` (independent GEN/COL/FLO checker). Fully deterministic. Pairing numbers fixed at Round 1 (rating DESC, start_number ASC).
-- `tiebreak/calculators.py` — Buchholz family, Sonneborn-Berger, progressive, wins/black-games, ARO/ARPO, Koya, direct encounter; `ALL_TIEBREAKS` + Persian names.
+- `pairing/` — compat shim over the independent `pairing-core` package (canonical FIDE Dutch engine; see `docs/ARCHITECTURE.md`). Re-exports `PlayerData`, `PairingCard`, `RoundResult`, `pair_round(...)`, `SwissEngine(...).generate()`, `validate_round(...)`. No pairing logic lives here — new code imports `pairing_core` directly. Fully deterministic. Pairing numbers fixed at Round 1 (rating DESC, start_number ASC).
+- `tiebreak/` — compat shims over the independent `tiebreak-core` package (canonical calculation; see `docs/ARCHITECTURE.md`). Re-exports calculators (Buchholz family, Sonneborn-Berger, progressive, wins/black-games, ARO/ARPO, Koya, direct encounter), `ALL_TIEBREAKS` + Persian names. No calculation logic lives here — new code imports `tiebreak_core` directly; DB mapping lives in `application/tournament/tiebreak_adapter.py`.
 - `rating/calculator.py` — FIDE win-expectancy/dp tables, Elo change, performance rating.
 - `pricing/engine.py` — additive percent discounts (early bird, veteran, women, FIDE title, promo), capped at 100%.
 - `prizes.py` / `rulebook.py` — category titles, section vocabulary/parse/serialize.

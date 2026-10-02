@@ -1,58 +1,133 @@
-# Architecture — ownership, dependencies, core integration (Phase 0)
+# Architecture Map — pairing / tiebreak boundaries
+
+```
+                     chess-manager
+                           |
+             +-------------+-------------+
+             |                           |
+             v                           v
+       pairing-core                tiebreak-core
+       (pairing domain,             (tie-break calculation,
+        Swiss engines,               ranking comparator,
+        validation)                  rules versioning)
+             |                           |
+             |                           |
+             +-------------+-------------+
+                           |
+                    tournament workflow
+              (orchestration + persistence
+               in chess-manager)
+```
+
+## Ownership
+
+- **chess-manager** (this repo) is the composition / integration /
+  persistence / presentation layer. It owns: tournament lifecycle,
+  database models and repositories, configuration (`tiebreak_rules` JSON,
+  `total_rounds`, `current_round`), round state, participant state
+  (registration, withdrawal, `points`, `color_history`, `float_history`,
+  `pairing_no`/`start_number`, `rating_snapshot`), seeding, withdrawal
+  filtering, rating/Elo reports, prizes, print/export, UI.
+- **pairing-core**: pairing domain — Swiss algorithms, constraints, colors,
+  floats, byes, validation, engines, external engine adapters.
+- **tiebreak-core**: tie-break calculations, ranking comparator
+  (`rank_standings`/`order_ids` over explicitly supplied values),
+  tie-break policies/rulesets, domain contracts, conformance logic.
+- There is deliberately NO shared `tournament-core` abstraction. If a
+  future pairing system needs tie-break-derived ordering, the caller
+  passes narrow scalar/vector data (`{player_id: value}`) at the
+  boundary — never a library dependency.
 
 ## Dependency direction
 
-```text
-                  chess-manager
-                  /            \
-                 /              \
-        pairing-core       tiebreak-core
+```
+chess-manager ──> pairing-core
+chess-manager ──> tiebreak-core
 ```
 
 - `pairing-core` and `tiebreak-core` are fully independent. Neither
   imports the other; neither imports chess-manager. Both are stdlib-only,
-  framework-free domain libraries.
-- `chess-manager` is the composition / integration / persistence /
-  presentation layer. It owns: tournament lifecycle, database models and
-  repositories, configuration (`tiebreak_rules` JSON, `total_rounds`,
-  `current_round`), round state, participant state (registration,
-  withdrawal, `points`, `color_history`, `float_history`,
-  `pairing_no`/`start_number`, `rating_snapshot`), seeding, withdrawal
-  filtering, rating/Elo reports, prizes, print/export, UI.
-- There is deliberately NO shared `tournament-core` abstraction. If a
-  future pairing system (e.g. Burstein) needs tie-break-derived ordering,
-  the caller passes narrow scalar/vector data (`{player_id: value}`) at
-  the boundary — never a library dependency.
+  framework-free domain libraries (verified: no Flask/SQLAlchemy/app
+  imports in either core).
+- `pairing-core` does not depend on `tiebreak-core` and vice versa.
 
-## Pairing integration
+## Data flow
 
-`application/round/pairing_generation_service.py` builds
-`pairing_core.PlayerData` (pairing_no, rating, points, color/float
-histories, opponents, received_bye) and runs `SwissEngine`
-(`pairing-core==0.1.0` pinned via git tag in `requirements.txt`).
-FIDE-legality validation (`validate_round`) wraps generation as a
-non-mutating safety net. Pairing numbers are assigned at round 1 from
-rating DESC + start_number ASC and never change afterwards.
+### Pairing
 
-## Tie-break integration
+```
+interfaces/web (round routes)
+      |
+      v
+application/round/round_lifecycle_service.py (RoundLifecycleService.create_next_round)
+  builds PlayerData from Participant/Round/Pairing rows
+      |
+      v
+pairing_core.SwissEngine.generate() + validate_round()
+      |
+      v
+PairingModel / RoundModel rows (persistence in chess-manager)
+```
 
-`application/tournament/tiebreak_adapter.py` is the single place allowed
-to translate persistence rows into tiebreak-core inputs
-(`PlayerTiebreakData` / `GameRecord`, 9-type result table, virtual
-opponent `-1` for unplayed/missing-opponent games). Calculation AND
-ordering come from `tiebreak-core`:
+- `domain/pairing/` is a compat shim re-exporting `pairing_core`; new code
+  imports `pairing_core` directly.
+- Declared dependency: `pairing-core @ git+https://github.com/20kevit/pairing-core.git@v0.1.0`
+  (verified installable in a clean environment).
+- `PairingGenerationService` keeps only shared helpers
+  (`_initialize_pairing_numbers`, `_get_opponent_ids`/`_have_played`,
+  `_validate_color_swap`, `_update_participant_stats_incremental`); the
+  former `generate_pairings`/`persist_pairings` duplicate of the lifecycle
+  path was removed (zero callers).
 
-- active standings → `tiebreak_core.rank_standings` (explicit criteria
-  order + `pairing_no or start_number or 999` deterministic keys).
-  No local ranking comparator remains in the manager.
-- round-0 seeding → manager-owned (`rating_snapshot` DESC,
-  `start_number` ASC). The core never seeds.
-- withdrawal filtering → manager-owned (non-active zero-point players
-  never reach the core). The core has no status concept.
-- display (`tiebreak_core.display.TIEBREAK_NAMES_FA`), print, exports,
-  prizes → manager-owned.
+### Tiebreak
 
-## Rulesets
+```
+database (Participant / Pairing / Round rows)
+      |
+application/tournament/tiebreak_adapter.py (build_tiebreak_data — ONLY place
+  allowed to read DB rows for tie-break purposes; owns RESULT_SCORES mapping,
+  virtual-opponent (-1) convention)
+      |
+tiebreak_core.calculate_all()  (calculation of values)
+      |
+application/tournament/standings_service.py (StandingsService.get_standings —
+  configuration from tournament.tiebreak_rules, ordering, seeding for Round 0,
+  withdrawal filtering, rating changes via domain/rating, presentation dict)
+```
+
+- `domain/tiebreak/` (`calculators.py`, `models.py`) are compat shims
+  re-exporting `tiebreak_core`; new code imports `tiebreak_core` directly.
+- Ordering for active standings comes from the core: `StandingsService`
+  calls `rank_standings(core_inputs, criteria, current_round,
+  deterministic_keys={pid: pairing_no or start_number or 999})` and maps
+  the ordered `PlayerResult`s back to the presentation dict (single source;
+  no local comparator — migrated in `cee8787`, pinned by
+  `tests/application/test_standings_ranking_equivalence.py`). Initial
+  seeding (Round 0 → rating snapshot DESC, start_number ASC) and withdrawal
+  filtering (non-active zero-point players never reach the core) stay
+  manager-owned by core contract (`tiebreak-core`
+  `docs/ADAPTER_CHESS_MANAGER.md`); the core has no status/seeding concept.
+
+## Integration points
+
+| Caller | Callee | What crosses the boundary |
+|--------|--------|---------------------------|
+| `RoundLifecycleService` | `pairing_core.SwissEngine`, `validate_round`, `compute_color` | `PlayerData` in; `RoundResult`/`PairingCard` out; nothing else |
+| `PairingGenerationService` helpers | `pairing_core.models.compute_color` | color-history string → color state (swap validation only) |
+| `StandingsService` | `tiebreak_core.calculate_all` (Round-0 seeding branch) + `tiebreak_core.rank_standings` (active standings) | `PlayerTiebreakData` map in; ordered `PlayerResult`s out |
+| `interfaces/web/tournament` | `domain.tiebreak.calculators.ALL_TIEBREAKS_DISPLAY` | display names only (via shim) |
+
+## Compatibility boundaries
+
+- `domain/pairing/__init__.py`: shim, no logic. Used only by tests
+  (5 files). Migrate tests to `pairing_core` imports when convenient (P2).
+- `domain/tiebreak/calculators.py`, `domain/tiebreak/models.py`: shims, no
+  logic. Used by tests + one web import (`ALL_TIEBREAKS_DISPLAY`). Keep.
+- `application/*_service.py` facades (`round_service.py`,
+  `tournament_service.py`, …): pre-existing delegation shims, unrelated to
+  this audit — do not add logic to them.
+
+## Rulesets (tiebreak-core)
 
 - `legacy-0.1.0`: the frozen behavior-preserving extraction. Byte-stable;
   goldens pin it. All current production standings use it.
@@ -78,10 +153,26 @@ ordering come from `tiebreak-core`:
 
 ## Reproducibility
 
-- `pairing-core` is pinned to git tag `v0.1.0` (verified downloadable;
-  tag provides every symbol the manager imports).
-- `tiebreak-core` integration is BLOCKED on publication: no GitHub
-  repository and no tags exist yet, so it cannot be pinned. The test
-  environment currently consumes it from a local install. Publication
-  steps: create `20kevit/tiebreak-core`, push, tag, add the pin to
-  `requirements.txt`. No push performed in Phase 0 (not authorized).
+- `pairing-core` is pinned to git tag `v0.1.0` (verified installable from
+  GitHub in a clean environment; tag commit `2cb570b`). NOTE: the
+  installed editable checkout in dev tracks `origin/main` HEAD (newer
+  commits: provider registry, BBP/JaVaFo adapters, TRF interchange,
+  deterministic controls, benchmark harness) — dev and prod do NOT run
+  the same pairing code. Re-pin or reinstall when new tags are cut.
+- `tiebreak-core` integration is BLOCKED on publication: the GitHub repo
+  `20kevit/tiebreak-core` exists but is EMPTY (no commits pushed, no
+  tags), and `requirements.txt` does not declare it. The test environment
+  consumes it from a local editable install. Publication steps: push
+  local `master` (6 commits), tag `v0.1.0`, add the pin to
+  `requirements.txt`. No push performed in this phase (not authorized).
+
+## What lives where (quick answers)
+
+- Pairing implemented? → **pairing-core**.
+- Tie-break calculations implemented? → **tiebreak-core**.
+- DB/application data adapted? → `RoundLifecycleService` (pairing),
+  `tiebreak_adapter.build_tiebreak_data` + `StandingsService` (tiebreak).
+- Pairing/tiebreak results stored? → **chess-manager**
+  (`PairingModel`/`RoundModel`/`TournamentParticipantModel` points+histories).
+- Tournament configuration owned by? → **chess-manager**
+  (`tournament.tiebreak_rules` JSON, `TournamentConfigService`).

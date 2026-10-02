@@ -28,18 +28,28 @@ Dependencies must strictly point outward from this layer (or rather, nothing dep
 
 ## 4. Module Specifications
 
-### A. Pairing Engine (`domain/pairing/`)
-A fully self-contained, deterministic implementation of the FIDE Dutch pairing system (C.04.2 + C.04.3).
-- **Entry Points:** `pair_round(players, round_number)` or `SwissEngine(players, round_number).generate()`.
+### A. Pairing Engine (`domain/pairing/` → `pairing-core`)
+Canonical pairing implementation lives in the independent **`pairing-core`**
+package (`pairing_core`, pinned in `requirements.txt`). `domain/pairing/`
+is a thin backward-compatibility shim that re-exports the public contract
+(`PlayerData`, `PairingCard`, `RoundResult`, `pair_round`, `SwissEngine`,
+`validate_round`). No pairing logic lives in chess-manager.
+- **Entry Points:** `pair_round(players, round_number)` or `SwissEngine(players, round_number).generate()` (both from `pairing_core`; new code must import from `pairing_core` directly).
 - **Input Contract:** `PlayerData` dataclass (requires `pairing_no`, `color_hist`, `float_hist`, `opponents`).
 - **Output Contract:** `RoundResult` containing `PairingCard` objects (includes `white_float` and `black_float` tags for database persistence).
-- **Key Constraints Maintained:**
+- **Key Constraints Maintained (in pairing-core):****
   - *Absolute:* No repeat opponents, Max color balance ±2, No 3 consecutive same colors.
   - *Transpositions/Exchanges:* Handled in exact lexicographic and FIDE-specified order (`transposition.py`, `exchange.py`).
 
-### B. Tiebreak Calculators (`domain/tiebreak/`)
-Calculates various tiebreaks based on the player's game history.
-- **Entry Point:** `calculate_all(player_data, all_players, tiebreak_list)`.
+### B. Tiebreak Calculators (`domain/tiebreak/` → `tiebreak-core`)
+Canonical tie-break calculation lives in the independent **`tiebreak-core`**
+package (`tiebreak_core`). `domain/tiebreak/` holds thin
+backward-compatibility shims (`calculators.py`, `models.py`) that re-export
+the public contract. No calculation logic lives in chess-manager.
+Chess-manager retains only data retrieval, mapping
+(`application/tournament/tiebreak_adapter.py`), configuration, orchestration
+(`StandingsService`), presentation and persistence.
+- **Entry Point:** `calculate_all(player_data, all_players, tiebreak_list)` (from `tiebreak_core`; ranking comparator `rank_standings` exists in the core but chess-manager keeps its own sort key because initial seeding — Round 0, rating snapshot order — is application-owned by design).
 - **Input Contract:** `PlayerTiebreakData` (includes a list of `GameRecord` objects).
 - **Registry:** `TIEBREAK_REGISTRY` holds all supported tiebreaks (e.g., `buchholz_cut1`, `sonneborn_berger`, `arpo`).
 - **Rule:** Do not add database queries here to find opponent data. All required data must be passed in the `all_players` dictionary.
