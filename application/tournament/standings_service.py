@@ -9,7 +9,7 @@ import json
 
 from app.extensions import db
 
-from tiebreak_core import calculate_all
+from tiebreak_core import calculate_all, rank_standings
 from tiebreak_core.display import TIEBREAK_NAMES_FA
 from application.tournament.tiebreak_adapter import build_tiebreak_data
 from domain.rating.calculator import calculate_tournament_ratings
@@ -37,39 +37,71 @@ class StandingsService:
         # Build raw tiebreak data from historical pairings
         tb_data = StandingsService._build_tiebreak_data(participants, all_pairings)
 
+        # Withdrawal filtering stays in the manager: tiebreak-core has no
+        # participant-status concept. Skipped players never reach the core.
+        eligible = [
+            p for p in participants
+            if not (p.status != "active" and (p.points or 0) == 0)
+        ]
+        by_id = {p.id: p for p in participants}
+
         player_standings = []
-        for p in participants:
-            # Skip withdrawn participants with zero points to keep standings clean
-            if p.status != "active" and (p.points or 0) == 0:
-                continue
+        if tournament.current_round == 0:
+            # Initial seeding stays in the manager (rating snapshot, then
+            # registration order). The core never seeds.
+            for p in eligible:
+                tb_values = {}
+                if p.id in tb_data:
+                    tb_values = calculate_all(
+                        tb_data[p.id], tb_data,
+                        tiebreak_rules, tournament.current_round
+                    )
+                player_standings.append({
+                    "player": p,  # Keep key as 'player' for template compatibility
+                    "points": p.points or 0.0,
+                    "tiebreaks": tb_values,
+                    "rank_no": p.pairing_no or p.start_number or 999
+                })
 
-            # Calculate tiebreak values if data exists
-            tb_values = {}
-            if p.id in tb_data:
-                tb_values = calculate_all(
-                    tb_data[p.id], tb_data,
-                    tiebreak_rules, tournament.current_round
-                )
-
-            player_standings.append({
-                "player": p, # Keep key as 'player' for template compatibility
-                "points": p.points or 0.0,
-                "tiebreaks": tb_values,
-                "rank_no": p.pairing_no or p.start_number or 999
-            })
-
-        # Professional Seeding & Ranking Logic
-        def sort_key(ps):
-            if tournament.current_round == 0:
+            def seed_key(ps):
                 # Initial Seed: Higher rating snapshot first, then earlier registration
                 return (-(ps["player"].rating_snapshot or 0), ps["player"].start_number)
 
-            # Active Standings: Points -> Tiebreaks -> Ranking Number
-            tb_sort = [-ps["tiebreaks"].get(r, 0) for r in tiebreak_rules]
-            return tuple([-ps["points"]] + tb_sort + [ps["rank_no"]])
-
-        # Execute sorting
-        player_standings.sort(key=sort_key)
+            player_standings.sort(key=seed_key)
+        else:
+            # Active standings: calculation + ordering both come from
+            # tiebreak-core (single source; no local comparator).
+            # Points -> Tiebreaks -> Ranking Number == core sort_key.
+            deterministic_keys = {
+                p.id: (p.pairing_no or p.start_number or 999)
+                for p in eligible
+            }
+            core_inputs = {}
+            for p in eligible:
+                if p.id in tb_data:
+                    core_inputs[p.id] = tb_data[p.id]
+                else:
+                    # Unreachable in practice (_build_tiebreak_data covers
+                    # every participant): a gameless input sorts exactly as
+                    # the legacy empty-values row (all zeros).
+                    from tiebreak_core.models import PlayerTiebreakData
+                    core_inputs[p.id] = PlayerTiebreakData(
+                        player_id=p.id,
+                        rating=p.rating_snapshot or 0,
+                        points=p.points or 0.0,
+                        games=[],
+                    )
+            standings = rank_standings(
+                core_inputs, tiebreak_rules, tournament.current_round,
+                deterministic_keys=deterministic_keys,
+            )
+            for pr in standings.players:
+                player_standings.append({
+                    "player": by_id[pr.player_id],
+                    "points": pr.points,
+                    "tiebreaks": dict(pr.values),
+                    "rank_no": deterministic_keys[pr.player_id],
+                })
 
         # Calculate rating changes for the display
         rating_changes = StandingsService._calculate_rating_changes(
