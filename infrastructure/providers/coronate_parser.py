@@ -134,12 +134,20 @@ def parse_coronate_json(file_content: str) -> BackupFileData:
                 ))
             rounds.append(current_round_pairings)
         
-        # Map tiebreaks from Coronate names to internal names
+        # Map tiebreaks from Coronate names to tiebreak-core registry ids.
+        # Phase 0: exact mappings only. "cumulativeOfOpposition" (sum of
+        # opponents' *progressive* scores) has NO exact tiebreak-core
+        # equivalent ("buchholz_sum" is Buchholz-of-Buchholz — different),
+        # so it passes through unmapped and MUST fail closed (unknown
+        # criterion) if ever consumed, rather than silently compute
+        # something else. Parsed tiebreaks are currently dropped at import
+        # (import_service applies default tiebreak_rules), so this mapping
+        # changes no production behavior; it exists so the vocabulary is
+        # correct if the field is ever wired up. Pinned by tests.
         tb_mapping = {
-            "median": "median_system",
-            "solkoff": "solkoff",
-            "cumulative": "cumulative",
-            "cumulativeOfOpposition": "cumulative_progressive_scores_of_opponents"
+            "median": "median_buchholz",
+            "solkoff": "buchholz",
+            "cumulative": "progressive",
         }
         raw_tiebreaks = t_data.get("tieBreaks", [])
         mapped_tiebreaks = [tb_mapping.get(tb, tb) for tb in raw_tiebreaks]
