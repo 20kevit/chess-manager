@@ -489,7 +489,7 @@ JS (static/js/*.js)
 
 ```
 Template ──X──► db.session / Repository / Model query    (must go through the route → service)
-Template ──X──► domain.pairing / tiebreak / rating logic (same)
+Template ──X──► pairing_core / tiebreak_core / rating logic (same)
 JS      ──X──► Flask internals (request, session, g)    (JS only knows HTTP + DOM)
 JS      ──X──► raw {{ csrf_token() }} outside the meta tag
 Route   ──X──► infrastructure.db_models directly         (prefer repositories; existing direct queries are grandfathered but new code must use repositories/services)
@@ -533,7 +533,7 @@ tournament.view()               interfaces/web/tournament/__init__.py:121
   ├─ TournamentRepository.get_by_public_id()
   ├─ require_result_editor() / require_tournament_manager() → can_edit_results / can_manage
   ├─ StandingsService.get_standings(tournament)        application/tournament/standings_service.py
-  │    └─ domain.tiebreak.calculators + domain.rating.calculator + infrastructure.repositories
+  │    └─ tiebreak_core + domain.rating.calculator + infrastructure.repositories
   ├─ PrizeSummaryService.get_public_prize_summary()
   └─ render_template("tournament/view.html", tournament=…, is_admin=…, can_manage=…, **standings)
          │

@@ -154,7 +154,7 @@ internal format (not Coronate).
 ## 11. Important Architectural Constraints
 
 **DO NOT place in infrastructure:**
-- Swiss pairing logic, tiebreak calculations, rating algorithms → belongs in `domain/pairing/`, `domain/tiebreak/`, `domain/rating/`
+- Swiss pairing logic, tiebreak calculations, rating algorithms → belong in `pairing-core`, `tiebreak-core`, `domain/rating/`
 - Business rule enforcement → belongs in `application/` services
 - Web framework specifics (Flask `request`, `session`) → belongs in `interfaces/web/`
 - Transaction management (`commit`, `rollback`) → belongs in `application/` services

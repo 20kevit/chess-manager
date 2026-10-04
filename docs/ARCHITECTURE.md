@@ -69,10 +69,12 @@ pairing_core.SwissEngine.generate() + validate_round()
 PairingModel / RoundModel rows (persistence in chess-manager)
 ```
 
-- `domain/pairing/` is a compat shim re-exporting `pairing_core`; new code
-  imports `pairing_core` directly.
-- Declared dependency: `pairing-core @ git+https://github.com/20kevit/pairing-core.git@v0.1.0`
-  (verified installable in a clean environment).
+- `domain/pairing/` was a compat shim re-exporting `pairing_core`; it has
+  been removed — all code imports `pairing_core` directly.
+- Declared dependency: `pairing-core @ git+https://github.com/20kevit/pairing-core.git@v0.4.1`
+  (verified installable in a clean environment; released API keeps
+  `SwissEngine`, `PlayerData`, `PairingRequest`, `NativeDutchEngine`,
+  `validate_round`, color computation, and deterministic behavior).
 - `PairingGenerationService` keeps only shared helpers
   (`_initialize_pairing_numbers`, `_get_opponent_ids`/`_have_played`,
   `_validate_color_swap`, `_update_participant_stats_incremental`); the
@@ -95,8 +97,11 @@ application/tournament/standings_service.py (StandingsService.get_standings —
   withdrawal filtering, rating changes via domain/rating, presentation dict)
 ```
 
-- `domain/tiebreak/` (`calculators.py`, `models.py`) are compat shims
-  re-exporting `tiebreak_core`; new code imports `tiebreak_core` directly.
+- `domain/tiebreak/` (`calculators.py`, `models.py`) were compat shims
+  re-exporting `tiebreak_core`; they have been removed — all code imports
+  `tiebreak_core` directly. Declared dependency:
+  `tiebreak-core @ git+https://github.com/20kevit/tiebreak-core.git@v1.2.0`
+  (verified installable in a clean environment).
 - Ordering for active standings comes from the core: `StandingsService`
   calls `rank_standings(core_inputs, criteria, current_round,
   deterministic_keys={pid: pairing_no or start_number or 999})` and maps
@@ -115,14 +120,13 @@ application/tournament/standings_service.py (StandingsService.get_standings —
 | `RoundLifecycleService` | `pairing_core.SwissEngine`, `validate_round`, `compute_color` | `PlayerData` in; `RoundResult`/`PairingCard` out; nothing else |
 | `PairingGenerationService` helpers | `pairing_core.models.compute_color` | color-history string → color state (swap validation only) |
 | `StandingsService` | `tiebreak_core.calculate_all` (Round-0 seeding branch) + `tiebreak_core.rank_standings` (active standings) | `PlayerTiebreakData` map in; ordered `PlayerResult`s out |
-| `interfaces/web/tournament` | `domain.tiebreak.calculators.ALL_TIEBREAKS_DISPLAY` | display names only (via shim) |
+| `interfaces/web/tournament` | `tiebreak_core.display.ALL_TIEBREAKS_DISPLAY` | display names only (direct core import) |
 
 ## Compatibility boundaries
 
-- `domain/pairing/__init__.py`: shim, no logic. Used only by tests
-  (5 files). Migrate tests to `pairing_core` imports when convenient (P2).
-- `domain/tiebreak/calculators.py`, `domain/tiebreak/models.py`: shims, no
-  logic. Used by tests + one web import (`ALL_TIEBREAKS_DISPLAY`). Keep.
+- `domain/pairing/` and `domain/tiebreak/` compat shims: REMOVED (no
+  remaining consumers; all imports go directly to `pairing_core` /
+  `tiebreak_core`). Do not recreate local wrappers.
 - `application/*_service.py` facades (`round_service.py`,
   `tournament_service.py`, …): pre-existing delegation shims, unrelated to
   this audit — do not add logic to them.
@@ -130,11 +134,13 @@ application/tournament/standings_service.py (StandingsService.get_standings —
 ## Rulesets (tiebreak-core)
 
 - `legacy-0.1.0`: the frozen behavior-preserving extraction. Byte-stable;
-  goldens pin it. All current production standings use it.
-- `fide-2026`: RESERVED name for future FIDE-correct behavior (Handbook
-  C.07 effective 1 Mar 2026). Not implemented. Requesting it on the
-  strict core path raises `UnsupportedRulesetError`. FIDE corrections
-  must never be silently applied to the legacy path.
+  goldens pin it. All current production standings use it (via the legacy
+  `calculate_all` / `rank_standings` entry points with no explicit ruleset).
+- The released core additionally ships strict/ruleset APIs (`fide-2024`,
+  `fide-2026`, descriptors, team surfaces). Chess-manager does not consume
+  them; adopting a new ruleset would be a per-tournament configuration
+  decision, never a silent global switch. FIDE corrections must never be
+  silently applied to the legacy path.
 
 ## Known quirks (preserved, not silently fixed)
 
@@ -153,18 +159,11 @@ application/tournament/standings_service.py (StandingsService.get_standings —
 
 ## Reproducibility
 
-- `pairing-core` is pinned to git tag `v0.1.0` (verified installable from
-  GitHub in a clean environment; tag commit `2cb570b`). NOTE: the
-  installed editable checkout in dev tracks `origin/main` HEAD (newer
-  commits: provider registry, BBP/JaVaFo adapters, TRF interchange,
-  deterministic controls, benchmark harness) — dev and prod do NOT run
-  the same pairing code. Re-pin or reinstall when new tags are cut.
-- `tiebreak-core` integration is BLOCKED on publication: the GitHub repo
-  `20kevit/tiebreak-core` exists but is EMPTY (no commits pushed, no
-  tags), and `requirements.txt` does not declare it. The test environment
-  consumes it from a local editable install. Publication steps: push
-  local `master` (6 commits), tag `v0.1.0`, add the pin to
-  `requirements.txt`. No push performed in this phase (not authorized).
+- `pairing-core` is pinned to released git tag `v0.4.1` and `tiebreak-core`
+  to released git tag `v1.2.0` in `requirements.txt` (both verified
+  installable from GitHub in a clean environment with no `PYTHONPATH`,
+  editable installs, or local paths). Production installs run the released
+  library code — no local core source tree is required.
 
 ## What lives where (quick answers)
 

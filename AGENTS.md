@@ -65,8 +65,8 @@ Details: `docs/AGENT_INSTRUCTIONS.txt`, `docs/DOMAIN.md`, `docs/APPLICATION.md`,
 
 ### `domain/` — pure business rules
 
-- `pairing/` — compat shim over the independent `pairing-core` package (canonical FIDE Dutch engine; see `docs/ARCHITECTURE.md`). Re-exports `PlayerData`, `PairingCard`, `RoundResult`, `pair_round(...)`, `SwissEngine(...).generate()`, `validate_round(...)`. No pairing logic lives here — new code imports `pairing_core` directly. Fully deterministic. Pairing numbers fixed at Round 1 (rating DESC, start_number ASC).
-- `tiebreak/` — compat shims over the independent `tiebreak-core` package (canonical calculation; see `docs/ARCHITECTURE.md`). Re-exports calculators (Buchholz family, Sonneborn-Berger, progressive, wins/black-games, ARO/ARPO, Koya, direct encounter), `ALL_TIEBREAKS` + Persian names. No calculation logic lives here — new code imports `tiebreak_core` directly; DB mapping lives in `application/tournament/tiebreak_adapter.py`.
+- `pairing/` — REMOVED (was a compat shim over the independent `pairing-core` package, the canonical FIDE Dutch engine; see `docs/ARCHITECTURE.md`). All code imports `pairing_core` directly: `PlayerData`, `PairingCard`, `RoundResult`, `pair_round(...)`, `SwissEngine(...).generate()`, `validate_round(...)`. No pairing logic lives here. Fully deterministic. Pairing numbers fixed at Round 1 (rating DESC, start_number ASC).
+- `tiebreak/` — REMOVED (was compat shims over the independent `tiebreak-core` package, the canonical calculation; see `docs/ARCHITECTURE.md`). All code imports `tiebreak_core` directly: calculators (Buchholz family, Sonneborn-Berger, progressive, wins/black-games, ARO/ARPO, Koya, direct encounter), `ALL_TIEBREAKS` + Persian names. No calculation logic lives here; DB mapping lives in `application/tournament/tiebreak_adapter.py`.
 - `rating/calculator.py` — FIDE win-expectancy/dp tables, Elo change, performance rating.
 - `pricing/engine.py` — additive percent discounts (early bird, veteran, women, FIDE title, promo), capped at 100%.
 - `prizes.py` / `rulebook.py` — category titles, section vocabulary/parse/serialize.
@@ -158,10 +158,10 @@ Small inline `<style>` in `register.html` (`.reg-*`/`price-box`) and `manual_pai
 
 ## Critical Invariants (do not break)
 
-- **Pairing is deterministic:** no `random`/`shuffle`; bipartite-matching pruning; 2M-node cap. `pairing_no` fixed at Round 1 (rating DESC, `start_number` ASC) and never changes. Bye selection via `domain.pairing.bye`.
+- **Pairing is deterministic:** no `random`/`shuffle`; bipartite-matching pruning; 2M-node cap. `pairing_no` fixed at Round 1 (rating DESC, `start_number` ASC) and never changes. Bye selection via `pairing_core.bye`.
 - **Result vocabulary (9):** `"1-0","0-1","1/2","+/-","-/+","+/+","bye","half-bye","zero-bye"` — Coronate mapping is strict (see `docs/INFRASTRUCTURE.md` §6).
 - **Lifecycle:** `Tournament.status` `setup→ongoing→finished` (first `create_next_round` → `ongoing`, last `finish_round` → `finished`); `Round.status` `pending→ongoing→finished`. Only `delete_round` / `rebuild_swiss_state` do full recompute; normal progress is incremental (`finish_round` updates `points`/`color_history`/`float_history`).
-- **Tiebreaks:** configured order in `tournament.tiebreak_rules` (JSON), evaluated via `domain.tiebreak`; `StandingsService.get_standings` computes `player_standings` + `rating_changes`.
+- **Tiebreaks:** configured order in `tournament.tiebreak_rules` (JSON), evaluated via `tiebreak_core`; `StandingsService.get_standings` computes `player_standings` + `rating_changes`.
 - **Payments are idempotent:** `PaymentInitiator.process_callback` handles duplicate callbacks; `code 101` counts as success; Rial = Toman×10; overbook flags manual-refund metadata, no auto-refunds.
 - **Notifications are isolated:** `NotificationService → NotificationDispatcher → providers (Web/Telegram/Bale)`; dispatcher checks tournament gates + user prefs; provider failure never crashes the dispatcher.
 - **FIDE data:** monthly XML, `fide/parser.py` streaming, default federation filter `IRI`, batch upsert every 500, tracked in `FideImportModel`, retention 90 days, instance-anchored storage.
