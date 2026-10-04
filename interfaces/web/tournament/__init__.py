@@ -33,7 +33,7 @@ from application.round.display_service import RoundDisplayService
 from interfaces.web.admin_auth import (
     require_admin, require_tournament_manager, require_result_editor,
 )
-from domain.tiebreak.calculators import ALL_TIEBREAKS_DISPLAY
+from tiebreak_core.display import ALL_TIEBREAKS_DISPLAY
 from domain.rulebook import (
     parse_sections, serialize_sections, SECTION_VOCABULARY,
 )

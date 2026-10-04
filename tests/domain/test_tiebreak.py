@@ -184,10 +184,17 @@ class TestDirectEncounter:
 
 class TestRegistry:
     def test_all_tiebreaks_registered(self):
-        expected_names = {n for n,_ in ALL_TIEBREAKS}
-        # Ensure registry covers at least the non-special ones; koya/direct not in registry
-        for name in expected_names:
-            if name in ("koya","direct_encounter"):
+        # Released tiebreak-core contract (v1.2.0): ALL_TIEBREAKS_DISPLAY is
+        # the legacy catalog chess-manager configures and passes to
+        # calculate_all — every entry except the special-cased koya /
+        # direct_encounter must resolve in the legacy TIEBREAK_REGISTRY.
+        # ALL_TIEBREAKS is a wider presentation superset (FIDE-2026
+        # descriptor labels such as tpr/apro handled via strict/descriptor
+        # APIs, never sent by chess-manager) and is intentionally NOT
+        # covered by the legacy registry.
+        from tiebreak_core.display import ALL_TIEBREAKS_DISPLAY
+        for name, _ in ALL_TIEBREAKS_DISPLAY:
+            if name in ("koya", "direct_encounter"):
                 continue
             assert name in TIEBREAK_REGISTRY, f"{name} missing"
 
