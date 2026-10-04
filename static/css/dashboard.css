@@ -2,14 +2,17 @@
    Dashboard Styles
    ============================================ */
 
-/* Dashboard Header */
+/* Dashboard Header — flat dark band in both themes (fixed ink, not a token
+   that inverts in dark mode). */
 .dash-header {
-    background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-700) 100%);
-    color: white;
+    background: #17212b;
+    color: #f2f6fa;
     padding: 30px;
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
+    border: var(--border-width) solid var(--border);
+    border-inline-start: 4px solid var(--accent);
     margin-bottom: 30px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-md);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -29,7 +32,7 @@
     border-radius: 20px;
     font-size: 0.85rem;
     font-weight: 600;
-    margin-left: 8px;
+    margin-inline-start: 8px;
 }
 
 /* Dashboard Grid */
@@ -47,7 +50,7 @@
 
 /* Dashboard Cards */
 .dash-card {
-    background: white;
+    background: var(--surface);
     border-radius: var(--radius);
     padding: 20px;
     box-shadow: var(--shadow);
@@ -98,12 +101,9 @@
     margin-top: 3px;
 }
 
-/* Button Actions */
+/* Button Actions — sizing hook; canonical styles in components.css. */
 .btn-action {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-    border-radius: 6px;
-    font-weight: 600;
+    font-size: var(--text-small);
     white-space: nowrap;
 }
 
@@ -128,33 +128,11 @@
     color: var(--gray-900);
 }
 
-/* Modal Overlay */
-.modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.modal-overlay.active {
-    display: flex;
-}
-
+/* Modal — canonical overlay/box live in components.css; dashboard keeps
+   only its narrow width and button rhythm. */
 .modal-box {
-    background: white;
-    padding: 30px;
-    border-radius: var(--radius);
     width: 90%;
     max-width: 450px;
-    max-height: 90vh;
-    overflow-y: auto;
 }
 
 /* Form elements in modal */
@@ -200,97 +178,49 @@
     min-width: 120px;
 }
 
-/* Alert in dashboard */
-.dash-card .alert {
-    padding: 10px 14px;
-    border-radius: var(--radius);
-    margin: 12px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9em;
-}
-
-.dash-card .alert-warning {
-    background: var(--warning-light);
-    color: var(--warning);
-}
+/* Alert in dashboard — canonical alerts live in components.css. */
 
 /* Pending invitations card highlight */
 .dash-card.pending-invitations {
-    border-left: 4px solid var(--warning);
+    border-inline-start: 4px solid var(--warning);
 }
 
 .dash-card.pending-invitations .list-item {
-    background: var(--warning-light);
+    background: var(--warning-subtle);
 }
 
 .dash-card.pending-invitations .list-item:hover {
-    background: var(--warning-light);
+    background: var(--warning-subtle);
     opacity: 0.9;
 }
 
 /* Assigned tournaments card */
 .dash-card.assigned-tournaments {
-    border-left: 4px solid var(--primary);
+    border-inline-start: 4px solid var(--primary);
 }
 
 /* My participations card */
 .dash-card.my-participations {
-    border-left: 4px solid var(--primary);
+    border-inline-start: 4px solid var(--primary);
 }
 
 /* Text muted */
 .text-muted {
-    color: var(--gray-500);
+    color: var(--text-muted);
 }
 
 /* MT-3 / MB-3 utilities */
 .mt-3 {
-    margin-top: 1rem !important;
+    margin-block-start: 1rem !important;
 }
 
 .mb-3 {
-    margin-bottom: 1rem !important;
+    margin-block-end: 1rem !important;
 }
 
-.btn-block {
-    display: block;
-    width: 100%;
-    text-align: center;
-}
+/* Button variants — retired, canonical in components.css. */
 
-.btn-outline-primary {
-    background: white;
-    color: var(--primary);
-    border: 2px solid var(--primary);
-}
-
-.btn-outline-primary:hover {
-    background: var(--primary);
-    color: white;
-    text-decoration: none;
-}
-
-.btn-light {
-    background: var(--gray-100);
-    color: var(--gray-700);
-}
-
-.btn-light:hover {
-    background: var(--gray-200);
-    color: var(--gray-700);
-    text-decoration: none;
-}
-
-/* Registration Status Colors */
-.status-pending { color: #d97706; }
-.status-payment-pending { color: #4338ca; }
-.status-receipt-submitted { color: #b45309; }
-.status-paid { color: #2563eb; }
-.status-approved { color: #059669; }
-.status-rejected { color: #dc2626; }
-.status-active { color: var(--success); }
+/* Registration Status Colors — canonical in components.css. */
 
 /* ============================================
    Beta profile card refresh (scoped to dashboard)
@@ -352,11 +282,7 @@
     font-weight: 600;
 }
 
-.badge-success { background: #dcfce7; color: #15803d; }
-.badge-warning { background: #fef3c7; color: #b45309; }
-.badge-error { background: #fee2e2; color: #b91c1c; }
-.badge-muted { background: var(--gray-200); color: var(--gray-700); }
-.badge-title { background: var(--gray-800); color: #fff; }
+/* Badge colors — canonical in components.css. */
 
 .profile-section {
     padding: 12px 0 4px 0;
@@ -403,9 +329,9 @@
     border-radius: var(--radius);
 }
 
-.role-state-active { background: #dcfce7; color: #15803d; }
-.role-state-pending { background: #fef3c7; color: #b45309; }
-.role-state-rejected { background: #fee2e2; color: #b91c1c; }
+.role-state-active { background: var(--success-subtle); color: var(--success); }
+.role-state-pending { background: var(--warning-subtle); color: var(--warning); }
+.role-state-rejected { background: var(--danger-subtle); color: var(--danger); }
 
 @media (max-width: 480px) {
     .profile-header {

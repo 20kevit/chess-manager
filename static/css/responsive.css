@@ -11,19 +11,15 @@
     }
 
     /* هدر */
-    .header .container {
-        justify-content: center;
+    .site-header .container {
+        gap: var(--space-2);
     }
 
-    .logo {
+    .brand {
         font-size: 0.95em;
     }
 
-    .nav {
-        gap: 8px;
-    }
-
-    .nav a {
+    .site-nav.desktop-only a {
         font-size: 0.8em;
     }
 
@@ -193,7 +189,7 @@
     content: '← اسکرول کنید';
     position: absolute;
     top: 4px;
-    left: 4px;
+    inset-inline-start: 4px;
     font-size: 0.65em;
     color: var(--gray-400);
     pointer-events: none;
@@ -241,7 +237,7 @@
 /* 1024px+ large */
 @media (min-width: 1024px) {
     .container {
-        max-width: 1100px;
+        max-width: var(--container-max);
     }
     .dash-grid {
         gap: var(--spacing-lg);
@@ -250,8 +246,10 @@
 
 /* Ensure touch targets >=44px on mobile */
 @media (max-width: 600px) {
-    .btn, .tab, .filter-btn, .nav a {
+    .btn, .tab, .filter-btn {
         min-height: 44px;
+    }
+    .btn:not(.btn-small):not(.btn-sm) {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -260,9 +258,8 @@
         position: relative;
     }
     .notification-dropdown {
-        left: 0;
-        right: auto;
-        width: 92vw;
-        max-width: 360px;
+        inset-inline-end: 0;
+        inline-size: 92vw;
+        max-inline-size: 360px;
     }
 }

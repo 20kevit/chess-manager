@@ -1,0 +1,176 @@
+/* ============================================================
+   CHESS-MANAGER design tokens — single source of truth.
+   Light (default) + dark via [data-theme="dark"].
+   All other sheets must use these vars, never raw hex.
+   ============================================================ */
+
+:root {
+  /* ---- brand foundation (restrained use) ---- */
+  --brand-blue: #1976d2;
+  --brand-deep: #12529a;
+  --brand-accent: #ff8a00;
+  --brand-accent-soft: #fff0dd;
+  --brand-blue-soft: #eaf4ff;
+  --brand-offwhite: #fafcff;
+  --brand-ink: #17212b;
+
+  /* ---- semantic: primary ---- */
+  --primary: var(--brand-blue);
+  --primary-hover: #1565bc;
+  --primary-active: var(--brand-deep);
+  --primary-subtle: var(--brand-blue-soft);
+
+  /* ---- semantic: accent ---- */
+  --accent: var(--brand-accent);
+  --accent-hover: #e67e00;
+  --accent-subtle: var(--brand-accent-soft);
+
+  /* ---- semantic: status ---- */
+  --success: #1a7f4b;
+  --success-hover: #14663c;
+  --success-subtle: #e6f4ec;
+  --warning: #b45309;
+  --warning-hover: #92400e;
+  --warning-subtle: #fef3e2;
+  --danger: #c62828;
+  --danger-hover: #a51f1f;
+  --danger-subtle: #fdecec;
+  --info: #1565c0;
+  --info-hover: #0f4f99;
+  --info-subtle: #e8f1fc;
+
+  /* ---- semantic: surfaces & text ---- */
+  --neutral: #5b6b7b;
+  --background: var(--brand-offwhite);
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+  --surface-sunken: #e8eef4;
+  --border: #dbe3ec;
+  --border-strong: #b9c6d4;
+  --text: var(--brand-ink);
+  --text-secondary: #3d4e5f;
+  --text-muted: #5b6b7b;
+  --text-disabled: #8fa0b1;
+
+  /* ---- gray ramp (legacy alias support) ---- */
+  --gray-50: var(--surface-muted);
+  --gray-100: #e8eef4;
+  --gray-200: var(--border);
+  --gray-300: var(--border-strong);
+  --gray-400: var(--text-disabled);
+  --gray-500: var(--text-muted);
+  --gray-600: var(--text-secondary);
+  --gray-700: #2c3b49;
+  --gray-800: #22303d;
+  --gray-900: var(--brand-ink);
+  --primary-dark: var(--primary-active);
+  --primary-light: var(--primary-subtle);
+  --success-light: var(--success-subtle);
+  --warning-light: var(--warning-subtle);
+  --error: var(--danger);
+  --error-light: var(--danger-subtle);
+
+  /* ---- cross-table cell fills (light) ---- */
+  --cell-win-bg: #ddf3e5;  --cell-win-fg: #14532d;
+  --cell-draw-bg: #fdf3d7; --cell-draw-fg: #713f12;
+  --cell-loss-bg: #fbdddd; --cell-loss-fg: #7f1d1d;
+  --cell-bye-bg: #ddebfb;  --cell-bye-fg: #123f7b;
+  --cell-half-bg: #fdeecd;  --cell-half-fg: #713f12;
+  --cell-zero-bg: #edf1f5; --cell-zero-fg: #4b5b6b;
+  --highlight-bg: #fff4d6;
+
+  /* ---- typography ---- */
+  --font-sans: "Vazirmatn", "Tahoma", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, monospace;
+  --text-display: 1.75rem;
+  --text-page: 1.375rem;
+  --text-section: 1.0625rem;
+  --text-sub: 0.9375rem;
+  --text-body: 0.875rem;
+  --text-small: 0.78rem;
+  --text-caption: 0.72rem;
+  --lh-tight: 1.4;
+  --lh-body: 1.8;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---- spacing (4-base) ---- */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+  --spacing-xs: var(--space-1); --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4); --spacing-lg: var(--space-6);
+  --spacing-xl: var(--space-8);
+
+  /* ---- shape / elevation / motion ---- */
+  --radius-sm: 6px; --radius: 8px; --radius-md: 8px;
+  --radius-lg: 12px; --radius-xl: 16px; --radius-full: 9999px;
+  --border-width: 1px;
+  --shadow-xs: 0 1px 2px rgba(23, 33, 43, 0.06);
+  --shadow: 0 1px 3px rgba(23, 33, 43, 0.08), 0 1px 2px rgba(23, 33, 43, 0.06);
+  --shadow-md: 0 4px 10px -2px rgba(23, 33, 43, 0.12);
+  --shadow-lg: 0 12px 24px -6px rgba(23, 33, 43, 0.16);
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --focus-ring: 0 0 0 3px rgba(25, 118, 210, 0.28);
+  --focus-ring-error: 0 0 0 3px rgba(198, 40, 40, 0.22);
+
+  /* ---- layout ---- */
+  --container-max: 1200px;
+  --container-narrow: 720px;
+  --gutter: 16px;
+  --header-h: 60px;
+
+  color-scheme: light;
+}
+
+/* ---- dark theme: retuned surfaces, same semantics ---- */
+[data-theme="dark"] {
+  --background: #0f1722;
+  --surface: #16202c;
+  --surface-muted: #1b2836;
+  --surface-sunken: #101924;
+  --border: #2a3a4b;
+  --border-strong: #3b5065;
+  --text: #e8eef4;
+  --text-secondary: #c3cfdb;
+  --text-muted: #9db0c2;
+  --text-disabled: #6d8195;
+
+  --primary: #64a6ec;
+  --primary-hover: #84bcf3;
+  --primary-active: #a5d0f7;
+  --primary-subtle: #1b3350;
+  --accent: #ffa54d;
+  --accent-subtle: #3a2a16;
+
+  --success: #4cc38a; --success-subtle: #143a2a;
+  --warning: #e8a94e; --warning-subtle: #3a2c14;
+  --danger: #ef8080;  --danger-subtle: #431e1e;
+  --info: #64a6ec;    --info-subtle: #1b3350;
+
+  --gray-50: var(--surface-muted); --gray-100: #22303f;
+  --gray-200: var(--border); --gray-300: var(--border-strong);
+  --gray-400: var(--text-disabled); --gray-500: var(--text-muted);
+  --gray-600: var(--text-secondary); --gray-700: #d5dfee;
+  --gray-800: #e8eef4; --gray-900: #ffffff;
+  --primary-dark: var(--primary); --primary-light: var(--primary-subtle);
+  --success-light: var(--success-subtle); --warning-light: var(--warning-subtle);
+  --error: var(--danger); --error-light: var(--danger-subtle);
+
+  --cell-win-bg: #16382a;  --cell-win-fg: #8fe3b6;
+  --cell-draw-bg: #3d3220; --cell-draw-fg: #f2cf7e;
+  --cell-loss-bg: #462020; --cell-loss-fg: #f3a3a3;
+  --cell-bye-bg: #1d3350;  --cell-bye-fg: #a9cdf5;
+  --cell-half-bg: #3a2c14;  --cell-half-fg: #f2cf7e;
+  --cell-zero-bg: #22303f; --cell-zero-fg: #9db0c2;
+  --highlight-bg: #3a2f14;
+
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 10px -2px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 24px -6px rgba(0, 0, 0, 0.55);
+  --focus-ring: 0 0 0 3px rgba(100, 166, 236, 0.35);
+
+  color-scheme: dark;
+}

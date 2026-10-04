@@ -129,7 +129,7 @@ function showAlert(message, type) {
     alertDiv.className = `alert alert-${type}`;
     alertDiv.innerHTML = `
         ${message}
-        <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+        <button type="button" class="alert-close" aria-label="بستن پیام">&times;</button>
     `;
     alertContainer.appendChild(alertDiv);
 }

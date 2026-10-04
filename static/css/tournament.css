@@ -1,27 +1,6 @@
-/* هدر تورنومنت */
-.tournament-header {
-    background: white;
-    padding: 16px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    margin-bottom: 12px;
-}
-
-.tournament-header h1 {
-    margin-bottom: 8px;
-    font-size: 1.2em;
-}
-
-.tournament-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.meta-item {
-    color: var(--gray-600);
-    font-size: 0.8em;
-}
+/* Tournament context header, tabs and filter bar now live in
+   navigation.css / components.css (canonical). The legacy selectors below
+   are retired; .tournament-arbiters is kept for the arbiter line. */
 
 .tournament-arbiters {
     margin-top: 8px;
@@ -34,102 +13,8 @@
     flex-wrap: wrap;
 }
 
-/* تب‌ها */
-.tabs {
-    display: flex;
-    gap: 3px;
-    background: white;
-    padding: 4px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    margin-bottom: 12px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.tab {
-    padding: 8px 14px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 0.85em;
-    border-radius: 6px;
-    transition: all 0.2s;
-    white-space: nowrap;
-    color: var(--gray-600);
-}
-
-.tab:hover { background: var(--gray-100); }
-
-.tab.active {
-    background: var(--primary);
-    color: white;
-}
-
-.tab-admin { margin-right: auto; }
-
-.tab-content {
-    display: none;
-    background: white;
-    padding: 16px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-}
-
-.tab-content.active { display: block; }
-
-.empty-state {
-    text-align: center;
-    padding: 30px;
-    color: var(--gray-400);
-    font-size: 0.9em;
-}
-
-/* فیلتر */
-.filter-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    padding: 8px 12px;
-    background: var(--gray-100);
-    border-radius: var(--radius);
-    margin-bottom: 12px;
-}
-
-.filter-label {
-    font-weight: 600;
-    color: var(--gray-600);
-    margin-left: 6px;
-    font-size: 0.85em;
-}
-
-.filter-btn {
-    padding: 4px 12px;
-    border: 2px solid var(--gray-300);
-    border-radius: 16px;
-    background: white;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 0.8em;
-    transition: all 0.2s;
-    color: var(--gray-700);
-}
-
-.filter-btn:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-}
-
-.filter-btn.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
-
-.filter-btn-custom { border-color: var(--success); color: var(--success); }
-.filter-btn-custom.active { background: var(--success); border-color: var(--success); color: white; }
+/* Tabs: retired — see navigation.css (.tabs/.tab/.tab-content). */
+.tab-admin { margin-inline-start: auto; }
 
 /* دورها */
 .rounds-list {
@@ -139,7 +24,7 @@
 }
 
 .round-card {
-    background: white;
+    background: var(--surface);
     padding: 12px 16px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -177,7 +62,7 @@
     font-family: inherit;
     font-size: 0.85em;
     cursor: pointer;
-    background: white;
+    background: var(--surface);
 }
 
 .result-select:focus {
@@ -200,7 +85,7 @@
 }
 
 .category-section {
-    background: white;
+    background: var(--surface);
     padding: 16px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -217,7 +102,7 @@
    کارت اطلاعات بازیکن
    ============================================ */
 .player-info-card {
-    background: white;
+    background: var(--surface);
     padding: 16px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -258,7 +143,7 @@
 }
 
 .stat-card {
-    background: white;
+    background: var(--surface);
     padding: 12px 16px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -284,10 +169,10 @@
 .stat-loss .stat-value { color: var(--error); }
 
 /* رنگ ردیف بر اساس نتیجه */
-.row-win { background-color: #f0fdf4 !important; }
-.row-loss { background-color: #fef2f2 !important; }
-.row-win:hover { background-color: #dcfce7 !important; }
-.row-loss:hover { background-color: #fee2e2 !important; }
+.row-win { background-color: var(--success-subtle) !important; }
+.row-loss { background-color: var(--danger-subtle) !important; }
+.row-win:hover { background-color: var(--success-subtle) !important; filter: brightness(0.97); }
+.row-loss:hover { background-color: var(--danger-subtle) !important; filter: brightness(0.97); }
 
 /* نقطه رنگ */
 .color-dot { font-size: 0.9em; }
@@ -296,7 +181,7 @@
    صفحه خلاصه
    ============================================ */
 .summary-info {
-    background: white;
+    background: var(--surface);
     padding: 16px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -326,7 +211,7 @@
 
 /* نوار نتایج */
 .result-stats {
-    background: white;
+    background: var(--surface);
     padding: 16px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -384,7 +269,7 @@
 
 /* سکوی نفرات برتر */
 .podium-section {
-    background: white;
+    background: var(--surface);
     padding: 16px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -411,9 +296,9 @@
     border: 2px solid var(--gray-200);
 }
 
-.podium-1 { border-color: #fbbf24; background: #fffbeb; }
-.podium-2 { border-color: #9ca3af; background: #f9fafb; }
-.podium-3 { border-color: #d97706; background: #fffbeb; }
+.podium-1 { border-color: var(--accent); background: var(--accent-subtle); }
+.podium-2 { border-color: var(--border-strong); background: var(--surface-muted); }
+.podium-3 { border-color: var(--warning); background: var(--warning-subtle); }
 
 .podium-rank {
     font-size: 2em;
@@ -421,9 +306,9 @@
     color: var(--gray-400);
 }
 
-.podium-1 .podium-rank { color: #f59e0b; }
-.podium-2 .podium-rank { color: #6b7280; }
-.podium-3 .podium-rank { color: #d97706; }
+.podium-1 .podium-rank { color: var(--accent-hover); }
+.podium-2 .podium-rank { color: var(--text-muted); }
+.podium-3 .podium-rank { color: var(--warning); }
 
 .podium-name {
     font-weight: 600;
@@ -449,7 +334,7 @@
 
 /* جوایز */
 .awards-section, .category-winners {
-    background: white;
+    background: var(--surface);
     padding: 16px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -510,56 +395,16 @@
     flex-wrap: wrap;
 }
 
-/* Admin Power User Mode Styles */
-.admin-dock {
-    background: #1e293b;
-    color: white;
-    padding: 15px 20px;
-    border-radius: 0 0 15px 15px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    margin-bottom: 30px;
-    border-bottom: 3px solid var(--primary);
-    position: sticky;
-    top: 60px;
-    z-index: 99;
-}
-.admin-dock-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    border-bottom: 1px solid #334155;
-    padding-bottom: 8px;
-}
-.admin-btn-group {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-.btn-admin {
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-    border: none;
-    cursor: pointer;
-}
-.btn-admin-primary { background: var(--primary); color: white; }
-.btn-admin-success { background: var(--success); color: white; }
-.btn-admin-secondary { background: #475569; color: white; }
-.btn-admin-danger { background: #ef4444; color: white; }
-.btn-admin:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+/* Arbiter quick-action dock — retired Phase 7 (actions live in the
+   tournament header + rounds console). Selectors removed, markup uses
+   .admin-actions from components.css. */
 
 .rank-badge {
-    background: #f1f5f9;
+    background: var(--surface-muted);
     padding: 2px 8px;
     border-radius: 6px;
     font-weight: bold;
-    color: #475569;
+    color: var(--text-secondary);
     font-size: 0.85em;
 }
 
@@ -578,69 +423,19 @@
     border-bottom: 2px solid var(--primary);
 }
 
-.toolbar-actions {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
+/* Floating admin trigger / toolbar / duplicate drawer — retired Phase 7.
+   No template references these selectors (verified 2026-10). */
 
-.toolbar-btn {
-    color: #cbd5e1;
-    text-decoration: none;
-    padding: 4px 10px;
-    border-radius: 5px;
-    transition: all 0.2s;
-    background: rgba(255,255,255,0.05);
-}
-
-.toolbar-btn:hover {
-    color: white;
-    background: var(--primary);
-    text-decoration: none;
-}
-
-.toolbar-btn-success { background: #166534; color: white; }
-.toolbar-btn-success:hover { background: #15803d; }
-
-/* Modern Pro UI Updates */
-:root {
-    --admin-dark: #0f172a;
-    --admin-accent: #3b82f6;
-}
-
-/* Floating Management Trigger */
-.admin-trigger {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: var(--admin-dark);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    cursor: pointer;
-    z-index: 1001;
-    border: 2px solid var(--admin-accent);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.admin-trigger:hover {
-    transform: scale(1.1) rotate(90deg);
-}
-
-/* Standings Table - Pro Look */
+/* Standings Table — inherits the unified table system (tables.css);
+   only the uppercase header treatment is tournament-specific. */
 .standings-table {
     border: none;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-xs);
 }
 
 .standings-table th {
-    background: #f8fafc;
-    color: #64748b;
+    background: var(--surface-muted);
+    color: var(--text-secondary);
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.025em;
@@ -649,47 +444,17 @@
 
 .standings-table td {
     padding: 10px 15px;
-    border-bottom: 1px solid #f1f5f9;
+    border-block-end: var(--border-width) solid var(--border);
 }
 
-/* Results Selection - Clean Style */
-.result-select-minimal {
-    border: 1px solid #e2e8f0;
-    padding: 2px 5px;
-    border-radius: 4px;
-    background: #fff;
-    font-size: 0.9em;
-    cursor: pointer;
-}
+/* Sidebar drawer duplicate — retired Phase 7 (see navigation.css). */
 
-/* Sidebar Drawer for Admin Tasks */
-.admin-sidebar {
-    position: fixed;
-    top: 0;
-    left: -300px;
-    width: 300px;
-    height: 100%;
-    background: white;
-    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-    z-index: 1002;
-    transition: left 0.3s ease;
-    padding: 20px;
-}
-
-.admin-sidebar.active {
-    left: 0;
-}
-
-/* Filter Buttons */
+/* Filter buttons — canonical definition in components.css; this later
+   block only keeps tournament-specific sizing consistent. */
 .filter-btn {
-    background: white;
-    border: 1px solid #cbd5e1;
-    color: #475569;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
+    background: var(--surface);
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
 }
 .filter-btn:hover {
     border-color: var(--primary);
@@ -701,9 +466,9 @@
     border-color: var(--primary);
 }
 
-/* Highlight Effect */
+/* Highlight Effect — token-driven (dark-mode safe). */
 .row-highlighted {
-    background-color: #fef08a !important; /* Yellow highlight */
+    background-color: var(--highlight-bg) !important;
 }
 /* Dim non-highlighted rows when a filter is active */
 .table-filtered .player-row:not(.row-highlighted) {
@@ -785,7 +550,7 @@
 .text-gray-900 { color: var(--gray-900); }
 .text-white { color: white; }
 
-.bg-white { background: white; }
+.bg-white { background: var(--surface); }
 .bg-gray-50 { background: var(--gray-50); }
 .bg-gray-100 { background: var(--gray-100); }
 .bg-gray-200 { background: var(--gray-200); }
@@ -909,14 +674,5 @@
 .w-80 { width: 80px; }
 .w-90 { width: 90px; }
 
-/* Table specific */
-.table-responsive { overflow-x: auto; margin: 12px 0; -webkit-overflow-scrolling: touch; }
-.data-table { width: 100%; border-collapse: collapse; font-size: 0.8em; border: 2px solid var(--gray-300); min-width: 600px; }
-.data-table th,
-.data-table td { padding: 7px 8px; text-align: center; border: 1px solid var(--gray-200); white-space: nowrap; }
-.data-table th { background: var(--gray-100); font-weight: 600; color: var(--gray-700); position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--gray-300); font-size: 0.85em; }
-.data-table tbody tr:hover { background: var(--primary-light); }
-.data-table tbody tr:nth-child(even) { background: var(--gray-50); }
-.data-table tbody tr:nth-child(even):hover { background: var(--primary-light); }
-.data-table .player-cell { text-align: right; }
+/* Table normalization: retired — unified system lives in tables.css. */
 .row-withdrawn { opacity: 0.5; text-decoration: line-through; }

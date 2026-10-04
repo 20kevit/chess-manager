@@ -1,117 +1,15 @@
 /* ============================================
-   Admin Layout & Components
+   Admin section extras — layout shell lives in navigation.css
+   (.layout-sidebar / .sidebar / .side-link).
    ============================================ */
 
-/* Admin Layout */
-.admin-layout {
-    min-height: calc(100vh - 60px);
-}
+/* Legacy dark-sidebar selectors retired with admin/base.html (Phase 3).
+   Kept as no-op aliases so nothing breaks if referenced. */
+.admin-layout, .admin-container, .admin-sidebar, .admin-nav,
+.admin-nav-item, .admin-sidebar-toggle, .admin-sidebar-header,
+.admin-sidebar-footer, .admin-user-name, .admin-main { /* retired */ }
 
-.admin-sidebar-toggle {
-    display: none;
-    width: 100%;
-    padding: 12px;
-    background: var(--gray-800);
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    text-align: right;
-}
-
-.admin-container {
-    display: flex;
-    gap: 0;
-    min-height: calc(100vh - 100px);
-}
-
-.admin-sidebar {
-    width: 250px;
-    background: var(--gray-800);
-    color: var(--gray-200);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    transition: width 0.3s ease, padding 0.3s ease;
-    overflow: hidden;
-}
-
-.admin-sidebar-header {
-    padding: 20px;
-    border-bottom: 1px solid var(--gray-700);
-}
-
-.admin-sidebar-header h3 {
-    margin: 0 0 5px 0;
-    font-size: 16px;
-    color: white;
-}
-
-.admin-user-name {
-    margin: 0;
-    font-size: 12px;
-    color: var(--gray-400);
-}
-
-.admin-nav {
-    flex: 1;
-    padding: 10px 0;
-    overflow-y: auto;
-}
-
-.admin-nav-item {
-    display: block;
-    padding: 12px 20px;
-    color: var(--gray-300);
-    text-decoration: none;
-    font-size: 14px;
-    transition: background 0.2s, color 0.2s;
-}
-
-.admin-nav-item:hover {
-    background: var(--gray-700);
-    color: white;
-}
-
-.admin-nav-item.active {
-    background: var(--primary);
-    color: white;
-    border-right: 3px solid var(--primary-dark);
-}
-
-.admin-sidebar-footer {
-    padding: 10px 0;
-    border-top: 1px solid var(--gray-700);
-}
-
-.admin-main {
-    flex: 1;
-    padding: 25px;
-    background: var(--gray-50);
-    overflow-y: auto;
-}
-
-@media (max-width: 768px) {
-    .admin-sidebar-toggle {
-        display: block;
-    }
-    .admin-sidebar {
-        position: fixed;
-        top: 60px;
-        right: -250px;
-        z-index: 1000;
-        transition: right 0.3s;
-        height: calc(100vh - 60px);
-        width: 250px;
-    }
-    .admin-sidebar.open {
-        right: 0;
-        width: 250px;
-    }
-    .admin-main {
-        padding: 15px;
-    }
-}
+.admin-main-content { min-inline-size: 0; }
 
 /* Page Title */
 .page-title {
@@ -122,7 +20,7 @@
 
 /* Admin Toolbar */
 .admin-toolbar {
-    background: white;
+    background: var(--surface);
     padding: 15px;
     border-radius: var(--radius);
     margin-bottom: 20px;
@@ -157,7 +55,7 @@
     border-radius: var(--radius);
     font-size: 14px;
     font-family: inherit;
-    background: white;
+    background: var(--surface);
     transition: border-color 0.2s;
 }
 
@@ -175,7 +73,7 @@
 }
 
 .stat-card {
-    background: white;
+    background: var(--surface);
     border-radius: var(--radius);
     padding: 20px;
     display: flex;
@@ -221,7 +119,7 @@
 }
 
 .dashboard-section {
-    background: white;
+    background: var(--surface);
     border-radius: var(--radius);
     padding: 20px;
     box-shadow: var(--shadow);
@@ -235,29 +133,32 @@
     padding-bottom: 10px;
 }
 
-/* Admin Table */
+/* Admin Table — extends the unified table system (see tables.css).
+   .admin-table is kept as a compatibility alias of .tbl. */
 .admin-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: var(--text-small);
+    background: var(--surface);
 }
 
 .admin-table th {
-    text-align: right;
-    padding: 12px;
-    background: var(--gray-100);
-    color: var(--gray-600);
-    font-weight: 600;
-    border-bottom: 2px solid var(--gray-300);
+    text-align: start;
+    padding: var(--space-3);
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    font-weight: var(--weight-bold);
+    border-block-end: 2px solid var(--border-strong);
+    white-space: nowrap;
 }
 
 .admin-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--gray-200);
+    padding: 10px var(--space-3);
+    border-block-end: var(--border-width) solid var(--border);
 }
 
-.admin-table tr:hover {
-    background: var(--gray-50);
+.admin-table tbody tr:hover {
+    background: var(--primary-subtle);
 }
 
 .empty-state {
@@ -266,37 +167,9 @@
     color: var(--gray-500);
 }
 
-/* Badges */
-.badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    margin-left: 2px;
-    background: var(--gray-200);
-    color: var(--gray-700);
-    font-weight: 500;
-}
-
-.badge-admin {
-    background: var(--error-light);
-    color: var(--error);
-}
-
-.badge-player {
-    background: var(--primary-light);
-    color: var(--primary);
-}
-
-.badge-organizer {
-    background: var(--success-light);
-    color: var(--success);
-}
-
-.badge-arbiter {
-    background: var(--warning-light);
-    color: var(--warning);
-}
+/* Badges — canonical definitions live in components.css.
+   Role badges below only set their semantic mapping. */
+.badge { margin-inline-end: 2px; }
 
 /* Status Badges */
 .status-badge {
@@ -389,83 +262,22 @@
 
 /* Table Container */
 .table-container {
-    background: white;
+    background: var(--surface);
     border-radius: var(--radius);
     overflow: hidden;
     box-shadow: var(--shadow);
 }
 
-/* Buttons (override components.css for admin-specific) */
-.btn {
-    display: inline-block;
-    padding: 8px 18px;
-    border-radius: var(--radius);
-    text-decoration: none;
-    font-family: inherit;
-    font-size: 0.85em;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-
-.btn-primary {
-    background: var(--primary);
+/* Buttons — canonical 5-type system lives in components.css.
+   Admin keeps only the solid-danger emphasis variant. */
+.btn-danger-solid {
+    background: var(--danger);
+    border-color: var(--danger);
     color: white;
 }
 
-.btn-primary:hover {
-    background: var(--primary-dark);
-    color: white;
-    text-decoration: none;
-}
-
-.btn-secondary {
-    background: var(--gray-200);
-    color: var(--gray-700);
-}
-
-.btn-secondary:hover {
-    background: var(--gray-300);
-    color: var(--gray-700);
-    text-decoration: none;
-}
-
-.btn-info {
-    background: #17a2b8;
-    color: white;
-}
-
-.btn-info:hover {
-    background: #138496;
-    color: white;
-    text-decoration: none;
-}
-
-.btn-sm {
-    padding: 4px 10px;
-    font-size: 12px;
-}
-
-.btn-warning {
-    background: var(--warning);
-    color: white;
-}
-
-.btn-warning:hover {
-    background: #b45309;
-    color: white;
-    text-decoration: none;
-}
-
-.btn-danger {
-    background: var(--error);
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #b91c1c;
+.btn-danger-solid:hover {
+    background: var(--danger-hover);
     color: white;
     text-decoration: none;
 }

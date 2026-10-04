@@ -46,8 +46,8 @@ function initTiebreakDnd() {
 
     list.addEventListener('drop', function(e) {
         e.preventDefault();
-        // Update checkbox order to match visual order
-        updateCheckboxOrder();
+        // Checkboxes move with their parent .tiebreak-item, so DOM order
+        // already matches visual order — nothing else to update.
     });
 
     function getDragAfterElement(container, y) {
@@ -64,10 +64,20 @@ function initTiebreakDnd() {
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    function updateCheckboxOrder() {
-        // The form will submit checkboxes in DOM order, which now matches visual order
-        // No additional action needed since checkboxes move with their parent .tiebreak-item
-    }
+    // Keyboard fallback: up/down buttons reorder without a mouse.
+    // (DOM order is the submit order, so moving the node is sufficient.)
+    document.querySelectorAll('.tiebreak-item').forEach(item => {
+        var up = item.querySelector('.tb-up');
+        var down = item.querySelector('.tb-down');
+        if (up) up.addEventListener('click', function () {
+            var prev = item.previousElementSibling;
+            if (prev) { list.insertBefore(item, prev); item.querySelector('.tb-up').focus(); }
+        });
+        if (down) down.addEventListener('click', function () {
+            var next = item.nextElementSibling;
+            if (next) { list.insertBefore(next, item); item.querySelector('.tb-down').focus(); }
+        });
+    });
 }
 
 // Initialize on DOM ready

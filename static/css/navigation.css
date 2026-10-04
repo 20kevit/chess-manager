@@ -1,0 +1,156 @@
+/* ============================================================
+   navigation — global header, drawer, sidebar, tabs,
+   tournament context nav. Logical properties throughout.
+   ============================================================ */
+
+/* ---------- global header ---------- */
+.site-header {
+  background: var(--gray-900);
+  color: #fff;
+  position: sticky; inset-block-start: 0; z-index: 200;
+  box-shadow: var(--shadow-md);
+  border-block-end: 3px solid var(--primary);
+  min-height: var(--header-h);
+}
+[data-theme="dark"] .site-header { background: #0b1220; }
+.site-header .container { display: flex; align-items: center; gap: var(--space-4); min-height: var(--header-h); padding-block: var(--space-2); }
+.brand { display: inline-flex; align-items: center; gap: var(--space-2); color: #fff; font-weight: var(--weight-bold); font-size: 1.05rem; white-space: nowrap; }
+.brand:hover { text-decoration: none; color: #fff; }
+.brand svg { inline-size: 26px; block-size: 26px; color: var(--accent); }
+.site-nav { display: flex; align-items: center; gap: var(--space-1); margin-inline-start: auto; }
+.site-nav a, .site-nav .nav-link {
+  color: #c9d4e0; padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius); font-size: var(--text-body);
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  min-height: 40px; white-space: nowrap;
+}
+.site-nav a:hover, .site-nav .nav-link:hover { color: #fff; background: rgba(255,255,255,0.08); text-decoration: none; }
+.site-nav a[aria-current="page"] { color: #fff; background: rgba(255,255,255,0.12); box-shadow: inset 0 -2px 0 var(--accent); }
+.header-actions { display: flex; align-items: center; gap: var(--space-1); }
+.nav-toggle { display: none; }
+
+/* notification bell */
+.notification-bell-container { position: relative; }
+.bell-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 40px; block-size: 40px; border-radius: var(--radius);
+  background: transparent; border: none; color: #c9d4e0; cursor: pointer; font-size: 1.15rem;
+}
+.bell-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.notif-badge {
+  position: absolute; inset-block-start: 2px; inset-inline-end: 2px;
+  background: var(--accent); color: #231300;
+  border-radius: var(--radius-full); padding: 0 7px;
+  font-size: 0.7rem; font-weight: var(--weight-bold); line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.notification-dropdown {
+  position: absolute; inset-block-start: calc(100% + 8px); inset-inline-end: 0;
+  inline-size: 360px; max-inline-size: calc(100vw - 32px);
+  background: var(--surface); color: var(--text);
+  border: var(--border-width) solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); z-index: 500; text-align: start;
+}
+.notif-dropdown-header { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); border-block-end: var(--border-width) solid var(--border); font-weight: var(--weight-semibold); }
+.notif-dropdown-body { max-block-size: 400px; overflow-y: auto; }
+.notif-dropdown-item { padding: var(--space-3); border-block-end: var(--border-width) solid var(--border); font-size: var(--text-body); }
+.notif-dropdown-item.unread { background: var(--primary-subtle); border-inline-start: 3px solid var(--primary); }
+.notif-dropdown-item strong { display: block; margin-block-end: var(--space-1); }
+.notif-dropdown-item p { margin: 0; color: var(--text-secondary); font-size: var(--text-small); }
+.notif-dropdown-item small { color: var(--text-muted); }
+
+/* theme toggle */
+.theme-toggle { background: transparent; border: var(--border-width) solid transparent; color: #c9d4e0; border-radius: var(--radius); inline-size: 40px; block-size: 40px; cursor: pointer; font-size: 1.05rem; }
+.theme-toggle:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* ---------- mobile drawer ---------- */
+.drawer-scrim { position: fixed; inset: 0; background: rgba(15,23,34,0.55); z-index: 290; opacity: 0; visibility: hidden; transition: opacity var(--transition-normal), visibility var(--transition-normal); }
+.drawer-scrim.open { opacity: 1; visibility: visible; }
+.drawer {
+  position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 300;
+  inline-size: min(320px, 88vw); background: var(--surface); color: var(--text);
+  border-inline-end: var(--border-width) solid var(--border);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(100%); transition: transform var(--transition-normal);
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+[dir="rtl"] .drawer { transform: translateX(100%); }
+.drawer.open { transform: translateX(0); }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4); border-block-end: var(--border-width) solid var(--border); }
+.drawer nav { padding: var(--space-3); display: flex; flex-direction: column; gap: 2px; }
+.drawer nav a { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius); color: var(--text); font-weight: var(--weight-medium); min-height: 46px; }
+.drawer nav a:hover { background: var(--surface-muted); text-decoration: none; }
+.drawer nav a[aria-current="page"] { background: var(--primary-subtle); color: var(--primary-active); }
+.drawer nav svg { inline-size: 20px; block-size: 20px; color: var(--text-muted); }
+
+/* ---------- sidebar (admin + tournament manage) ---------- */
+.layout-sidebar { display: grid; grid-template-columns: 260px 1fr; gap: var(--space-4); align-items: start; }
+.sidebar {
+  background: var(--surface); border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-3);
+  position: sticky; inset-block-start: calc(var(--header-h) + var(--space-4));
+  max-block-size: calc(100vh - var(--header-h) - var(--space-8)); overflow-y: auto;
+}
+.sidebar-head { padding: var(--space-2) var(--space-3); }
+.sidebar-head h2, .sidebar-head h3 { font-size: var(--text-sub); margin: 0; }
+.sidebar-head p { font-size: var(--text-small); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; }
+.side-group { margin-block-start: var(--space-3); }
+.side-group > .side-label { font-size: var(--text-caption); font-weight: var(--weight-bold); color: var(--text-muted); padding: 0 var(--space-3); margin-block-end: var(--space-1); letter-spacing: 0.02em; }
+.side-link {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: 9px var(--space-3); border-radius: var(--radius);
+  color: var(--text-secondary); font-size: var(--text-body); font-weight: var(--weight-medium);
+  min-height: 42px;
+}
+.side-link svg { inline-size: 18px; block-size: 18px; flex-shrink: 0; color: var(--text-muted); }
+.side-link:hover { background: var(--surface-muted); color: var(--text); text-decoration: none; }
+.side-link.active, .side-link[aria-current="page"] { background: var(--primary-subtle); color: var(--primary-active); font-weight: var(--weight-semibold); }
+.side-link.active svg { color: var(--primary); }
+.sidebar-toggle { display: none; }
+
+/* legacy admin-layout aliases retired — see admin.css */
+
+/* ---------- tabs (tournament workspace) ---------- */
+.tabs { display: flex; gap: var(--space-1); overflow-x: auto; border-block-end: 2px solid var(--border); margin-block: var(--space-4) 0; scrollbar-width: thin; }
+.tab {
+  padding: 10px 18px; font-family: inherit; font-size: var(--text-body); font-weight: var(--weight-medium);
+  background: none; border: none; color: var(--text-muted); cursor: pointer; white-space: nowrap;
+  border-block-end: 3px solid transparent; margin-block-end: -2px; min-height: 44px;
+  display: inline-flex; align-items: center; gap: var(--space-2);
+}
+.tab svg { inline-size: 16px; block-size: 16px; }
+.tab:hover { color: var(--text); background: var(--surface-muted); border-radius: var(--radius) var(--radius) 0 0; }
+.tab.active, .tab[aria-selected="true"] { color: var(--primary-active); border-block-end-color: var(--primary); font-weight: var(--weight-semibold); }
+.tab-content { display: none; padding-block: var(--space-4); }
+.tab-content.active { display: block; }
+
+/* ---------- tournament context header ---------- */
+.tournament-header {
+  background: var(--surface); border: var(--border-width) solid var(--border);
+  border-inline-start: 4px solid var(--primary);
+  border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6);
+  box-shadow: var(--shadow-xs); margin-block-end: var(--space-2);
+}
+.tournament-header h1 { margin: 0 0 var(--space-2); }
+.tournament-meta { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); color: var(--text-secondary); font-size: var(--text-body); }
+.tournament-meta .meta-item { display: inline-flex; align-items: center; gap: var(--space-1); }
+.tournament-progress { display: flex; align-items: center; gap: var(--space-2); margin-block-start: var(--space-3); }
+.progress-track { flex: 1; block-size: 8px; border-radius: var(--radius-full); background: var(--surface-muted); overflow: hidden; min-inline-size: 120px; }
+.progress-fill { block-size: 100%; background: var(--primary); border-radius: var(--radius-full); transition: inline-size var(--transition-normal); }
+
+@media (max-width: 1023px) {
+  .site-nav.desktop-only { display: none; }
+  .nav-toggle { display: inline-flex; align-items: center; justify-content: center; inline-size: 42px; block-size: 42px; background: transparent; border: none; color: #fff; font-size: 1.4rem; cursor: pointer; border-radius: var(--radius); }
+  .layout-sidebar { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 300;
+    inline-size: min(320px, 88vw); border-radius: 0; max-block-size: none;
+    transform: translateX(100%); transition: transform var(--transition-normal);
+  }
+  [dir="rtl"] .sidebar { transform: translateX(100%); }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-toggle { display: inline-flex; }
+}
+@media (min-width: 1024px) {
+  .drawer, .drawer-scrim { display: none; }
+}

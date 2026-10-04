@@ -1,0 +1,104 @@
+/* ============================================================
+   forms — coherent field system. Native controls preserved.
+   ============================================================ */
+
+.form-container {
+  background: var(--surface);
+  padding: var(--space-6);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  max-inline-size: 800px;
+  margin-inline: auto;
+}
+.form-container.narrow { max-inline-size: 480px; }
+
+.form-section { margin-block-end: var(--space-6); padding-block-end: var(--space-4); border-block-end: var(--border-width) solid var(--border); }
+.form-section:last-of-type { border-block-end: none; }
+
+.field, .form-group { margin-block-end: var(--space-4); }
+.field label, .form-group label {
+  display: block; margin-block-end: var(--space-1);
+  font-weight: var(--weight-semibold); color: var(--text);
+  font-size: var(--text-body);
+}
+.required::after { content: " *"; color: var(--danger); }
+
+.field input, .field select, .field textarea,
+.form-group input, .form-group select, .form-group textarea,
+.form-control {
+  inline-size: 100%;
+  padding: 10px 12px;
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius);
+  font-family: inherit; font-size: var(--text-body);
+  background: var(--surface); color: var(--text);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  min-height: 42px;
+}
+.field textarea, .form-group textarea { min-height: 96px; resize: vertical; }
+.field input:focus, .field select:focus, .field textarea:focus,
+.form-group input:focus, .form-group select:focus, .form-control:focus {
+  outline: none; border-color: var(--primary); box-shadow: var(--focus-ring);
+}
+.field input:disabled, .field select:disabled, .form-group input:disabled { background: var(--surface-muted); color: var(--text-disabled); cursor: not-allowed; }
+
+/* validation */
+.field.invalid input, .field.invalid select, .field.invalid textarea,
+.form-group.invalid input, .form-group.invalid select, input[aria-invalid="true"], select[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.field.invalid input:focus, .form-group.invalid input:focus { box-shadow: var(--focus-ring-error); }
+.field-hint, .form-note { font-size: var(--text-small); color: var(--text-muted); margin-block-start: var(--space-1); }
+.field-error, .form-error { font-size: var(--text-small); color: var(--danger); font-weight: var(--weight-medium); margin-block-start: var(--space-1); display: flex; gap: var(--space-1); align-items: flex-start; }
+.form-errors-summary { background: var(--danger-subtle); border: var(--border-width) solid var(--danger); border-radius: var(--radius); padding: var(--space-3) var(--space-4); margin-block-end: var(--space-4); }
+.form-errors-summary ul { margin-inline-start: var(--space-4); }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.form-actions { display: flex; gap: var(--space-2); justify-content: flex-start; margin-block-start: var(--space-4); flex-wrap: wrap; }
+.form-actions.center { justify-content: center; }
+
+/* radios / checkboxes — native inputs, styled labels */
+.radio-group { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.radio-label {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  cursor: pointer; padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius); font-size: var(--text-body);
+  min-height: 42px;
+}
+.radio-label:has(input:checked) { border-color: var(--primary); background: var(--primary-subtle); }
+.radio-label input, .checkbox-label input { accent-color: var(--primary); inline-size: 18px; block-size: 18px; }
+.checkbox-label { display: flex; align-items: flex-start; gap: var(--space-2); cursor: pointer; line-height: 1.6; font-size: var(--text-body); }
+
+/* search inputs */
+input[type="search"] { padding-inline-start: 36px; }
+
+/* file input */
+.file-input {
+  padding: var(--space-2);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  inline-size: 100%; cursor: pointer; background: var(--surface-muted); color: var(--text);
+}
+.file-input:hover { border-color: var(--primary); }
+
+/* result selects stay native but comfortable */
+.result-select { min-inline-size: 110px; padding: 8px 10px; font-size: var(--text-body); }
+
+/* tiebreak DnD + keyboard fallback */
+.tiebreak-list { display: flex; flex-direction: column; gap: var(--space-1); min-height: 50px; }
+.tiebreak-item {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: 10px 12px; background: var(--surface-muted);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius); user-select: none;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+.tiebreak-item.tiebreak-active { background: var(--primary-subtle); border-color: var(--primary); }
+.tiebreak-item.tb-dragging { background: var(--surface); border-color: var(--primary); box-shadow: var(--shadow-md); opacity: 0.95; }
+.tb-placeholder { background: var(--primary-subtle); border: 2px dashed var(--primary); border-radius: var(--radius); margin: 2px 0; }
+.drag-handle { color: var(--text-muted); font-size: 1.2em; cursor: grab; padding: var(--space-1); touch-action: none; }
+.drag-order { margin-inline-start: auto; font-size: var(--text-small); color: var(--primary); font-weight: var(--weight-bold); min-inline-size: 20px; text-align: center; }
+.tb-clone { background: var(--surface); border: 2px solid var(--primary); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 10px 12px; display: flex; align-items: center; gap: var(--space-2); }
+.tb-move { display: flex; gap: 2px; }

@@ -23,20 +23,33 @@ function initTournamentView() {
         'S50': 50, 'S65': 65
     };
 
-    // Tab switching
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabName = this.getAttribute('data-tab');
-            if (!tabName) return;
-
-            tabs.forEach(t => t.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-
-            this.classList.add('active');
-            const targetContent = document.getElementById('tab-' + tabName);
-            if (targetContent) {
-                targetContent.classList.add('active');
-            }
+    // Tab switching (tablist pattern: arrows move, ARIA stays in sync)
+    function selectTab(tab, focus) {
+        const tabName = tab.getAttribute('data-tab');
+        if (!tabName) return;
+        tabs.forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+            t.tabIndex = -1;
+        });
+        tabContents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        tab.tabIndex = 0;
+        const targetContent = document.getElementById('tab-' + tabName);
+        if (targetContent) targetContent.classList.add('active');
+        if (focus) tab.focus();
+    }
+    tabs.forEach((tab, i) => {
+        tab.addEventListener('click', function() { selectTab(this, false); });
+        tab.addEventListener('keydown', function(e) {
+            // In RTL, ArrowLeft moves forward visually; support both directions.
+            var next = null;
+            if (e.key === 'ArrowRight') next = tabs[(i - 1 + tabs.length) % tabs.length];
+            else if (e.key === 'ArrowLeft') next = tabs[(i + 1) % tabs.length];
+            else if (e.key === 'Home') next = tabs[0];
+            else if (e.key === 'End') next = tabs[tabs.length - 1];
+            if (next) { e.preventDefault(); selectTab(next, true); }
         });
     });
 
