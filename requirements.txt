@@ -31,10 +31,9 @@ urllib3==2.7.0
 Werkzeug==3.1.8
 WTForms==3.2.2
 Flask-Login==0.6.3
-# pairing-core: standalone FIDE Dutch engine, pinned to Git tag v0.1.0
+# pairing-core: standalone FIDE Dutch engine, pinned to released Git tag v0.4.1
 # for reproducible installs (no local path / editable / PYTHONPATH).
-pairing-core @ git+https://github.com/20kevit/pairing-core.git@v0.1.0
-# tiebreak-core: NOT yet pinnable — 20kevit/tiebreak-core has no pushed
-# commits/tags, so no git+https line can resolve. Dev/test currently use a
-# local editable install; add `tiebreak-core @ git+https://github.com/20kevit/tiebreak-core.git@vX.Y.Z`
-# once the core agent publishes a tag. Do not invent a version here.
+pairing-core @ git+https://github.com/20kevit/pairing-core.git@v0.4.1
+# tiebreak-core: standalone tiebreak calculation library, pinned to released
+# Git tag v1.2.0. Reproducible install (no local path / editable / PYTHONPATH).
+tiebreak-core @ git+https://github.com/20kevit/tiebreak-core.git@v1.2.0
