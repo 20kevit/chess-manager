@@ -268,19 +268,8 @@
     box-shadow: var(--shadow);
 }
 
-/* Buttons — canonical 5-type system lives in components.css.
-   Admin keeps only the solid-danger emphasis variant. */
-.btn-danger-solid {
-    background: var(--danger);
-    border-color: var(--danger);
-    color: white;
-}
-
-.btn-danger-solid:hover {
-    background: var(--danger-hover);
-    color: white;
-    text-decoration: none;
-}
+/* Buttons — canonical 5-type system lives in components.css
+   (including the danger-solid confirm variant). Nothing admin-specific. */
 
 /* Form elements in admin toolbar */
 .search-form .btn {

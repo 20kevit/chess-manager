@@ -31,8 +31,8 @@
                 {% elif t.time_control_type == 'rapid' %}سریع
                 {% elif t.time_control_type == 'blitz' %}برق‌آسا{% endif %}
             </span>
-            <span>👥 {{ t.players|length }}</span>
-            <span>🔄 {{ t.current_round }}/{{ t.total_rounds }}</span>
+            <span>👥 <span class="num">{{ t.players|length }}</span></span>
+            <span>🔄 <span class="num">{{ t.current_round }}/{{ t.total_rounds }}</span></span>
             <span class="badge {% if t.status == 'finished' %}badge-success{% else %}badge-warning{% endif %}">
                 {% if t.status == 'ongoing' %}در جریان
                 {% elif t.status == 'finished' %}پایان یافته

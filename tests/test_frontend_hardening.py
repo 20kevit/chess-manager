@@ -14,7 +14,10 @@ class TestFrontendHardening:
         assert 'focus-visible' in css
 
     def test_design_tokens_expanded(self):
-        css=_read("static/css/base.css")
+        # Tokens live in tokens.css (canonical home since the 2026-10 redesign);
+        # fall back to base.css for pre-redesign trees.
+        tokens = pathlib.Path("static/css/tokens.css")
+        css = _read(str(tokens) if tokens.exists() else "static/css/base.css")
         for token in ["--radius-sm","--radius-lg","--shadow-md","--transition-fast","--focus-ring","--spacing-md"]:
             assert token in css
 

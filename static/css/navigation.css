@@ -60,8 +60,13 @@
 .notif-dropdown-item small { color: var(--text-muted); }
 
 /* theme toggle */
-.theme-toggle { background: transparent; border: var(--border-width) solid transparent; color: #c9d4e0; border-radius: var(--radius); inline-size: 40px; block-size: 40px; cursor: pointer; font-size: 1.05rem; }
+.theme-toggle { display: inline-flex; align-items: center; justify-content: center; background: transparent; border: var(--border-width) solid transparent; color: #c9d4e0; border-radius: var(--radius); inline-size: 40px; block-size: 40px; cursor: pointer; }
 .theme-toggle:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.theme-toggle svg { inline-size: 20px; block-size: 20px; }
+/* sun shows in dark mode (click → light), moon shows in light mode */
+.theme-toggle .icon-sun { display: none; }
+[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
 /* ---------- mobile drawer ---------- */
 .drawer-scrim { position: fixed; inset: 0; background: rgba(15,23,34,0.55); z-index: 290; opacity: 0; visibility: hidden; transition: opacity var(--transition-normal), visibility var(--transition-normal); }

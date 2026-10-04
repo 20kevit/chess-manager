@@ -27,8 +27,10 @@
 .btn-ghost:hover, .btn-outline-primary:hover, .btn-light:hover { background: var(--primary-subtle); border-color: var(--primary); }
 .btn-danger, .btn-danger-outline { background: transparent; border-color: var(--danger); color: var(--danger); }
 .btn-danger:hover, .btn-danger-outline:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
-.btn-danger-solid, .btn-success { background: var(--success); border-color: var(--success); color: #fff; }
-.btn-danger-solid:hover, .btn-success:hover { background: var(--success-hover); color: #fff; }
+.btn-danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn-danger-solid:hover { background: var(--danger-hover); border-color: var(--danger-hover); color: #fff; }
+.btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+.btn-success:hover { background: var(--success-hover); border-color: var(--success-hover); color: #fff; }
 .btn-info { background: var(--info-subtle); border-color: var(--info); color: var(--info); }
 .btn-info:hover { background: var(--info); color: #fff; }
 .btn-warning { background: var(--warning-subtle); border-color: var(--warning); color: var(--warning); }

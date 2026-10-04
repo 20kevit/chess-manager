@@ -43,13 +43,14 @@ img { max-width: 100%; height: auto; }
 .caption, .meta { font-size: var(--text-caption); color: var(--text-muted); }
 
 /* ---- numeric / technical LTR isolation ---- */
+/* NOTE: never set display on .num — it is applied directly to <td>/<th>
+   elements, where inline-block would destroy table layout. */
 .num, .ltr, .technical {
   direction: ltr;
   unicode-bidi: isolate;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
 }
-.num { display: inline-block; }
 .num-ltr { direction: ltr; unicode-bidi: embed; font-variant-numeric: tabular-nums; }
 [dir="ltr"] { text-align: left; }
 
