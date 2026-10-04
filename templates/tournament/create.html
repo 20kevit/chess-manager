@@ -5,22 +5,22 @@
 {% block extra_css %}
 <style>
     .create-container { max-width: 900px; margin: 0 auto; padding: 20px; }
-    .toggle-buttons { display: flex; gap: 15px; margin-bottom: 30px; background: #f1f5f9; padding: 5px; border-radius: 12px; }
-    .toggle-btn { padding: 12px 20px; border-radius: 8px; border: none; background: transparent; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.3s; flex: 1; text-align: center; font-size: 1rem; }
-    .toggle-btn.active { background: #fff; color: #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .toggle-buttons { display: flex; gap: 15px; margin-bottom: 30px; background: var(--surface-muted); padding: 5px; border-radius: 12px; }
+    .toggle-btn { padding: 12px 20px; border-radius: 8px; border: none; background: transparent; font-weight: 600; color:var(--text-muted); cursor: pointer; transition: all 0.3s; flex: 1; text-align: center; font-size: 1rem; }
+    .toggle-btn.active { background:var(--surface); color: #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     
-    .section-card { background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid #f3f4f6; }
-    .section-title { font-size: 1.1rem; font-weight: 700; color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f3f4f6; }
+    .section-card { background:var(--surface); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid var(--surface-muted); }
+    .section-title { font-size: 1.1rem; font-weight: 700; color:var(--text); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--surface-muted); }
     
     .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
     .full-width { grid-column: 1 / -1; }
     
     .form-group { display: flex; flex-direction: column; }
     .form-group label { margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 0.9rem; }
-    .form-control { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; transition: all 0.2s; background: #fff; }
+    .form-control { padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 8px; font-size: 1rem; transition: all 0.2s; background:var(--surface); }
     .form-control:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
     
-    .checkbox-group { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 15px; border-radius: 8px; }
+    .checkbox-group { display: flex; align-items: center; gap: 10px; background:var(--surface); padding: 15px; border-radius: 8px; }
     .checkbox-group input { width: 18px; height: 18px; accent-color: #2563eb; }
     
     .actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 10px; }
@@ -35,7 +35,7 @@
     
     .alert { padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
     .alert-error { background: #fee2e2; color: #991b1b; }
-    .tournament-preview-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc; }
+    .tournament-preview-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; background-color: #f8fafc; }
     .loading-spinner { display: inline-block; margin-right: 10px; }
 </style>
 {% endblock %}
@@ -149,7 +149,7 @@
     <div id="coronate-section" class="mode-section">
         <div class="section-card">
             <h3 class="section-title">وارد کردن از فایل پشتیبان Coronate</h3>
-            <p style="margin-bottom: 15px; color: #555;">
+            <p style="margin-bottom: 15px; color:var(--text-muted);">
                 اگر فایل پشتیبان Coronate دارید، می‌توانید تورنمنت را از آن وارد کنید:
             </p>
             
@@ -160,7 +160,7 @@
                 <div class="form-group full-width">
                     <label for="backup-file">فایل پشتیبان (JSON)</label>
                     <input type="file" id="backup-file" class="form-control" accept=".json">
-                    <p style="font-size: 0.9em; color: #666; margin-top: 5px;">لطفاً فایل JSON خروجی گرفته شده از Coronate را انتخاب کنید.</p>
+                    <p style="font-size: 0.9em; color:var(--text-muted); margin-top: 5px;">لطفاً فایل JSON خروجی گرفته شده از Coronate را انتخاب کنید.</p>
                 </div>
                 <div class="actions full-width">
                     <button type="button" class="btn btn-primary" onclick="previewTournaments()">
@@ -173,7 +173,7 @@
         
         <div id="preview-results" class="section-card" style="display: none;">
             <h3 class="section-title">تورنمنت‌های موجود در فایل</h3>
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">تورنمنت مورد نظر خود را برای وارد کردن به سیستم انتخاب کنید:</p>
+            <p style="font-size: 0.9em; color:var(--text-muted); margin-bottom: 15px;">تورنمنت مورد نظر خود را برای وارد کردن به سیستم انتخاب کنید:</p>
         </div>
     </div>
 </div>
@@ -261,7 +261,7 @@ function previewTournaments() {
 
 function renderTournamentList(tournaments, csrfToken, file) {
     const previewResults = document.getElementById('preview-results');
-    previewResults.innerHTML = '<h3 class="section-title">تورنمنت‌های موجود در فایل</h3><p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">تورنمنت مورد نظر خود را برای وارد کردن به سیستم انتخاب کنید:</p>';
+    previewResults.innerHTML = '<h3 class="section-title">تورنمنت‌های موجود در فایل</h3><p style="font-size: 0.9em; color:var(--text-muted); margin-bottom: 15px;">تورنمنت مورد نظر خود را برای وارد کردن به سیستم انتخاب کنید:</p>';
     
     tournaments.forEach(tournament => {
         const itemDiv = document.createElement('div');
@@ -285,8 +285,15 @@ function renderTournamentList(tournaments, csrfToken, file) {
 }
 
 function handleImport(tournamentId, tournamentName, csrfToken, file) {
-    if (!confirm(`آیا مطمئن هستید که می‌خواهید تورنمنت "${tournamentName}" را وارد کنید؟`)) return;
-    
+    UI.openConfirm({
+        title: 'ایمپورت تورنومنت',
+        body: 'تورنومنت «' + tournamentName + '» وارد سیستم می‌شود.',
+        hint: 'پیش از ادامه از داده‌ها نسخه پشتیبان بگیرید.',
+        onConfirm: function () { doImport(tournamentId, csrfToken, file); }
+    });
+}
+
+function doImport(tournamentId, csrfToken, file) {    
     const importForm = document.getElementById('import-form');
     document.getElementById('import-csrf-token').value = csrfToken;
     document.getElementById('target-tournament-id').value = tournamentId;
@@ -307,7 +314,7 @@ function showAlert(message, type) {
     const alertContainer = document.getElementById('alert-container');
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type}`;
-    alertDiv.innerHTML = `${message} <button class="btn btn-secondary" style="padding: 2px 8px;" onclick="this.parentElement.remove()">✕</button>`;
+    alertDiv.innerHTML = `${message} <button type="button" class="alert-close" aria-label="بستن پیام">✕</button>`;
     alertContainer.appendChild(alertDiv);
 }
 

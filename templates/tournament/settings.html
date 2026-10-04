@@ -2,16 +2,16 @@
 {% block title %}تنظیمات | {{ tournament.name }}{% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+<div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>⚙️ تنظیمات تورنمنت</h1>
         <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
     </div>
 </div>
 
-<form method="POST" class="form-container" style="max-width: 900px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
+<form method="POST" class="form-container" style="max-width: 900px; border:none; background:var(--surface); padding:30px; border-radius:15px;">
     <!-- 1️⃣ Basic Information Section -->
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
         <h2 class="section-title">📝 اطلاعات پایه</h2>
         <div class="form-group">
             <label>نام مسابقه</label>
@@ -30,7 +30,7 @@
     </div>
 
     <!-- 📅 Dates Section -->
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
         <h2 class="section-title">📅 تاریخ‌ها</h2>
         <div class="form-row">
             <div class="form-group">
@@ -45,7 +45,7 @@
     </div>
 
     <!-- 2️⃣ Competition Logic Section -->
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
         <h2 class="section-title">♟️ قوانین و کنترل زمان</h2>
         <div class="form-row">
             <div class="form-group">
@@ -67,7 +67,7 @@
                 <input type="number" name="total_rounds" value="{{ tournament.total_rounds }}" min="{{ tournament.current_round }}" max="30">
             </div>
             <div class="form-group" style="display:flex; align-items:center; padding-top:25px;">
-                <label class="checkbox-label" style="background:#f1f5f9; padding:10px; border-radius:8px; width:100%;">
+                <label class="checkbox-label" style="background:var(--surface-muted); padding:10px; border-radius:8px; width:100%;">
                     <input type="checkbox" name="cumulative_age_category" value="1" {% if tournament.cumulative_age_category %}checked{% endif %}>
                     <span>رده‌سنی به صورت تجمعی محاسبه شود</span>
                 </label>
@@ -77,9 +77,9 @@
 
 
     <!-- 3️⃣ Tiebreak Configuration (Drag & Drop) -->
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
         <h2 class="section-title">📊 اولویت تای‌بریک‌ها (شکست امتیاز)</h2>
-        <p style="font-size:0.85em; color:#64748b; margin-bottom:15px;">آیتم‌ها را برای تغییر اولویت جابجا کنید. رده‌بندی بر اساس موارد تیک‌خورده و به ترتیب از بالا به پایین انجام می‌شود.</p>
+        <p style="font-size:0.85em; color:var(--text-muted); margin-bottom:15px;">آیتم‌ها را برای تغییر اولویت جابجا کنید. رده‌بندی بر اساس موارد تیک‌خورده و به ترتیب از بالا به پایین انجام می‌شود.</p>
         
         <div id="tiebreak-list" class="tiebreak-list">
             {% set ordered_tbs = [] %}
@@ -100,9 +100,13 @@
 
             {% for tb_key, tb_name, is_checked in ordered_tbs %}
             <div class="tiebreak-item {% if is_checked %}tiebreak-active{% endif %}" data-key="{{ tb_key }}">
-                <span class="drag-handle" style="color:#94a3b8;">☰</span>
-                <input type="checkbox" name="tiebreaks" value="{{ tb_key }}" {% if is_checked %}checked{% endif %}>
-                <span style="flex-grow:1; font-size:0.95em;">{{ tb_name }}</span>
+                <span class="drag-handle" aria-hidden="true">☰</span>
+                <input type="checkbox" name="tiebreaks" value="{{ tb_key }}" id="tb_{{ tb_key }}" {% if is_checked %}checked{% endif %}>
+                <label for="tb_{{ tb_key }}" style="flex-grow:1; font-size:0.95em; font-weight:400;">{{ tb_name }}</label>
+                <span class="tb-move" role="group" aria-label="تغییر ترتیب {{ tb_name }}">
+                    <button type="button" class="icon-btn tb-up" aria-label="انتقال {{ tb_name }} به بالا">▲</button>
+                    <button type="button" class="icon-btn tb-down" aria-label="انتقال {{ tb_name }} به پایین">▼</button>
+                </span>
             </div>
             {% endfor %}
         </div>

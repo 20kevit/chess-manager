@@ -1,65 +1,67 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="admin-layout">
-    <!-- Mobile Toggle -->
-    <button class="admin-sidebar-toggle" data-target=".admin-sidebar" data-action="toggle-class" data-class="open">
-        ☰ منوی مدیریت
+<div class="layout-sidebar">
+    <button class="btn btn-secondary sidebar-toggle" id="adminSidebarToggle" aria-expanded="false" aria-controls="adminSidebar">
+        {{ icon("menu", 18) }} منوی مدیریت
     </button>
-    
-    <div class="admin-container">
-        <!-- Sidebar -->
-        <aside class="admin-sidebar">
-            <div class="admin-sidebar-header">
-                <h3>پنل مدیریت سیستم</h3>
-                <p class="admin-user-name">{{ current_user.email }}</p>
-            </div>
-            
-            <nav class="admin-nav">
-                <a href="{{ url_for('admin.dashboard') }}" class="admin-nav-item {% if active_section == 'dashboard' %}active{% endif %}">
-                    📊 داشبورد
+
+    <aside class="sidebar" id="adminSidebar" aria-label="ناوبری مدیریت سیستم">
+        <div class="sidebar-head">
+            <h2>پنل مدیریت سیستم</h2>
+            <p class="ltr">{{ current_user.email }}</p>
+        </div>
+
+        <nav>
+            <div class="side-group">
+                <div class="side-label">نمای کلی</div>
+                <a href="{{ url_for('admin.dashboard') }}" class="side-link {% if active_section == 'dashboard' %}active{% endif %}" {% if active_section == 'dashboard' %}aria-current="page"{% endif %}>
+                    {{ icon("dashboard", 18) }} داشبورد
                 </a>
-                <a href="{{ url_for('admin.manage_users') }}" class="admin-nav-item {% if active_section == 'users' %}active{% endif %}">
-                    👥 کاربران
-                </a>
-                <a href="{{ url_for('admin.role_requests') }}" class="admin-nav-item {% if active_section == 'roles' %}active{% endif %}">
-                    🛡️ درخواست‌های نقش
-                </a>
-                <a href="{{ url_for('admin.manage_tournaments') }}" class="admin-nav-item {% if active_section == 'tournaments' %}active{% endif %}">
-                    🏆 مسابقات
-                </a>
-                <a href="{{ url_for('fide.fide_dashboard') }}" class="admin-nav-item {% if active_section == 'fide' %}active{% endif %}">
-                    🌐 داده‌های فیده
-                </a>
-                <a href="{{ url_for('fide.verifications_list') }}" class="admin-nav-item {% if active_section == 'verifications' %}active{% endif %}">
-                    ✅ تأیید هویت
-                </a>
-                <a href="{{ url_for('admin.notification_status') }}" class="admin-nav-item {% if active_section == 'notifications' %}active{% endif %}">
-                    🔔 اعلان‌ها
-                </a>
-                <a href="{{ url_for('admin.system_health') }}" class="admin-nav-item {% if active_section == 'system' %}active{% endif %}">
-                    💻 سلامت سیستم
-                </a>
-            </nav>
-            
-            <div class="admin-sidebar-footer">
-                <a href="{{ url_for('dashboard.index') }}" class="admin-nav-item">
-                    ← بازگشت به سایت
-                </a>
-                <a href="{{ url_for('auth.logout') }}" class="admin-nav-item">
-                    🚪 خروج
+                <a href="{{ url_for('admin.system_health') }}" class="side-link {% if active_section == 'system' %}active{% endif %}" {% if active_section == 'system' %}aria-current="page"{% endif %}>
+                    {{ icon("settings", 18) }} سلامت سیستم
                 </a>
             </div>
-        </aside>
-        
-        <!-- Main Content -->
-        <main class="admin-main">
-            {% block admin_content %}{% endblock %}
-        </main>
+            <div class="side-group">
+                <div class="side-label">کاربران و دسترسی</div>
+                <a href="{{ url_for('admin.manage_users') }}" class="side-link {% if active_section == 'users' %}active{% endif %}" {% if active_section == 'users' %}aria-current="page"{% endif %}>
+                    {{ icon("users", 18) }} کاربران
+                </a>
+                <a href="{{ url_for('admin.role_requests') }}" class="side-link {% if active_section == 'roles' %}active{% endif %}" {% if active_section == 'roles' %}aria-current="page"{% endif %}>
+                    {{ icon("shield", 18) }} درخواست‌های نقش
+                </a>
+                <a href="{{ url_for('fide.verifications_list') }}" class="side-link {% if active_section == 'verifications' %}active{% endif %}" {% if active_section == 'verifications' %}aria-current="page"{% endif %}>
+                    {{ icon("check", 18) }} تأیید هویت
+                </a>
+            </div>
+            <div class="side-group">
+                <div class="side-label">مسابقات و داده‌ها</div>
+                <a href="{{ url_for('admin.manage_tournaments') }}" class="side-link {% if active_section == 'tournaments' %}active{% endif %}" {% if active_section == 'tournaments' %}aria-current="page"{% endif %}>
+                    {{ icon("trophy", 18) }} مسابقات
+                </a>
+                <a href="{{ url_for('fide.fide_dashboard') }}" class="side-link {% if active_section == 'fide' %}active{% endif %}" {% if active_section == 'fide' %}aria-current="page"{% endif %}>
+                    {{ icon("globe", 18) }} داده‌های فیده
+                </a>
+                <a href="{{ url_for('admin.notification_status') }}" class="side-link {% if active_section == 'notifications' %}active{% endif %}" {% if active_section == 'notifications' %}aria-current="page"{% endif %}>
+                    {{ icon("bell", 18) }} اعلان‌ها
+                </a>
+            </div>
+            <div class="side-group">
+                <div class="side-label">میانبرها</div>
+                <a href="{{ url_for('dashboard.index') }}" class="side-link">
+                    {{ icon("home", 18) }} بازگشت به سایت
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <div class="admin-main-content">
+        {% block admin_content %}{% endblock %}
     </div>
 </div>
 {% endblock %}

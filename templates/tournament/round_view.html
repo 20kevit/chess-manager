@@ -2,80 +2,96 @@
 {% block title %}دور {{ round.round_number }} | {{ tournament.name }}{% endblock %}
 
 {% block content %}
+{% from "components/icons.html" import icon %}
 <div class="page-header">
-    <h1>مدیریت دور {{ round.round_number }}</h1>
-    <p>{{ tournament.name }} | وضعیت: <span class="badge">{{ round.status_label }}</span></p>
+    <div>
+        <nav class="breadcrumbs" aria-label="مسیر صفحه">
+            <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
+            <span class="sep" aria-hidden="true">‹</span>
+            <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}">دورها</a>
+            <span class="sep" aria-hidden="true">‹</span><span aria-current="page">دور {{ round.round_number }}</span>
+        </nav>
+        <h1 class="page-title">دور <span class="num">{{ round.round_number }}</span></h1>
+        <p class="page-desc">وضعیت:
+            {% if round.status == 'finished' %}<span class="badge badge-success">پایان یافته</span>
+            {% elif round.status == 'ongoing' %}<span class="badge badge-info">در جریان</span>
+            {% else %}<span class="badge badge-neutral">در انتظار</span>{% endif %}
+        </p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('round.manual_pairing', public_id=tournament.public_id, round_number=round.round_number) }}" class="btn btn-secondary">{{ icon("settings", 16) }} جابجایی دستی</a>
+        <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-ghost">بازگشت به دورها</a>
+    </div>
 </div>
 
 <form method="POST" action="{{ url_for('round.save_results', public_id=tournament.public_id, round_number=round.round_number) }}">
-    <div class="form-container" style="max-width: 100%;">
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>میز</th>
-                        <th style="text-align:right;">سفید (W)</th>
-                        <th>نتیجه</th>
-                        <th style="text-align:right;">سیاه (B)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for pairing in pairings %}
-                    <tr>
-                        <td>{{ pairing.board_number }}</td>
-                        <td class="player-cell" style="text-align:right;">
-                            <strong>{{ pairing.white_participant.ranking_label }}</strong>. {{ pairing.white_participant.full_name }}
-                            <small>({{ pairing.white_participant.rating }})</small>
-                        </td>
-                        <td class="result-cell">
-                            {% if pairing.black_participant_id %}
-                                {% if round.status == 'finished' %}
-                                    <span class="result-display">{{ pairing.result_display }}</span>
-                                {% else %}
-                                    <select name="result_{{ pairing.id }}" class="result-select">
-                                        <option value="" {% if pairing.result == '' %}selected{% endif %}>در انتظار</option>
-                                        <option value="1-0" {% if pairing.result == '1-0' %}selected{% endif %}>1 - 0</option>
-                                        <option value="0-1" {% if pairing.result == '0-1' %}selected{% endif %}>0 - 1</option>
-                                        <option value="1/2" {% if pairing.result == '1/2' %}selected{% endif %}>½ - ½</option>
-                                        <option value="+/-" {% if pairing.result == '+/-' %}selected{% endif %}>+ - - (F)</option>
-                                        <option value="-/+" {% if pairing.result == '-/+' %}selected{% endif %}>- - + (F)</option>
-                                        <option value="+/+" {% if pairing.result == '+/+' %}selected{% endif %}>- - - (F)</option>
-                                    </select>
-                                {% endif %}
+    <div class="tbl-wrap">
+        <table class="tbl data-table">
+            <caption class="visually-hidden">ثبت نتایج دور {{ round.round_number }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">میز</th>
+                    <th scope="col" style="text-align:start;">سفید (W)</th>
+                    <th scope="col">نتیجه</th>
+                    <th scope="col" style="text-align:start;">سیاه (B)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pairing in pairings %}
+                <tr class="{% if pairing.black_participant_id and (not pairing.result or pairing.result == '') %}is-pending{% endif %}">
+                    <td class="num">{{ pairing.board_number }}</td>
+                    <td class="player-cell">
+                        <strong class="num">{{ pairing.white_participant.ranking_label }}</strong>. {{ pairing.white_participant.full_name }}
+                        <small class="num">({{ pairing.white_participant.rating }})</small>
+                    </td>
+                    <td class="result-cell">
+                        {% if pairing.black_participant_id %}
+                            {% if round.status == 'finished' %}
+                                <strong class="result-display num" dir="ltr">{{ pairing.result_display }}</strong>
                             {% else %}
-                                <span class="result-display">{{ pairing.result_display }}</span>
+                                <label class="visually-hidden" for="result_{{ pairing.id }}">نتیجه میز {{ pairing.board_number }}</label>
+                                <select name="result_{{ pairing.id }}" id="result_{{ pairing.id }}" class="result-select" dir="ltr">
+                                    <option value="" {% if pairing.result == '' %}selected{% endif %}>در انتظار</option>
+                                    <option value="1-0" {% if pairing.result == '1-0' %}selected{% endif %}>1 - 0</option>
+                                    <option value="0-1" {% if pairing.result == '0-1' %}selected{% endif %}>0 - 1</option>
+                                    <option value="1/2" {% if pairing.result == '1/2' %}selected{% endif %}>½ - ½</option>
+                                    <option value="+/-" {% if pairing.result == '+/-' %}selected{% endif %}>+ - - (F)</option>
+                                    <option value="-/+" {% if pairing.result == '-/+' %}selected{% endif %}>- - + (F)</option>
+                                    <option value="+/+" {% if pairing.result == '+/+' %}selected{% endif %}>- - - (F)</option>
+                                </select>
                             {% endif %}
-                        </td>
-                        <td class="player-cell" style="text-align:right;">
-                            {% if pairing.black_participant_id %}
-                                <strong>{{ pairing.black_participant.ranking_label }}</strong>. {{ pairing.black_participant.full_name }}
-                                <small>({{ pairing.black_participant.rating }})</small>
-                            {% else %}
-                                <span class="badge badge-warning">استراحت (Bye)</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        {% else %}
+                            <span class="badge badge-info">استراحت (Bye)</span>
+                        {% endif %}
+                    </td>
+                    <td class="player-cell">
+                        {% if pairing.black_participant_id %}
+                            <strong class="num">{{ pairing.black_participant.ranking_label }}</strong>. {{ pairing.black_participant.full_name }}
+                            <small class="num">({{ pairing.black_participant.rating }})</small>
+                        {% else %}
+                            <span class="badge badge-info">استراحت (Bye)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-        <div class="form-actions">
-            {% if round.status == 'ongoing' %}
-                <button type="submit" class="btn btn-primary">💾 ذخیره نتایج این دور</button>
-                
-                <button type="submit" form="finish_form" class="btn btn-success" 
-                        onclick="return confirm('آیا از تایید نهایی نتایج و بستن این دور اطمینان دارید؟');">
-                    ✅ پایان دور و به‌روزرسانی جدول
-                </button>
-            {% endif %}
-            
-            <a href="{{ url_for('round.manual_pairing', public_id=tournament.public_id, round_number=round.round_number) }}" class="btn btn-secondary">⚙️ جابجایی دستی بازیکنان</a>
-            <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به لیست دورها</a>
-        </div>
+    <div class="form-actions">
+        {% if round.status == 'ongoing' %}
+            <button type="submit" class="btn btn-primary">💾 ذخیره نتایج این دور</button>
+        {% endif %}
     </div>
 </form>
 
-<form id="finish_form" method="POST" action="{{ url_for('round.finish_round', public_id=tournament.public_id, round_number=round.round_number) }}">
+{% if round.status == 'ongoing' %}
+<form id="finish_form" method="POST" action="{{ url_for('round.finish_round', public_id=tournament.public_id, round_number=round.round_number) }}"
+      data-confirm="نتایج دور {{ round.round_number }} نهایی و جدول رده‌بندی به‌روزرسانی می‌شود."
+      data-confirm-hint="پس از پایان دور، ایجاد دور بعدی ممکن می‌شود.">
+    <div class="form-actions">
+        <button type="submit" class="btn btn-success">✅ پایان دور و به‌روزرسانی جدول</button>
+    </div>
 </form>
+{% endif %}
 {% endblock %}

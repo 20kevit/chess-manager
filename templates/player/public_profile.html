@@ -7,9 +7,9 @@
 <div class="profile-container" style="max-width: 1000px; margin: 0 auto; padding: 20px;">
     
     <!-- اطلاعات پایه -->
-    <div class="card" style="padding: 20px; margin-bottom: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <div class="card" style="padding: 20px; margin-bottom: 20px; background:var(--surface); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
         <h1 style="margin-bottom: 5px;">{{ profile_data.profile.full_name }}</h1>
-        <div style="display: flex; gap: 20px; color: #555;">
+        <div style="display: flex; gap: 20px; color:var(--text-muted);">
             <span>فدراسیون: {{ profile_data.profile.federation }}</span>
             {% if profile_data.profile.fide_title %}
             <span>عنوان: {{ profile_data.profile.fide_title }}</span>
@@ -24,8 +24,8 @@
         <!-- ستون چپ: آمار و ریتینگ -->
         <div style="flex: 1; min-width: 300px;">
             <!-- ریتینگ‌های فعلی -->
-            <div class="card" style="padding: 20px; margin-bottom: 20px; background: #fff; border-radius: 8px;">
-                <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">ریتینگ‌های فعلی</h3>
+            <div class="card" style="padding: 20px; margin-bottom: 20px; background:var(--surface); border-radius: 8px;">
+                <h3 style="border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">ریتینگ‌های فعلی</h3>
                 <div style="display: flex; justify-content: space-between; text-align: center;">
                     <div style="flex: 1;">
                         <h4>استاندارد</h4>
@@ -43,8 +43,8 @@
             </div>
 
             <!-- آمار -->
-            <div class="card" style="padding: 20px; background: #fff; border-radius: 8px;">
-                <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">آمار کلی</h3>
+            <div class="card" style="padding: 20px; background:var(--surface); border-radius: 8px;">
+                <h3 style="border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">آمار کلی</h3>
                 <ul style="list-style: none; padding: 0; line-height: 2;">
                     <li>تعداد مسابقات: <strong>{{ statistics.tournament_count }}</strong></li>
                     <li>تعداد بازی‌ها: <strong>{{ statistics.game_count }}</strong></li>
@@ -56,28 +56,28 @@
 
         <!-- ستون راست: نمودار ریتینگ -->
         <div style="flex: 2; min-width: 400px;">
-            <div class="card" style="padding: 20px; background: #fff; border-radius: 8px; height: 100%;">
-                <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">تاریخچه تغییرات ریتینگ</h3>
+            <div class="card" style="padding: 20px; background:var(--surface); border-radius: 8px; height: 100%;">
+                <h3 style="border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">تاریخچه تغییرات ریتینگ</h3>
                 <canvas id="ratingChart" style="max-height: 300px;"></canvas>
             </div>
         </div>
     </div>
 
     <!-- تاریخچه تورنمنت‌ها -->
-    <div class="card" style="padding: 20px; margin-top: 20px; background: #fff; border-radius: 8px;">
-        <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">تاریخچه مسابقات</h3>
+    <div class="card" style="padding: 20px; margin-top: 20px; background:var(--surface); border-radius: 8px;">
+        <h3 style="border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">تاریخچه مسابقات</h3>
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
-                <tr style="text-align: right; border-bottom: 1px solid #ddd;">
-                    <th style="padding: 10px;">نام مسابقه</th>
-                    <th style="padding: 10px;">تاریخ</th>
-                    <th style="padding: 10px;">امتیاز</th>
-                    <th style="padding: 10px;">ریتینگ</th>
+                <tr style="text-align: right; border-bottom: 1px solid var(--border);">
+                    <th scope="col" style="padding: 10px;">نام مسابقه</th>
+                    <th scope="col" style="padding: 10px;">تاریخ</th>
+                    <th scope="col" style="padding: 10px;">امتیاز</th>
+                    <th scope="col" style="padding: 10px;">ریتینگ</th>
                 </tr>
             </thead>
             <tbody>
                 {% for t in tournament_history %}
-                <tr style="border-bottom: 1px solid #eee;">
+                <tr style="border-bottom: 1px solid var(--border);">
                     <td style="padding: 10px;">
                         <a href="{{ url_for('tournament.view', public_id=t.public_id) }}">{{ t.name }}</a>
                     </td>
@@ -91,21 +91,21 @@
     </div>
 
     <!-- تاریخچه بازی‌ها -->
-    <div class="card" style="padding: 20px; margin-top: 20px; background: #fff; border-radius: 8px;">
-        <h3 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">تاریخچه بازی‌ها</h3>
+    <div class="card" style="padding: 20px; margin-top: 20px; background:var(--surface); border-radius: 8px;">
+        <h3 style="border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">تاریخچه بازی‌ها</h3>
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
-                <tr style="text-align: right; border-bottom: 1px solid #ddd;">
-                    <th style="padding: 10px;">مسابقه</th>
-                    <th style="padding: 10px;">دور</th>
-                    <th style="padding: 10px;">حریف</th>
-                    <th style="padding: 10px;">رنگ</th>
-                    <th style="padding: 10px;">نتیجه</th>
+                <tr style="text-align: right; border-bottom: 1px solid var(--border);">
+                    <th scope="col" style="padding: 10px;">مسابقه</th>
+                    <th scope="col" style="padding: 10px;">دور</th>
+                    <th scope="col" style="padding: 10px;">حریف</th>
+                    <th scope="col" style="padding: 10px;">رنگ</th>
+                    <th scope="col" style="padding: 10px;">نتیجه</th>
                 </tr>
             </thead>
             <tbody>
                 {% for g in game_history %}
-                <tr style="border-bottom: 1px solid #eee;">
+                <tr style="border-bottom: 1px solid var(--border);">
                     <td style="padding: 10px;">{{ g.tournament_name }}</td>
                     <td style="padding: 10px;">{{ g.round_number }}</td>
                     <td style="padding: 10px;">{{ g.opponent_name }} ({{ g.opponent_rating }})</td>

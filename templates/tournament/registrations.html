@@ -1,40 +1,34 @@
 {% extends "base.html" %}
 {% block title %}درخواست‌های ثبت‌نام - {{ tournament.name }}{% endblock %}
-
-{% block extra_css %}
-<style>
-    .reg-manage-container { max-width: 1000px; margin: 20px auto; }
-    .reg-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-    .reg-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #f3f4f6; }
-    .reg-item:last-child { border: none; }
-    .reg-info { flex: 1; }
-    .reg-name { font-weight: 700; color: #1f2937; font-size: 1.1rem; }
-    .reg-meta { font-size: 0.85rem; color: #6b7280; margin-top: 5px; display: flex; gap: 15px; }
-    .reg-price { font-weight: 600; color: #059669; }
-    .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
-</style>
-{% endblock %}
+{% from "components/ui.html" import registration_status, empty_state %}
 
 {% block content %}
-<div class="reg-manage-container">
-    <div class="reg-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-            <h2 style="margin: 0;">مدیریت درخواست‌های ثبت‌نام</h2>
-            <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
-        </div>
-        
+<div class="page-header">
+    <div>
+        <nav class="breadcrumbs" aria-label="مسیر صفحه">
+            <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
+            <span class="sep" aria-hidden="true">‹</span><span aria-current="page">درخواست‌های ثبت‌نام</span>
+        </nav>
+        <h1 class="page-title">درخواست‌های ثبت‌نام</h1>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-ghost">بازگشت به پنل مدیریت</a>
+    </div>
+</div>
+
         {% if parsed_regs %}
-        <div class="table-responsive">
-            <table class="standings-table" style="width: 100%;">
+        <div class="tbl-wrap">
+            <table class="tbl standings-table">
+                <caption class="visually-hidden">درخواست‌های ثبت‌نام {{ tournament.name }}</caption>
                 <thead>
                     <tr>
-                        <th>نام بازیکن</th>
-                        <th>کد فیده</th>
-                        <th>تاریخ درخواست</th>
-                        <th>مبلغ نهایی</th>
-                        <th>وضعیت</th>
-                        <th>کد پیگیری</th>
-                        <th>عملیات</th>
+                        <th scope="col" style="text-align:start;">نام بازیکن</th>
+                        <th scope="col">کد فیده</th>
+                        <th scope="col">تاریخ درخواست</th>
+                        <th scope="col">مبلغ نهایی</th>
+                        <th scope="col">وضعیت</th>
+                        <th scope="col">کد پیگیری</th>
+                        <th scope="col"><span class="visually-hidden">عملیات</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -42,22 +36,18 @@
                     {% set reg = item.reg %}
                     {% set bd = item.breakdown %}
                     <tr>
-                        <td>{{ reg.profile.full_name }}</td>
-                        <td>{{ reg.profile.fide_id or '-' }}</td>
-                        <td>{{ reg.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td><strong>{{ bd.final_price or 0 }} تومان</strong></td>                        <td>
-                            {% if reg.status == 'pending' %}
-                                <span class="status-badge" style="background: #fef3c7; color: #92400e;">در انتظار</span>
-                            {% elif reg.status == 'payment_pending' %}
-                                <span class="status-badge" style="background: #e0e7ff; color: #3730a3;">در حال پرداخت</span>
-                            {% elif reg.status == 'receipt_submitted' %}
-                                <span class="status-badge" style="background: #ffedd5; color: #9a3412;">رسید در انتظار بررسی</span>
-                            {% elif reg.status == 'paid' %}
-                                <span class="status-badge" style="background: #dbeafe; color: #1e40af;">پرداخت شده</span>
-                            {% elif reg.status == 'approved' %}
-                                <span class="status-badge" style="background: #d1fae5; color: #065f46;">تأیید شده</span>
-                            {% elif reg.status == 'rejected' %}
-                                <span class="status-badge" style="background: #fee2e2; color: #991b1b;">رد شده</span>
+                        <td class="player-cell">{{ reg.profile.full_name }}</td>
+                        <td class="num">{{ reg.profile.fide_id or '-' }}</td>
+                        <td class="num">{{ reg.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="num"><strong>{{ bd.final_price or 0 }} تومان</strong></td>
+                        <td>{{ registration_status(reg.status) }}</td>
+                        <td>
+                            {% if reg.payment_method == 'online' %}
+                                {{ item.ref_id or '-' }}
+                            {% elif reg.payment_method == 'transfer' and reg.receipt_path %}
+                                <a href="{{ url_for('registration.download_receipt', reg_id=reg.id) }}" target="_blank" class="btn btn-info btn-sm">مشاهده رسید</a>
+                            {% else %}
+                                -
                             {% endif %}
                         </td>
                         <td>
@@ -97,8 +87,6 @@
             </table>
         </div>
         {% else %}
-            <p style="text-align: center; color: #6b7280; padding: 40px;">هیچ درخواست ثبت‌نامی وجود ندارد.</p>
+            {{ empty_state("درخواست ثبت‌نامی وجود ندارد", "درخواست‌های جدید بازیکنان اینجا نمایش داده می‌شود.") }}
         {% endif %}
-    </div>
-</div>
 {% endblock %}

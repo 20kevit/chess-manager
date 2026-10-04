@@ -3,25 +3,33 @@
 
 {% block content %}
 <div class="page-header">
-    <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-secondary" style="float:left;">🔙 بازگشت</a>
-    <h1>جدول برخورد (Cross-Table)</h1>
-    <p>{{ tournament.name }}</p>
+    <div>
+        <nav class="breadcrumbs" aria-label="مسیر صفحه">
+            <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
+            <span class="sep" aria-hidden="true">‹</span><span aria-current="page">جدول برخورد</span>
+        </nav>
+        <h1 class="page-title">جدول برخورد (Cross-Table)</h1>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-ghost">بازگشت</a>
+    </div>
 </div>
 
 {% if sorted_players %}
-<div class="table-responsive">
-    <table class="data-table crosstable">
+<div class="tbl-wrap">
+    <table class="tbl data-table crosstable">
+        <caption class="visually-hidden">جدول برخورد {{ tournament.name }}</caption>
         <thead>
             <tr>
-                <th>رتبه</th>
-                <th>#</th>
-                <th>عنوان</th>
-                <th class="player-cell">نام بازیکن</th>
-                <th>ریتینگ</th>
+                <th scope="col">رتبه</th>
+                <th scope="col">#</th>
+                <th scope="col">عنوان</th>
+                <th scope="col" class="player-cell">نام بازیکن</th>
+                <th scope="col">ریتینگ</th>
                 {% for r in range(1, total_rounds + 1) %}
-                <th class="round-col">{{ r }}</th>
+                <th scope="col" class="round-col num">{{ r }}</th>
                 {% endfor %}
-                <th>امتیاز</th>
+                <th scope="col">امتیاز</th>
             </tr>
         </thead>
         <tbody>
@@ -29,32 +37,32 @@
             {% set player = data.player %}
             {% if player.status == 'active' or player.points > 0 %}
             <tr>
-                <td><strong>{{ loop.index }}</strong></td>
-                <td>{{ player.start_number }}</td>
-                <td>{{ player.fide_title or '' }}</td>
+                <td class="num"><strong>{{ loop.index }}</strong></td>
+                <td class="num">{{ player.start_number }}</td>
+                <td class="num">{{ player.fide_title or '' }}</td>
                 <td class="player-cell">
                     <a href="{{ url_for('tournament.player_detail', public_id=tournament.public_id, participant_id=player.id) }}">
                         {{ player.full_name }}
                     </a>
                 </td>
-                <td>{{ player.rating or 0 }}</td>
+                <td class="num">{{ player.rating or 0 }}</td>
                 {% for r in range(1, total_rounds + 1) %}
-                <td class="cross-cell {% if data.rounds.get(r) %}{{ data.rounds[r].css }}{% endif %}">
+                <td class="cross-cell num {% if data.rounds.get(r) %}{{ data.rounds[r].css }}{% endif %}">
                     {% if data.rounds.get(r) %}
                         {% set cell = data.rounds[r] %}
                         {% if cell.get('opponent_id') %}
-                            <a href="{{ url_for('tournament.player_detail', public_id=tournament.public_id, participant_id=cell.opponent_id) }}" title="حریف: {{ cell.opponent_num }}">
+                            <a href="{{ url_for('tournament.player_detail', public_id=tournament.public_id, participant_id=cell.opponent_id) }}" title="حریف: {{ cell.opponent_num }}" aria-label="دور {{ r }}: {{ cell.text }} برابر بازیکن شماره {{ cell.opponent_num }}">
                                 {{ cell.text }}
                             </a>
                         {% else %}
                             {{ cell.text }}
                         {% endif %}
                     {% else %}
-                        <span class="cell-empty">-</span>
+                        <span class="cell-empty" aria-hidden="true">-</span>
                     {% endif %}
                 </td>
                 {% endfor %}
-                <td><strong>{{ player.points or 0 }}</strong></td>
+                <td class="num"><strong>{{ player.points or 0 }}</strong></td>
             </tr>
             {% endif %}
             {% endfor %}

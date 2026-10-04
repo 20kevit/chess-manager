@@ -80,7 +80,7 @@
                 {% if user.is_admin %}
                 <span class="badge badge-admin">فعال</span>
                 <form method="POST" action="{{ url_for('admin.toggle_admin', user_id=user.id) }}" style="display:inline;">
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('آیا از حذف دسترسی ادمین مطمئن هستید؟')">حذف دسترسی</button>
+                    <button type="submit" class="btn btn-danger btn-sm" data-confirm="دسترسی ادمین این کاربر حذف می‌شود.">حذف دسترسی</button>
                 </form>
                 {% else %}
                 <span class="badge badge-inactive">غیرفعال</span>
@@ -124,7 +124,7 @@
 .page-title { margin: 0 0 20px 0; font-size: 24px; color: #2c3e50; }
 .user-detail-container { display: grid; gap: 20px; }
 .detail-card {
-    background: white;
+    background:var(--surface);
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.08);
@@ -164,11 +164,11 @@
     border-radius: 12px;
     font-size: 12px;
 }
-.badge-admin { background: #e74c3c; color: white; }
-.badge-player { background: #3498db; color: white; }
-.badge-organizer { background: #2ecc71; color: white; }
-.badge-arbiter { background: #f39c12; color: white; }
-.badge-inactive { background: #bdc3c7; color: white; }
+.badge-admin { background: #e74c3c; color:#fff; }
+.badge-player { background: #3498db; color:#fff; }
+.badge-organizer { background: #2ecc71; color:#fff; }
+.badge-arbiter { background: #f39c12; color:#fff; }
+.badge-inactive { background: #bdc3c7; color:#fff; }
 .status-badge {
     display: inline-block;
     padding: 2px 8px;
@@ -176,10 +176,10 @@
     font-size: 11px;
     font-weight: 600;
 }
-.status-active, .status-verified { background: #2ecc71; color: white; }
-.status-inactive, .status-rejected { background: #e74c3c; color: white; }
-.status-pending { background: #f39c12; color: white; }
-.status-unverified { background: #95a5a6; color: white; }
+.status-active, .status-verified { background: #2ecc71; color:#fff; }
+.status-inactive, .status-rejected { background: #e74c3c; color:#fff; }
+.status-pending { background: #f39c12; color:#fff; }
+.status-unverified { background: #95a5a6; color:#fff; }
 .btn {
     padding: 6px 14px;
     border: none;
@@ -189,9 +189,9 @@
     text-decoration: none;
     display: inline-block;
 }
-.btn-danger { background: #e74c3c; color: white; }
-.btn-success { background: #2ecc71; color: white; }
-.btn-secondary { background: #95a5a6; color: white; margin-top: 20px; }
+.btn-danger { background: #e74c3c; color:#fff; }
+.btn-success { background: #2ecc71; color:#fff; }
+.btn-secondary { background: #95a5a6; color:#fff; margin-top: 20px; }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 hr { border: none; border-top: 1px solid #ecf0f1; margin: 10px 0; }
 </style>

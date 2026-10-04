@@ -10,16 +10,16 @@
     </div>
 
     <!-- بخش اتصال به پیام‌رسان‌ها -->
-    <div style="background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 25px;">
-        <div style="font-size: 1.1rem; font-weight: 700; color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f3f4f6;">
+    <div style="background:var(--surface); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 25px;">
+        <div style="font-size: 1.1rem; font-weight: 700; color:var(--text); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--surface-muted);">
             اتصال به پیام‌رسان‌ها
         </div>
         
         <!-- Telegram Row -->
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 8px; background: #f9fafb; margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 8px; background: var(--surface-muted); margin-bottom: 10px;">
             <div style="display: flex; flex-direction: column;">
-                <span style="font-weight: 600; color: #1f2937;">تلگرام</span>
-                <span style="font-size: 0.85rem; color: #6b7280; margin-top: 3px;">
+                <span style="font-weight: 600; color:var(--text);">تلگرام</span>
+                <span style="font-size: 0.85rem; color:var(--text-muted); margin-top: 3px;">
                     {% if telegram_connected %} ✅ حساب تلگرام شما متصل است. {% else %} ❌ حساب تلگرام متصل نیست. {% endif %}
                 </span>
             </div>
@@ -34,10 +34,10 @@
         </div>
 
         <!-- Bale Row -->
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 8px; background: #f9fafb; margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 8px; background: var(--surface-muted); margin-bottom: 10px;">
             <div style="display: flex; flex-direction: column;">
-                <span style="font-weight: 600; color: #1f2937;">بله</span>
-                <span style="font-size: 0.85rem; color: #6b7280; margin-top: 3px;">
+                <span style="font-weight: 600; color:var(--text);">بله</span>
+                <span style="font-size: 0.85rem; color:var(--text-muted); margin-top: 3px;">
                     {% if bale_connected %} ✅ حساب بله شما متصل است. {% else %} ❌ حساب بله متصل نیست. {% endif %}
                 </span>
             </div>
@@ -53,8 +53,8 @@
     </div>
 
     <!-- بخش تنظیمات نوع اعلان‌ها -->
-    <div style="background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 25px;">
-        <div style="font-size: 1.1rem; font-weight: 700; color: #1f2937; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f3f4f6;">
+    <div style="background:var(--surface); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 25px;">
+        <div style="font-size: 1.1rem; font-weight: 700; color:var(--text); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--surface-muted);">
             مدیریت اعلان‌ها
         </div>
 
@@ -65,10 +65,10 @@
                 <table class="table" style="width: 100%;">
                     <thead>
                         <tr>
-                            <th>نوع اعلان</th>
-                            <th style="width: 80px; text-align: center;">سایت</th>
-                            {% if telegram_connected %}<th style="width: 80px; text-align: center;">تلگرام</th>{% endif %}
-                            {% if bale_connected %}<th style="width: 80px; text-align: center;">بله</th>{% endif %}
+                            <th scope="col">نوع اعلان</th>
+                            <th scope="col" style="width: 80px; text-align: center;">سایت</th>
+                            {% if telegram_connected %}<th scope="col" style="width: 80px; text-align: center;">تلگرام</th>{% endif %}
+                            {% if bale_connected %}<th scope="col" style="width: 80px; text-align: center;">بله</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>

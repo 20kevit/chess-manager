@@ -1,103 +1,152 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}مدیریت تورنومنت شطرنج{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <meta name="description" content="سیستم مدیریت تورنومنت شطرنج سوییس - جفت‌گذاری، Tiebreak، محاسبه ریتینگ">
-    <meta name="theme-color" content="#1f2937">
+    <meta name="theme-color" content="#17212B">
     <meta property="og:title" content="{% block og_title %}مدیریت تورنومنت شطرنج{% endblock %}">
     <meta property="og:description" content="سیستم مدیریت تورنومنت شطرنج با جفت‌گذاری سوییس استاندارد فیده">
     <meta property="og:type" content="website">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    
+    <script>(function(){try{var t=localStorage.getItem("cm-theme");if(!t&&matchMedia("(prefers-color-scheme: dark)").matches)t="dark";document.documentElement.dataset.theme=t||"light";}catch(e){}})();</script>
+
     <!-- فونت وزیرمتن -->
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
-    
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navigation.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tournament.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <a href="#main-content" class="skip-link">پرش به محتوای اصلی</a>
-    <!-- هدر -->
-    <header class="header" role="banner">
+    {% from "components/icons.html" import icon %}
+    <!-- هدر سراسری -->
+    <header class="site-header" role="banner">
         <div class="container">
-            <a href="/" class="logo" aria-label="خانه">♚ مدیریت تورنومنت شطرنج</a>
-            <nav class="nav" aria-label="ناوبری اصلی">
-                <a href="/">خانه</a>
+            <button class="nav-toggle" id="navToggle" aria-label="باز کردن منو" aria-expanded="false" aria-controls="mobileDrawer">{{ icon("menu", 22) }}</button>
+            <a href="/" class="brand" aria-label="خانه — مدیریت تورنومنت شطرنج">{{ icon("pawn", 26) }}<span>مدیریت تورنومنت شطرنج</span></a>
+            <nav class="site-nav desktop-only" aria-label="ناوبری اصلی">
+                <a href="/" {% if request.path == "/" %}aria-current="page"{% endif %}>{{ icon("home", 16) }} خانه</a>
                 {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('dashboard.index') }}">داشبورد</a>
+                    <a href="{{ url_for('dashboard.index') }}" {% if request.path.startswith("/dashboard") %}aria-current="page"{% endif %}>{{ icon("dashboard", 16) }} داشبورد</a>
                     {% if current_user.has_role('organizer') %}
-                        <a href="{{ url_for('tournament.create') }}">ایجاد تورنومنت</a>
+                        <a href="{{ url_for('tournament.create') }}">{{ icon("plus", 16) }} ایجاد تورنومنت</a>
                     {% endif %}
-
                     {% if current_user.is_authenticated and current_user.is_admin %}
-                    <a href="{{ url_for('admin.dashboard') }}" class="nav-link">پنل مدیریت</a>
+                    <a href="{{ url_for('admin.dashboard') }}" {% if request.path.startswith("/admin") %}aria-current="page"{% endif %}>{{ icon("shield", 16) }} پنل مدیریت</a>
                     {% endif %}
-                    
-                    <!-- Notification Bell -->
-                    <div class="notification-bell-container">
-                        <a href="#" id="notifBell" class="nav-link" aria-label="اعلان‌ها" aria-haspopup="true" aria-expanded="false" role="button">
-                            🔔
-                            {% if unread_notifications_count > 0 %}
-                            <span class="notif-badge" id="notifCount" aria-label="{{ unread_notifications_count }} اعلان خوانده نشده">{{ unread_notifications_count }}</span>
-                            {% endif %}
-                        </a>
-                        <div class="notification-dropdown" id="notifDropdown" style="display: none;">
-                            <div class="notif-dropdown-header">
-                                <span>اعلان‌های اخیر</span>
-                                <a href="{{ url_for('notification.index') }}" class="notif-see-all">مشاهده همه</a>
-                            </div>
-                            <div class="notif-dropdown-body" id="notifDropdownBody">
-                                <!-- Loaded via AJAX -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <a href="{{ url_for('auth.logout') }}">خروج</a>
                 {% else %}
-                    <a href="{{ url_for('auth.login') }}">ورود</a>
+                    <a href="{{ url_for('auth.login') }}">{{ icon("key", 16) }} ورود</a>
                     <a href="{{ url_for('auth.register') }}">ثبت‌نام</a>
                 {% endif %}
             </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="تغییر تم روشن/تیره" title="تغییر تم">◐</button>
+                {% if current_user.is_authenticated %}
+                <div class="notification-bell-container">
+                    <button class="bell-btn" id="notifBell" aria-label="اعلان‌ها" aria-haspopup="true" aria-expanded="false">
+                        {{ icon("bell", 20) }}
+                        {% if unread_notifications_count > 0 %}
+                        <span class="notif-badge" id="notifCount" aria-label="{{ unread_notifications_count }} اعلان خوانده نشده">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </button>
+                    <div class="notification-dropdown" id="notifDropdown" style="display: none;" role="menu" aria-label="اعلان‌های اخیر">
+                        <div class="notif-dropdown-header">
+                            <span>اعلان‌های اخیر</span>
+                            <a href="{{ url_for('notification.index') }}" class="notif-see-all">مشاهده همه</a>
+                        </div>
+                        <div class="notif-dropdown-body" id="notifDropdownBody">
+                            <!-- Loaded via AJAX -->
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="site-nav desktop-only" style="display:inline-flex" aria-label="خروج">{{ icon("logout", 16) }}</a>
+                {% endif %}
+            </div>
         </div>
     </header>
-    
+
+    <!-- کشوی ناوبری موبایل -->
+    <div class="drawer-scrim" id="drawerScrim"></div>
+    <aside class="drawer" id="mobileDrawer" aria-label="منوی موبایل" aria-hidden="true">
+        <div class="drawer-head">
+            <strong>منو</strong>
+            <button class="icon-btn" id="drawerClose" aria-label="بستن منو">✕</button>
+        </div>
+        <nav aria-label="ناوبری موبایل">
+            <a href="/">{{ icon("home", 20) }} خانه</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard.index') }}">{{ icon("dashboard", 20) }} داشبورد</a>
+                {% if current_user.has_role('organizer') %}
+                    <a href="{{ url_for('tournament.create') }}">{{ icon("plus", 20) }} ایجاد تورنومنت</a>
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.is_admin %}
+                <a href="{{ url_for('admin.dashboard') }}">{{ icon("shield", 20) }} پنل مدیریت</a>
+                {% endif %}
+                <a href="{{ url_for('notification.index') }}">{{ icon("bell", 20) }} اعلان‌ها</a>
+                <a href="{{ url_for('auth.logout') }}">{{ icon("logout", 20) }} خروج</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">{{ icon("key", 20) }} ورود</a>
+                <a href="{{ url_for('auth.register') }}">{{ icon("plus", 20) }} ثبت‌نام</a>
+            {% endif %}
+        </nav>
+    </aside>
+
     <!-- پیام‌ها -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="container">
+            <div class="container" role="status" aria-live="polite">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        {{ message }}
-                        <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+                    <div class="alert alert-{{ 'error' if category == 'error' else ('warning' if category == 'warning' else ('success' if category == 'success' else 'info')) }}">
+                        <span>{{ message }}</span>
+                        <button type="button" class="alert-close" aria-label="بستن پیام">✕</button>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
     {% endwith %}
-    
+
     <!-- محتوای اصلی -->
     <main class="main-content" id="main-content" tabindex="-1">
         <div class="container">
             {% block content %}{% endblock %}
         </div>
     </main>
-    
+
     <!-- فوتر -->
     <footer class="footer">
         <div class="container">
-            <p>سیستم مدیریت تورنومنت شطرنج سوییس | ۲۰کویت</p>
+            <p>سیستم مدیریت تورنومنت شطرنج سوییس</p>
         </div>
     </footer>
-    
+
+    <!-- دیالوگ تأیید یکپارچه -->
+    <div class="modal-overlay" id="confirmDialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmBody" style="display:none">
+        <div class="modal-box">
+            <div class="confirm-icon danger" id="confirmIcon" aria-hidden="true">⚠</div>
+            <h2 id="confirmTitle">آیا مطمئن هستید؟</h2>
+            <p id="confirmBody"></p>
+            <p class="caption" id="confirmHint"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-danger-solid" id="confirmYes">تأیید</button>
+                <button type="button" class="btn btn-secondary" id="confirmNo">انصراف</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

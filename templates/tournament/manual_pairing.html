@@ -10,15 +10,15 @@
         align-items: center;
         padding: 15px;
         margin-bottom: 10px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         border-radius: 4px;
-        background-color: #f9f9f9;
+        background-color: var(--surface-muted);
         flex-wrap: wrap;
         gap: 10px;
     }
     .board-number {
         font-weight: bold;
-        color: #555;
+        color:var(--text-muted);
         min-width: 60px;
     }
     .players-display {
@@ -36,7 +36,7 @@
     .swap-section {
         margin-top: 30px;
         padding: 20px;
-        background-color: #f5f5f5;
+        background-color: var(--surface-muted);
         border-radius: 6px;
     }
     .warning-box {
@@ -53,13 +53,13 @@
 {% block content %}
 <div class="form-container">
     <h2 class="section-title">تنظیمات دستی جفت‌گذاری - دور {{ round.round_number }}</h2>
-    <p style="margin-bottom: 20px; color: #555;">
+    <p style="margin-bottom: 20px; color:var(--text-muted);">
         در این صفحه می‌توانید پس از تولید جفت‌ها، تغییرات دستی مانند جابجایی رنگ یا جابجایی بازیکنان بین میزها را اعمال کنید.
     </p>
 
     <div class="form-section">
         <h3 class="section-title">میزهای فعلی</h3>
-        <p style="margin-bottom: 15px; color: #666; font-size: 0.9em;">
+        <p style="margin-bottom: 15px; color:var(--text-muted); font-size: 0.9em;">
             برای جابجایی رنگ‌های یک میز (بدون تغییر بازیکنان)، روی دکمه "جابجایی رنگ" کلیک کنید.
         </p>
 
@@ -82,7 +82,7 @@
                     <input type="hidden" name="action" value="swap_colors">
                     <input type="hidden" name="board" value="{{ pairing.board_number }}">
                     <button type="submit" class="btn btn-small btn-secondary"
-                            onclick="return confirm('آیا از جابجایی رنگ‌های میز {{ pairing.board_number }} اطمینان دارید؟');">
+                            data-confirm="رنگ‌های میز {{ pairing.board_number }} جابه‌جا می‌شود.">
                         جابجایی رنگ
                     </button>
                 </form>
@@ -90,8 +90,8 @@
             </div>
             {% endfor %}
         {% else %}
-            <div class="alert" style="background-color: #f9f9f9; text-align: center; padding: 30px;">
-                <p style="color: #666;">هیچ جفت‌گذاری برای این دور وجود ندارد.</p>
+            <div class="alert" style="background-color: var(--surface-muted); text-align: center; padding: 30px;">
+                <p style="color:var(--text-muted);">هیچ جفت‌گذاری برای این دور وجود ندارد.</p>
             </div>
         {% endif %}
     </div>
@@ -99,7 +99,7 @@
     {% if pairings and pairings|length >= 2 %}
     <div class="swap-section">
         <h3 class="section-title">جابجایی بازیکن بین دو میز</h3>
-        <p style="margin-bottom: 15px; color: #666;">
+        <p style="margin-bottom: 15px; color:var(--text-muted);">
             یک بازیکن از میز اول را با یک بازیکن از میز دوم جابجا کنید.
         </p>
 
@@ -162,7 +162,7 @@
     </div>
     {% endif %}
 
-    <div class="form-actions" style="margin-top: 30px; border-top: 2px dashed #ddd; padding-top: 20px;">
+    <div class="form-actions" style="margin-top: 30px; border-top: 2px dashed var(--border); padding-top: 20px;">
         <a href="{{ url_for('round.round_view', public_id=tournament.public_id, round_number=round.round_number) }}" class="btn btn-secondary">بازگشت به مشاهده دور</a>
         <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary">بازگشت به لیست دورها</a>
     </div>

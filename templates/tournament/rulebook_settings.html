@@ -2,22 +2,22 @@
 {% block title %}آیین‌نامه | {{ tournament.name }}{% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+<div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>📜 آیین‌نامه مسابقه</h1>
         <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
     </div>
-    <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-top:8px;">
         سه حالت مستقل: متن آزاد، بخش‌های ساختاریافته (مرتب‌شونده) و فایل PDF عمومی. می‌توانید از یک، دو یا هر سه حالت همزمان استفاده کنید.
     </p>
 </div>
 
 <form method="POST" action="{{ url_for('tournament.rulebook_settings', public_id=tournament.public_id) }}"
-      class="form-container" style="max-width: 900px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
+      class="form-container" style="max-width: 900px; border:none; background:var(--surface); padding:30px; border-radius:15px;">
     <input type="hidden" name="sections_json" id="sections_json">
 
     <!-- ۱) Raw long-form text -->
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
         <h2 class="section-title">📝 متن آزاد آیین‌نامه</h2>
         <div class="form-group">
             <textarea name="rulebook_text" rows="7" style="width:100%;" placeholder="متن کامل قوانین مسابقه...">{{ tournament.rulebook_text or '' }}</textarea>
@@ -25,29 +25,29 @@
     </div>
 
     <!-- ۲) Structured sections - Accordion style -->
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
         <h2 class="section-title">🧱 بخش‌های ساختاریافته</h2>
-        <p style="font-size:0.85em; color:#64748b;">برای ویرایش محتوای هر بخش، روی عنوان آن کلیک کنید. فقط یک بخش در هر لحظه باز می‌تواند باشد.</p>
+        <p style="font-size:0.85em; color:var(--text-muted);">برای ویرایش محتوای هر بخش، روی عنوان آن کلیک کنید. فقط یک بخش در هر لحظه باز می‌تواند باشد.</p>
 
         <div id="sections-container">
             {% for s in sections %}
             <div class="accordion-section" data-key="{{ s.key }}">
-                <div class="accordion-header" style="display:flex; gap:8px; align-items:center; padding:12px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:background 0.2s;">
+                <div class="accordion-header" style="display:flex; gap:8px; align-items:center; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; cursor:pointer; transition:background 0.2s;">
                     <button type="button" class="btn btn-light btn-sm move-up" title="بالا" style="flex-shrink:0;">▲</button>
                     <button type="button" class="btn btn-light btn-sm move-down" title="پایین" style="flex-shrink:0;">▼</button>
                     <input type="text" class="sec-title" value="{{ s.title }}" placeholder="عنوان بخش" style="flex:1; border:1px solid transparent; background:transparent; font-size:1rem; font-weight:500; padding:4px 8px; border-radius:4px;" readonly>
-                    <span dir="ltr" style="font-size:0.75rem; color:#94a3b8; flex-shrink:0;">{{ s.key }}</span>
+                    <span dir="ltr" style="font-size:0.75rem; color:var(--text-muted); flex-shrink:0;">{{ s.key }}</span>
                     <button type="button" class="btn btn-danger btn-sm remove-sec" title="حذف" style="flex-shrink:0;">حذف</button>
-                    <span class="accordion-toggle" style="flex-shrink:0; margin-right:4px; font-size:1.2rem; color:#64748b; transition:transform 0.2s;">▼</span>
+                    <span class="accordion-toggle" style="flex-shrink:0; margin-right:4px; font-size:1.2rem; color:var(--text-muted); transition:transform 0.2s;">▼</span>
                 </div>
-                <div class="accordion-content" style="display:none; padding:16px; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 8px 8px; background:#fff;">
-                    <textarea class="sec-body" rows="5" style="width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:10px; font-family:inherit; font-size:0.95rem; line-height:1.6; resize:vertical;" placeholder="متن این بخش...">{{ s.body }}</textarea>
+                <div class="accordion-content" style="display:none; padding:16px; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; background:var(--surface);">
+                    <textarea class="sec-body" rows="5" style="width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:10px; font-family:inherit; font-size:0.95rem; line-height:1.6; resize:vertical;" placeholder="متن این بخش...">{{ s.body }}</textarea>
                 </div>
             </div>
             {% endfor %}
         </div>
 
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px; padding-top:15px; border-top:1px dashed #e2e8f0;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px; padding-top:15px; border-top:1px dashed var(--border);">
             <select id="vocab-select" class="form-control" style="max-width:320px; min-height:42px;">
                 {% for key, title in vocabulary %}
                 <option value="{{ key }}">{{ title }}</option>
@@ -63,10 +63,10 @@
 </form>
 
 <!-- ۳) Public PDF -->
-<div class="form-container" style="max-width: 900px; margin-top:20px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+<div class="form-container" style="max-width: 900px; margin-top:20px; border:none; background:var(--surface); padding:30px; border-radius:15px;">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
         <h2 class="section-title">📎 فایل PDF عمومی</h2>
-        <p style="font-size:0.85em; color:#64748b;">این فایل برای عموم بازدیدکنندگان بدون نیاز به ورود قابل مشاهده است (حداکثر ۵ مگابایت).</p>
+        <p style="font-size:0.85em; color:var(--text-muted);">این فایل برای عموم بازدیدکنندگان بدون نیاز به ورود قابل مشاهده است (حداکثر ۵ مگابایت).</p>
 
         {% if tournament.rulebook_pdf_path %}
         <p style="margin-bottom:10px;">
@@ -153,9 +153,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // Remove
         row.querySelector('.remove-sec').onclick = function(e) {
             e.stopPropagation();
-            if (confirm('آیا از حذف این بخش مطمئن هستید؟')) {
-                row.remove();
-            }
+            UI.openConfirm({
+                title: 'حذف بخش',
+                body: 'این بخش از آیین‌نامه حذف می‌شود.',
+                hint: 'این عمل قابل بازگشت نیست.',
+                onConfirm: function () { row.remove(); }
+            });
         };
 
         // Title input: allow editing when section is open
@@ -181,16 +184,16 @@ document.addEventListener('DOMContentLoaded', function () {
         row.className = 'accordion-section';
         row.setAttribute('data-key', key);
         row.innerHTML =
-            '<div class="accordion-header" style="display:flex; gap:8px; align-items:center; padding:12px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:background 0.2s;">' +
+            '<div class="accordion-header" style="display:flex; gap:8px; align-items:center; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; cursor:pointer; transition:background 0.2s;">' +
             '<button type="button" class="btn btn-light btn-sm move-up" title="بالا" style="flex-shrink:0;">▲</button>' +
             '<button type="button" class="btn btn-light btn-sm move-down" title="پایین" style="flex-shrink:0;">▼</button>' +
             '<input type="text" class="sec-title" value="' + (vocabTitles[key] || key) + '" placeholder="عنوان بخش" style="flex:1; border:1px solid transparent; background:transparent; font-size:1rem; font-weight:500; padding:4px 8px; border-radius:4px;" readonly>' +
-            '<span dir="ltr" style="font-size:0.75rem; color:#94a3b8; flex-shrink:0;">' + key + '</span>' +
+            '<span dir="ltr" style="font-size:0.75rem; color:var(--text-muted); flex-shrink:0;">' + key + '</span>' +
             '<button type="button" class="btn btn-danger btn-sm remove-sec" title="حذف" style="flex-shrink:0;">حذف</button>' +
-            '<span class="accordion-toggle" style="flex-shrink:0; margin-right:4px; font-size:1.2rem; color:#64748b; transition:transform 0.2s;">▼</span>' +
+            '<span class="accordion-toggle" style="flex-shrink:0; margin-right:4px; font-size:1.2rem; color:var(--text-muted); transition:transform 0.2s;">▼</span>' +
             '</div>' +
-            '<div class="accordion-content" style="display:none; padding:16px; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 8px 8px; background:#fff;">' +
-            '<textarea class="sec-body" rows="5" style="width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:10px; font-family:inherit; font-size:0.95rem; line-height:1.6; resize:vertical;" placeholder="متن این بخش..."></textarea>' +
+            '<div class="accordion-content" style="display:none; padding:16px; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; background:var(--surface);">' +
+            '<textarea class="sec-body" rows="5" style="width:100%; border:1px solid var(--border-strong); border-radius:6px; padding:10px; font-family:inherit; font-size:0.95rem; line-height:1.6; resize:vertical;" placeholder="متن این بخش..."></textarea>' +
             '</div>';
         container.appendChild(row);
         bindRow(row);

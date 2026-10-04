@@ -2,161 +2,153 @@
 {% block title %}{{ tournament.name }}{% endblock %}
 
 {% block content %}
+{% from "components/icons.html" import icon %}
 
 {% if can_edit_results %}
-<div class="flex justify-center gap-8 mb-15">
+<div class="admin-actions" role="toolbar" aria-label="اقدامات داوری">
     {% if can_manage %}
     <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-primary">
-        ⚙️ ورود به پنل مدیریت تورنمنت
+        {{ icon("settings", 16) }} پنل مدیریت تورنمنت
     </a>
     {% endif %}
     <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary">
-        🎛️ کنسول داوری و ثبت نتایج
+        {{ icon("layers", 16) }} کنسول داوری و ثبت نتایج
     </a>
 </div>
 {% endif %}
 
-<div class="tournament-header border-r-5-primary pr-20">
-    <h1 class="fs-1-8 mb-10">{{ tournament.name }}</h1>
-    <div class="tournament-meta text-gray-600">
-        <span>📍 {{ tournament.city }}</span> | 
-        <span>♟️ {{ tournament.time_control_type|capitalize }}</span> | 
-        <span>🔄 دور {{ tournament.current_round }} از {{ tournament.total_rounds }}</span>
-    </div>
-    
-    {% if current_user.is_authenticated %}
-    <div class="mt-15">
-        <a href="{{ url_for('registration.register', public_id=tournament.public_id) }}" class="btn btn-success">
-            📝 ثبت‌نام آنلاین در مسابقه
-        </a>
-    </div>
-    {% else %}
-    <div class="mt-15">
-        <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-outline-primary">
-            برای ثبت‌نام لطفاً وارد شوید
-        </a>
-    </div>
-    {% endif %}
+{% set primary_action = None %}
+{% if current_user.is_authenticated %}
+  {% set primary_action %}<a href="{{ url_for('registration.register', public_id=tournament.public_id) }}" class="btn btn-accent">{{ icon("plus", 16) }} ثبت‌نام آنلاین</a>{% endset %}
+{% else %}
+  {% set primary_action %}<a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-secondary">برای ثبت‌نام لطفاً وارد شوید</a>{% endset %}
+{% endif %}
+{% include "components/tournament_header.html" with context %}
+
+<div class="tabs" role="tablist" aria-label="بخش‌های تورنومنت">
+    <button class="tab active" role="tab" aria-selected="true" aria-controls="tab-standings" id="tabbtn-standings" data-tab="standings">رده‌بندی</button>
+    {% for r in tournament.rounds|sort(attribute='round_number') %}
+        <button class="tab" role="tab" aria-selected="false" aria-controls="tab-round-{{ r.round_number }}" id="tabbtn-round-{{ r.round_number }}" data-tab="round-{{ r.round_number }}" tabindex="-1">دور {{ r.round_number }}</button>
+    {% endfor %}
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-crosstable" id="tabbtn-crosstable" data-tab="crosstable" tabindex="-1">جدول برخورد</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-summary" id="tabbtn-summary" data-tab="summary" tabindex="-1">خلاصه و آمار</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-rulebook" id="tabbtn-rulebook" data-tab="rulebook" tabindex="-1">آیین‌نامه مسابقه</button>
 </div>
 
-<div class="tabs mt-25 border-b-2-gray-300 bg-transparent shadow-none">
-    <button class="tab active" data-tab="standings">رده‌بندی</button>
-    {% for r in tournament.rounds|sort(attribute='round_number') %}
-        <button class="tab" data-tab="round-{{ r.round_number }}">دور {{ r.round_number }}</button>
-    {% endfor %}
-    <button class="tab" data-tab="crosstable">جدول برخورد</button>
-    <button class="tab" data-tab="summary">خلاصه و آمار</button> 
-    <button class="tab" data-tab="rulebook">آیین‌نامه مسابقه</button>
-</div>
-<div id="tab-standings" class="tab-content active shadow-none p-0">
-    
+<div id="tab-standings" class="tab-content active" role="tabpanel" aria-labelledby="tabbtn-standings" tabindex="0">
+
     {% set unique_ages = [] %}
     {% for ps in player_standings %}
         {% if ps.player.age_category and ps.player.age_category not in unique_ages %}
             {% set _ = unique_ages.append(ps.player.age_category) %}
         {% endif %}
     {% endfor %}
-    
+
     {% if unique_ages %}
-    <div class="filter-bar bg-gray-50 p-15 rounded-10 mb-20 border border-gray-200 flex flex-wrap items-center gap-10">
+    <div class="filter-bar" role="group" aria-label="فیلتر رده سنی">
         <span class="fw-600 text-gray-700">هایلایت رده سنی:</span>
         <button class="filter-btn active" data-filter="none">هیچکدام (حالت عادی)</button>
-        <span class="text-gray-400 mx-2">|</span>
-        
+        <span class="text-gray-400 mx-2" aria-hidden="true">|</span>
+
         {% for cat in unique_ages|sort %}
             <button class="filter-btn" data-filter="age-{{ cat }}">{{ cat }}</button>
         {% endfor %}
     </div>
     {% endif %}
 
-    <div class="table-responsive">
-        <table class="standings-table" id="main-standings-table">
+    {% if player_standings %}
+    <div class="tbl-wrap">
+        <table class="tbl standings-table sticky-first" id="main-standings-table">
+            <caption class="visually-hidden">جدول رده‌بندی {{ tournament.name }}</caption>
             <thead>
                 <tr>
-                    <th style="width: 50px;">رتبه</th>
-                    <th style="width: 50px;">#No</th>
-                    <th style="text-align:right;">نام بازیکن</th>
-                    <th style="width: 40px;">جنسیت</th>
-                    <th style="width: 60px;">رده سنی</th>
-                    <th>ریتینگ</th>
-                    <th>امتیاز</th>
-                    {% for tb in tiebreak_rules %}<th>{{ tb_names.get(tb, tb)[:8] }}</th>{% endfor %}
-                    <th>+/-</th>
+                    <th scope="col" style="width: 50px;">رتبه</th>
+                    <th scope="col" style="width: 50px;">#No</th>
+                    <th scope="col" style="text-align:start;">نام بازیکن</th>
+                    <th scope="col" style="width: 40px;">جنسیت</th>
+                    <th scope="col" style="width: 60px;">رده سنی</th>
+                    <th scope="col">ریتینگ</th>
+                    <th scope="col">امتیاز</th>
+                    {% for tb in tiebreak_rules %}<th scope="col">{{ tb_names.get(tb, tb)[:8] }}</th>{% endfor %}
+                    <th scope="col">+/−</th>
                 </tr>
             </thead>
             <tbody id="standings-body">
                 {% for ps in player_standings %}
-                <tr class="player-row {% if ps.player.status == 'withdrawn' %}row-withdrawn{% endif %} transition-bg" 
-                    data-age="{{ ps.player.age_category or 'none' }}"
-                    {% if ps.player.status == 'withdrawn' %}style="opacity:0.5;"{% endif %}>
-                    
-                    <td class="text-center"><strong>{{ loop.index }}</strong></td>
-                    <td class="text-center text-gray-400">{{ ps.player.ranking_label }}</td>
-                    
-                    <td class="text-right">
-                        <a href="/{{ tournament.public_id }}/player/{{ ps.player.id }}" class="text-gray-800 fw-500">
-                            {% if ps.player.fide_title_snapshot %}<span class="badge bg-primary-light text-primary badge-xs">{{ ps.player.fide_title_snapshot }}</span>{% endif %}
+                <tr class="player-row {% if ps.player.status == 'withdrawn' %}is-withdrawn{% endif %}"
+                    data-age="{{ ps.player.age_category or 'none' }}">
+                    <td class="num"><strong>{{ loop.index }}</strong></td>
+                    <td class="num text-gray-400">{{ ps.player.ranking_label }}</td>
+                    <td class="player-cell">
+                        <a href="/{{ tournament.public_id }}/player/{{ ps.player.id }}">
+                            {% if ps.player.fide_title_snapshot %}<span class="badge badge-info badge-xs" dir="ltr">{{ ps.player.fide_title_snapshot }}</span>{% endif %}
                             {{ ps.player.full_name }}
+                            {% if ps.player.status == 'withdrawn' %}<span class="badge badge-error badge-xs">انصراف داده</span>{% endif %}
                         </a>
                     </td>
-                    
                     <td class="text-center text-gray-500">
                         {% if ps.player.profile.gender == 'M' %}آقا{% elif ps.player.profile.gender == 'F' %}خانم{% else %}-{% endif %}
                     </td>
-                    
                     <td class="text-center">
-                        <span class="badge bg-gray-100 text-gray-600">{{ ps.player.age_category or '-' }}</span>
+                        <span class="badge badge-neutral">{{ ps.player.age_category or '-' }}</span>
                     </td>
-                    
-                    <td class="text-center">{{ ps.player.rating_snapshot or 0 }}</td>
-                    <td class="text-center"><strong class="fs-1-1 text-primary-dark">{{ ps.points }}</strong></td>
-                    
+                    <td class="num">{{ ps.player.rating_snapshot or 0 }}</td>
+                    <td class="num"><strong class="fs-1-1 text-primary-dark">{{ ps.points }}</strong></td>
                     {% for tb in tiebreak_rules %}
-                        <td class="text-center fs-0-9 text-gray-500">{{ ps.tiebreaks.get(tb, 0) }}</td>
+                        <td class="num fs-0-9 text-gray-500">{{ ps.tiebreaks.get(tb, 0) }}</td>
                     {% endfor %}
-                    
-                    <td class="text-center">
+                    <td class="num">
                         {% set rc = rating_changes.get(ps.player.id, {}) %}
-                        <span class="{% if rc.rating_change > 0 %}rating-up{% elif rc.rating_change < 0 %}rating-down{% endif %}">
-                            {{ rc.rating_change|round(1) if rc.rating_change else '0' }}
-                        </span>
+                        {% set delta = rc.get('rating_change', 0) if rc is mapping else (rc.rating_change if rc.rating_change is defined else 0) %}
+                        <span class="{% if delta > 0 %}rating-up{% elif delta < 0 %}rating-down{% endif %}" aria-label="تغییر ریتینگ {{ delta|round(1) }}">{{ '+' if delta > 0 else '' }}{{ delta|round(1) }}</span>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% else %}
+    <div class="empty-state">
+        <p class="empty-title">هنوز بازیکنی ثبت نشده است</p>
+        <p>پس از افزودن بازیکنان، رده‌بندی اینجا نمایش داده می‌شود.</p>
+    </div>
+    {% endif %}
 </div>
 
 {% for r in tournament.rounds %}
-<div id="tab-round-{{ r.round_number }}" class="tab-content shadow-none">
-    <div class="table-responsive">
-        <table class="standings-table">
+<div id="tab-round-{{ r.round_number }}" class="tab-content" role="tabpanel" aria-labelledby="tabbtn-round-{{ r.round_number }}" tabindex="0">
+    <div class="tbl-wrap">
+        <table class="tbl standings-table">
+            <caption class="visually-hidden">نتایج دور {{ r.round_number }}</caption>
             <thead>
                 <tr>
-                    <th style="width:40px;">میز</th>
-                    <th style="text-align:right;">سفید</th>
-                    <th style="width:100px;">نتیجه</th>
-                    <th style="text-align:right;">سیاه</th>
+                    <th scope="col" style="width:40px;">میز</th>
+                    <th scope="col" style="text-align:start;">سفید</th>
+                    <th scope="col" style="width:100px;">نتیجه</th>
+                    <th scope="col" style="text-align:start;">سیاه</th>
                 </tr>
             </thead>
             <tbody>
                 {% for p in r.pairings|sort(attribute='board_number') %}
-                <tr>
-                    <td class="text-center text-gray-400">{{ p.board_number }}</td>
-                    <td class="text-right">
-                        {{ p.white_participant.ranking_label }}. {{ p.white_participant.full_name }} 
-                        <span class="fs-0-8 text-gray-400">({{ p.white_participant.rating }})</span>
+                <tr class="{% if not p.result or p.result == 'pending' %}is-pending{% endif %}">
+                    <td class="num text-gray-400">{{ p.board_number }}</td>
+                    <td class="player-cell">
+                        <span class="num">{{ p.white_participant.ranking_label }}</span>. {{ p.white_participant.full_name }}
+                        <span class="fs-0-8 text-gray-400 num">({{ p.white_participant.rating }})</span>
                     </td>
-                    <td class="text-center">
-                        <span class="fw-bold" style="letter-spacing:2px;">{{ p.result_display }}</span>
-                    </td>
-                    <td class="text-right">
-                        {% if p.black_participant_id %}
-                            {{ p.black_participant.ranking_label }}. {{ p.black_participant.full_name }}
-                            <span class="fs-0-8 text-gray-400">({{ p.black_participant.rating }})</span>
+                    <td class="num">
+                        {% if not p.result or p.result == 'pending' %}
+                        <span class="badge badge-warning">در انتظار</span>
                         {% else %}
-                            <span class="text-warning fs-0-9">استراحت</span>
+                        <strong class="num" dir="ltr" style="letter-spacing:2px;">{{ p.result_display }}</strong>
+                        {% endif %}
+                    </td>
+                    <td class="player-cell">
+                        {% if p.black_participant_id %}
+                            <span class="num">{{ p.black_participant.ranking_label }}</span>. {{ p.black_participant.full_name }}
+                            <span class="fs-0-8 text-gray-400 num">({{ p.black_participant.rating }})</span>
+                        {% else %}
+                            <span class="badge badge-info">استراحت</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -167,39 +159,42 @@
 </div>
 {% endfor %}
 
-<div id="tab-crosstable" class="tab-content shadow-none">
+<div id="tab-crosstable" class="tab-content" role="tabpanel" aria-labelledby="tabbtn-crosstable" tabindex="0">
     <div class="text-center py-40">
-        <a href="/{{ tournament.public_id }}/crosstable" class="btn btn-secondary">مشاهده جدول کامل برخوردها</a>
+        <a href="/{{ tournament.public_id }}/crosstable" class="btn btn-secondary">{{ icon("table", 16) }} مشاهده جدول کامل برخوردها</a>
     </div>
 </div>
 
-<div id="tab-summary" class="tab-content shadow-none py-20">
+<div id="tab-summary" class="tab-content" role="tabpanel" aria-labelledby="tabbtn-summary" tabindex="0">
     {% if prize_summary and prize_summary.winners %}
         <div class="card p-18 mb-18">
-            <h3 class="mb-0 border-b border-gray-200 pb-8">🏆 برندگان جوایز</h3>
-            <table class="standings-table mt-8">
+            <h3 class="mb-0 border-b pb-8">🏆 برندگان جوایز</h3>
+            <div class="tbl-wrap plain">
+            <table class="tbl mt-8">
+                <caption class="visually-hidden">برندگان جوایز</caption>
                 <tbody>
                 {% for w in prize_summary.winners %}
                     <tr>
-                        <td>{{ w.rank_medal }}</td>
+                        <td class="num">{{ w.rank_medal }}</td>
                         <td><strong>{{ w.category_title }}</strong>{% if w.description %} <span class="fs-0-8 text-gray-500">({{ w.description }})</span>{% endif %}</td>
                         <td>{{ w.winner_name }}</td>
-                        <td class="text-left nowrap">{{ w.amount | toman_formatter }}</td>
+                        <td class="num">{{ w.amount | toman_formatter }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
             </table>
+            </div>
             <p class="text-left fs-0-85 text-gray-500 mb-0">
                 جمع جوایز: {{ prize_summary.total_awarded_amount | toman_formatter }}
             </p>
         </div>
     {% endif %}
     <div class="text-center py-40">
-        <a href="/{{ tournament.public_id }}/summary" class="btn btn-secondary">مشاهده آمار و گزارشات</a>
+        <a href="/{{ tournament.public_id }}/summary" class="btn btn-secondary">{{ icon("chart", 16) }} مشاهده آمار و گزارشات</a>
     </div>
 </div>
 
-<div id="tab-rulebook" class="tab-content shadow-none py-20">
+<div id="tab-rulebook" class="tab-content" role="tabpanel" aria-labelledby="tabbtn-rulebook" tabindex="0">
     {% set has_text = tournament.rulebook_text %}
     {% set sections_list = rulebook_sections or [] %}
     {% set has_sections = sections_list|length > 0 %}
@@ -208,7 +203,7 @@
     {% if has_pdf %}
         <div class="mb-20 text-center">
             <a href="{{ url_for('tournament.download_rulebook_pdf', public_id=tournament.public_id) }}" target="_blank" class="btn btn-primary">
-                📎 مشاهده / دانلود فایل PDF آیین‌نامه
+                {{ icon("doc", 16) }} مشاهده / دانلود فایل PDF آیین‌نامه
             </a>
         </div>
     {% endif %}
@@ -216,7 +211,7 @@
     {% if has_sections %}
         {% for s in sections_list %}
         <div class="card p-18 mb-12">
-            <h3 class="mb-0 border-b border-gray-200 pb-8">{{ s.title }}</h3>
+            <h3 class="mb-0 border-b pb-8">{{ s.title }}</h3>
             <div class="pre-wrap lh-1-8">{{ s.body }}</div>
         </div>
         {% endfor %}
@@ -229,7 +224,7 @@
     {% endif %}
 
     {% if not (has_pdf or has_sections or has_text) %}
-        <p class="text-center text-gray-500 py-40">آیین‌نامه‌ای برای این مسابقه ثبت نشده است.</p>
+        <div class="empty-state"><p class="empty-title">آیین‌نامه‌ای ثبت نشده است</p></div>
     {% endif %}
 </div>
 

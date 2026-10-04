@@ -43,7 +43,7 @@
                     {% for p in players %}<option value="{{ p.id }}">{{ p.full_name }}</option>{% endfor %}
                 </select>
             </div>
-            <button type="submit" class="btn btn-secondary" style="width:100%; background:#1e293b; color:white;">🔒 قفل کردن این جفت</button>
+            <button type="submit" class="btn btn-secondary" style="width:100%; background:var(--gray-800); color:#fff;">🔒 قفل کردن این جفت</button>
         </form>
     </div>
 </div>
@@ -52,18 +52,18 @@
     <h2 class="section-title">📋 درخواست‌های ثبت‌شده برای دور {{ next_round }}</h2>
     
     {% if not existing_byes and not manual_pairings %}
-        <div class="alert" style="background-color: #f9f9f9; text-align: center; padding: 20px;">
-            <p style="color: #666; margin:0;">هیچ درخواست استراحت یا جفت‌گذاری دستی برای این دور ثبت نشده است.</p>
+        <div class="alert" style="background-color: var(--surface-muted); text-align: center; padding: 20px;">
+            <p style="color:var(--text-muted); margin:0;">هیچ درخواست استراحت یا جفت‌گذاری دستی برای این دور ثبت نشده است.</p>
         </div>
     {% else %}
         <div class="table-responsive">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>نوع درخواست</th>
-                        <th style="text-align: right;">بازیکنان درگیر</th>
-                        <th>جزئیات</th>
-                        <th>عملیات</th>
+                        <th scope="col">نوع درخواست</th>
+                        <th scope="col" style="text-align: right;">بازیکنان درگیر</th>
+                        <th scope="col">جزئیات</th>
+                        <th scope="col">عملیات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -78,7 +78,7 @@
                         </td>
                         <td>
                             <form method="POST" action="{{ url_for('round.cancel_bye', public_id=tournament.public_id, bye_id=bye.id) }}" style="display: inline;">
-                                <button type="submit" class="btn btn-small btn-danger-outline" onclick="return confirm('آیا از لغو این استراحت اطمینان دارید؟');">لغو / حذف</button>
+                                <button type="submit" class="btn btn-small btn-danger-outline" data-confirm="این درخواست استراحت لغو می‌شود.">لغو / حذف</button>
                             </form>
                         </td>
                     </tr>
@@ -95,7 +95,7 @@
                         <td>
                             <form method="POST" action="{{ url_for('round.manual_pairing_remove', public_id=tournament.public_id) }}" style="display: inline;">
                                 <input type="hidden" name="participant_id" value="{{ mp.white_participant_id }}">
-                                <button type="submit" class="btn btn-small btn-danger-outline" onclick="return confirm('آیا از لغو این جفت‌گذاری دستی اطمینان دارید؟');">لغو / حذف</button>
+                                <button type="submit" class="btn btn-small btn-danger-outline" data-confirm="این جفت‌گذاری دستی لغو می‌شود.">لغو / حذف</button>
                             </form>
                         </td>
                     </tr>

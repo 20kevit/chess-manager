@@ -6,7 +6,7 @@
 <style>
     .dash-header {
         background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-        color: white;
+        color:#fff;
         padding: 30px;
         border-radius: 16px;
         margin-bottom: 30px;
@@ -14,7 +14,7 @@
     }
     .dash-header h2 { margin: 0; font-size: 1.8rem; font-weight: 700; }
     .dash-card {
-        background: #fff;
+        background:var(--surface);
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
@@ -23,28 +23,28 @@
     .dash-card-title {
         font-size: 1.1rem;
         font-weight: 700;
-        color: #1f2937;
+        color:var(--text);
         margin-bottom: 20px;
         padding-bottom: 10px;
-        border-bottom: 2px solid #f3f4f6;
+        border-bottom: 2px solid var(--surface-muted);
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
     .modern-table { width: 100%; border-collapse: collapse; }
-    .modern-table th { text-align: right; color: #6b7280; font-size: 0.85rem; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
-    .modern-table td { padding: 12px 0; border-bottom: 1px solid #f3f4f6; color: #1f2937; font-weight: 500; }
+    .modern-table th { text-align: right; color:var(--text-muted); font-size: 0.85rem; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
+    .modern-table td { padding: 12px 0; border-bottom: 1px solid var(--surface-muted); color:var(--text); font-weight: 500; }
     .badge-status { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .badge-success { background: #d1fae5; color: #059669; }
-    .badge-pending { background: #fef3c7; color: #d97706; }
-    .badge-failed { background: #fee2e2; color: #dc2626; }
+    .badge-success { background: #d1fae5; color: var(--success); }
+    .badge-pending { background: #fef3c7; color: var(--warning); }
+    .badge-failed { background: #fee2e2; color: var(--danger); }
     /* Phase 2: Two-row progress UI */
     .progress-row { margin-bottom: 15px; }
-    .progress-row-label { font-size: 0.85rem; color: #64748b; margin-bottom: 6px; display: flex; justify-content: space-between; }
-    .progress-bar-container { background: #e2e8f0; border-radius: 8px; height: 22px; overflow: hidden; }
+    .progress-row-label { font-size: 0.85rem; color:var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .progress-bar-container { background: var(--border); border-radius: 8px; height: 22px; overflow: hidden; }
     .progress-bar { height: 100%; width: 0%; background: #2563eb; transition: width .4s; }
-    .progress-bar.complete { background: #059669; }
-    .progress-bar.error { background: #dc2626; }
+    .progress-bar.complete { background: var(--success); }
+    .progress-bar.error { background: var(--danger); }
     .progress-hidden { display: none; }
 </style>
 {% endblock %}
@@ -91,16 +91,16 @@
                             <div id="processing-progress-bar" class="progress-bar"></div>
                         </div>
                     </div>
-                    <p style="font-size:0.85rem; color:#64748b; margin-top:6px;">
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">
                         مرحله: <span id="fide-stage">-</span>
                         · پردازش‌شده: <span id="fide-processed">0</span>
                     </p>
                 </div>
 
                 <!-- P1-G: server-placed manual fallback (cPanel) -->
-                <div style="margin-top:18px; border-top:1px dashed #e2e8f0; padding-top:12px;">
+                <div style="margin-top:18px; border-top:1px dashed var(--border); padding-top:12px;">
                     <h5 style="font-size:0.9rem; margin-bottom:6px;">به‌روزرسانی دستی (از طریق cPanel)</h5>
-                    <p style="font-size:0.8rem; color:#6b7280;">
+                    <p style="font-size:0.8rem; color:var(--text-muted);">
                         اگر سرور فیده در دسترس نیست، فایل رسمی <code dir="ltr">players_list_xml.zip</code> را از cPanel در مسیر زیر قرار دهید و سپس «شروع ایمپورت» را بزنید:
                         <br><code dir="ltr">{{ config.FIDE_DATA_DIR }}/&lt;YYYY-MM&gt;/players_list_xml.zip</code>
                     </p>
@@ -113,7 +113,7 @@
                     درخواست‌های تأیید هویت
                 </div>
                 <div class="text-center">
-                    <h3 style="font-weight: 700; color: {{ ' #dc2626' if pending_verifications else '#059669' }};">
+                    <h3 style="font-weight: 700; color: {{ ' var(--danger)' if pending_verifications else 'var(--success)' }};">
                         {{ pending_verifications|length }}
                     </h3>
                     <p class="text-muted">درخواست معلق</p>
@@ -135,11 +135,11 @@
         <table class="modern-table">
             <thead>
                 <tr>
-                    <th>دوره (ماه)</th>
-                    <th>تاریخ دانلود</th>
-                    <th>تاریخ ایمپورت</th>
-                    <th>وضعیت</th>
-                    <th>تعداد پردازش شده</th>
+                    <th scope="col">دوره (ماه)</th>
+                    <th scope="col">تاریخ دانلود</th>
+                    <th scope="col">تاریخ ایمپورت</th>
+                    <th scope="col">وضعیت</th>
+                    <th scope="col">تعداد پردازش شده</th>
                 </tr>
             </thead>
             <tbody>

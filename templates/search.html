@@ -11,8 +11,9 @@
 </div>
 
 <div class="search-section" style="margin-bottom:16px;">
-    <form class="search-form" action="/search" method="GET">
-        <input type="text" name="q" value="{{ query }}" placeholder="جستجوی نام تورنومنت..." dir="auto">
+    <form class="search-form" action="{{ url_for('tournament.search') }}" method="GET" role="search">
+        <label class="visually-hidden" for="search-q">جستجوی نام تورنومنت</label>
+        <input type="search" id="search-q" name="q" value="{{ query }}" placeholder="جستجوی نام تورنومنت..." dir="auto">
         <button type="submit" class="btn btn-primary">جستجو</button>
     </form>
 </div>

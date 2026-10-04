@@ -7,13 +7,13 @@
 <table>
     <thead>
         <tr>
-            <th style="width: 30px;">رتبه</th>
-            <th style="width: 30px;">#</th>
-            <th class="player-cell">نام بازیکن</th>
-            <th style="width: 50px;">ریتینگ</th>
-            <th style="width: 50px;">امتیاز</th>
+            <th scope="col" style="width: 30px;">رتبه</th>
+            <th scope="col" style="width: 30px;">#</th>
+            <th scope="col" class="player-cell">نام بازیکن</th>
+            <th scope="col" style="width: 50px;">ریتینگ</th>
+            <th scope="col" style="width: 50px;">امتیاز</th>
             {% for tb in tiebreak_rules %}
-                <th style="font-size: 8px;">{{ tb_names.get(tb, tb) }}</th>
+                <th scope="col" style="font-size: 8px;">{{ tb_names.get(tb, tb) }}</th>
             {% endfor %}
         </tr>
     </thead>

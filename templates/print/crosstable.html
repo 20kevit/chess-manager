@@ -7,14 +7,14 @@
 <table>
     <thead>
         <tr>
-            <th>رتبه</th>
-            <th>#</th>
-            <th class="player-cell">بازیکن</th>
-            <th>ریتینگ</th>
+            <th scope="col">رتبه</th>
+            <th scope="col">#</th>
+            <th scope="col" class="player-cell">بازیکن</th>
+            <th scope="col">ریتینگ</th>
             {% for r in range(1, total_rounds + 1) %}
-            <th>{{ r }}</th>
+            <th scope="col">{{ r }}</th>
             {% endfor %}
-            <th>امتیاز</th>
+            <th scope="col">امتیاز</th>
         </tr>
     </thead>
     <tbody>

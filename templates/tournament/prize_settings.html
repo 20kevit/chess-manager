@@ -2,22 +2,22 @@
 {% block title %}جوایز | {{ tournament.name }}{% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+<div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>🏆 جوایز مسابقه</h1>
         <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
     </div>
-    <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-top:8px;">
         ترتیب نمایش، ترتیب تخصیص است: اگر یک بازیکن واجد چند جایزه باشد فقط نخستین (بالاترین اولویت) به او تعلق می‌گیرد. مبالغ به تومان است و پس از اتمام هر دور به‌صورت خودکار تخصیص می‌یابند.
     </p>
 </div>
 
 <form method="POST" action="{{ url_for('tournament.prize_settings', public_id=tournament.public_id) }}"
-      class="form-container" style="max-width: 980px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
+      class="form-container" style="max-width: 980px; border:none; background:var(--surface); padding:30px; border-radius:15px;">
     <input type="hidden" name="prizes_json" id="prizes_json">
 
     <!-- Quick-add category templates -->
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
         <h2 class="section-title">➕ افزودن سریع دسته</h2>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn btn-secondary btn-sm add-cat" data-cat="open">کلی</button>
@@ -27,16 +27,16 @@
             <button type="button" class="btn btn-secondary btn-sm add-cat" data-cat="unrated">بدون ریتینگ</button>
             <button type="button" class="btn btn-secondary btn-sm add-cat" data-cat="custom">سایر (دستی)</button>
         </div>
-        <p style="font-size:0.78rem; color:#94a3b8; margin-top:8px;">دسته «سایر» فاقد منطق خودکار است و صرفاً برای نمایش دستی استفاده می‌شود.</p>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-top:8px;">دسته «سایر» فاقد منطق خودکار است و صرفاً برای نمایش دستی استفاده می‌شود.</p>
     </div>
 
     <!-- Definition rows -->
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:20px;">
         <h2 class="section-title">📋 جوایز تعریف‌شده (به ترتیب اولویت)</h2>
         <div id="prizes-container">
             {% for r in rows %}
             <div class="prize-row" data-cat="{{ r.category_type }}"
-                 style="border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:10px; background:#fff;">
+                 style="border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:10px; background:var(--surface);">
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
                     <button type="button" class="btn btn-light btn-sm move-up">▲</button>
                     <button type="button" class="btn btn-light btn-sm move-down">▼</button>
@@ -65,7 +65,7 @@
             </div>
             {% endfor %}
         </div>
-        <p id="empty-prizes" style="color:#6b7280; text-align:center;" {% if rows %}hidden{% endif %}>هنوز جایزه‌ای تعریف نشده است.</p>
+        <p id="empty-prizes" style="color:var(--text-muted); text-align:center;" {% if rows %}hidden{% endif %}>هنوز جایزه‌ای تعریف نشده است.</p>
     </div>
 
     <div class="form-actions" style="margin-top:25px; display:flex; gap:15px;">
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var row = document.createElement('div');
             row.className = 'prize-row';
             row.setAttribute('data-cat', cat);
-            row.style.cssText = 'border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:10px;background:#fff;';
+            row.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--surface);';
             var rankOptions = '';
             for (var i = 1; i <= 10; i++) rankOptions += '<option value="' + i + '">' + i + '</option>';
             row.innerHTML =

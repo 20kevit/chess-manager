@@ -4,12 +4,12 @@
 {% block extra_css %}
 <style>
     .reg-container { max-width: 800px; margin: 20px auto; }
-    .reg-card { background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    .reg-card h2 { margin-top: 0; border-bottom: 2px solid #f3f4f6; padding-bottom: 15px; }
-    .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
-    .price-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin-top: 20px; }
-    .price-row { display: flex; justify-content: space-between; margin-bottom: 8px; color: #1e40af; }
-    .price-total { font-size: 1.2rem; font-weight: 700; border-top: 2px dashed #bfdbfe; margin-top: 10px; padding-top: 10px; }
+    .reg-card { background:var(--surface); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .reg-card h2 { margin-top: 0; border-bottom: 2px solid var(--surface-muted); padding-bottom: 15px; }
+    .info-box { background:var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+    .price-box { background: var(--info-subtle); border: 1px solid var(--info); border-radius: 8px; padding: 20px; margin-top: 20px; }
+    .price-row { display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--text); }
+    .price-total { font-size: 1.2rem; font-weight: 700; border-top: 2px dashed var(--border-strong); margin-top: 10px; padding-top: 10px; }
 </style>
 {% endblock %}
 
@@ -19,8 +19,8 @@
         <h2>فرم ثبت‌نام: {{ tournament.name }}</h2>
 
         {% if existing_reg %}
-            <div class="info-box" style="background: #ecfdf5; border-color: #a7f3d0;">
-                <h4 style="margin-top:0; color: #065f46;">وضعیت ثبت‌نام شما</h4>
+            <div class="info-box" style="background: var(--success-subtle); border-color: var(--success);">
+                <h4 style="margin-top:0; color: var(--success);">وضعیت ثبت‌نام شما</h4>
                 <p style="margin-bottom: 0;">
                 {% if existing_reg.status == 'pending' %}
                     در انتظار پرداخت
@@ -39,39 +39,39 @@
 
                 {% if existing_reg.status == 'receipt_submitted' and existing_reg.receipt_path %}
                     <!-- P0-E: receipt under review — preview + optional withdrawal -->
-                    <div style="margin-top: 20px; padding: 15px; background: #fffbeb; border-radius: 8px; border: 1px solid #fcd34d;">
+                    <div style="margin-top: 20px; padding: 15px; background:var(--warning-subtle); border-radius: 8px; border: 1px solid var(--warning);">
                         <h5 style="margin-top:0;">رسید پرداخت شما</h5>
-                        <p style="font-size: 0.9rem; color: #6b7280;">پس از بررسی برگزارکننده، وضعیت ثبت‌نام شما بروزرسانی می‌شود.</p>
+                        <p style="font-size: 0.9rem; color:var(--text-muted);">پس از بررسی برگزارکننده، وضعیت ثبت‌نام شما بروزرسانی می‌شود.</p>
                         <a href="{{ url_for('registration.download_receipt', reg_id=existing_reg.id) }}" target="_blank" class="btn btn-info" style="margin-bottom: 10px;">مشاهده رسید ارسالی</a>
                         <form action="{{ url_for('registration.discard_receipt', reg_id=existing_reg.id) }}" method="POST">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-secondary" onclick="return confirm('آیا از حذف رسید و بازگشت به حالت پرداخت مطمئن هستید؟')">حذف رسید و بازگشت به پرداخت</button>
+                            <button type="submit" class="btn btn-secondary" data-confirm="رسید حذف می‌شود و ثبت‌نام به حالت پرداخت بازمی‌گردد.">حذف رسید و بازگشت به پرداخت</button>
                         </form>
                     </div>
                 {% endif %}
 
                 {% if existing_reg.final_price > 0 and existing_reg.status in ['pending', 'payment_pending'] %}
-                    <div style="margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
+                    <div style="margin-top: 20px; padding: 15px; background:var(--surface); border-radius: 8px; border: 1px solid var(--border);">
 
                         <!-- Option 1: Online Payment (server-side toggle enforced) -->
                         {% if tournament.enable_online_payment %}
                         <h5 style="margin-top:0;">روش ۱: پرداخت آنلاین</h5>
-                        <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 10px;">مبلغ: <strong>{{ existing_reg.final_price }} تومان</strong></p>
+                        <p style="font-size: 0.9rem; color:var(--text-muted); margin-bottom: 10px;">مبلغ: <strong>{{ existing_reg.final_price }} تومان</strong></p>
                         <form action="{{ url_for('payment.initiate_payment', reg_id=existing_reg.id) }}" method="POST">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-primary" style="width: 100%;">پرداخت آنلاین (زرین‌پال)</button>
                         </form>
 
-                        <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #ccc;">
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px dashed var(--border-strong);">
                         {% else %}
-                        <p style="color: #b45309; font-size: 0.9rem;">پرداخت آنلاین برای این مسابقه غیرفعال است؛ لطفاً از روش کارت به کارت استفاده کنید.</p>
+                        <p style="color: var(--warning); font-size: 0.9rem;">پرداخت آنلاین برای این مسابقه غیرفعال است؛ لطفاً از روش کارت به کارت استفاده کنید.</p>
                         {% endif %}
 
                         <!-- Option 2: Bank Transfer -->
                         {% if tournament.bank_card_number %}
                         <h5 style="margin-top:0;">روش ۲: کارت به کارت</h5>
-                        <p style="font-size: 0.9rem; color: #6b7280;">مبلغ را به کارت زیر واریز کرده و تصویر رسید را آپلود کنید:</p>
-                        <div style="background: #f3f4f6; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
+                        <p style="font-size: 0.9rem; color:var(--text-muted);">مبلغ را به کارت زیر واریز کرده و تصویر رسید را آپلود کنید:</p>
+                        <div style="background: var(--surface-muted); padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
                             <strong style="font-size: 1.1rem; letter-spacing: 1px;">{{ tournament.bank_card_number }}</strong>
                             <p style="font-size: 0.8rem; margin-top: 5px;">به نام: {{ tournament.bank_account_name or tournament.name }}</p>
                         </div>
@@ -85,7 +85,7 @@
                             <button type="submit" class="btn btn-success" style="width: 100%;">آپلود رسید و ثبت</button>
                         </form>
                         {% else %}
-                            <p style="color: #6b7280; font-size: 0.9rem;">گزینه پرداخت کارت به کارت توسط برگزارکننده غیرفعال شده است.</p>
+                            <p style="color:var(--text-muted); font-size: 0.9rem;">گزینه پرداخت کارت به کارت توسط برگزارکننده غیرفعال شده است.</p>
                         {% endif %}
                         
                     </div>
@@ -96,7 +96,7 @@
         <div class="info-box">
             <h4 style="margin-top:0;">قوانین قیمت‌گذاری</h4>
             <p style="margin-bottom: 5px;">قیمت پایه: <strong>{{ tournament.base_price or 0 }} تومان</strong></p>
-            <ul style="margin: 0; padding-right: 20px; color: #64748b;">
+            <ul style="margin: 0; padding-right: 20px; color:var(--text-muted);">
                 {% if tournament.women_discount_percent %}
                 <li>تخفیف بانوان: {{ tournament.women_discount_percent }}٪</li>
                 {% endif %}
@@ -107,8 +107,8 @@
         </div>
 
         <form method="POST" action="{{ url_for('registration.register', public_id=tournament.public_id) }}" id="reg-form" data-api-url="{{ url_for('registration.calculate_price_api', public_id=tournament.public_id) }}" data-base-price="{{ tournament.base_price or 0 }}">
-            <h4 style="margin-top: 20px; color: #1f2937;">اطلاعات بازیکن</h4>
-            <p style="font-size: 0.85em; color: #6b7280; margin-bottom: 15px;">اگر پروفایل شطرنجی شما در سیستم باشد، اطلاعات زیر پیش‌فرض است.</p>
+            <h4 style="margin-top: 20px; color:var(--text);">اطلاعات بازیکن</h4>
+            <p style="font-size: 0.85em; color:var(--text-muted); margin-bottom: 15px;">اگر پروفایل شطرنجی شما در سیستم باشد، اطلاعات زیر پیش‌فرض است.</p>
             
             <div class="form-row">
                 <div class="form-group col-md-6">
@@ -163,7 +163,7 @@
             </div>
 
             <div class="price-box">
-                <h4 style="margin-top: 0; color: #1e40af;">محاسبه قیمت</h4>
+                <h4 style="margin-top: 0; color: var(--info);">محاسبه قیمت</h4>
                 <div id="price-breakdown">
                     <div class="price-row">
                         <span>قیمت پایه:</span>

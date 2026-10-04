@@ -10,7 +10,7 @@
         </div>
         
         <form method="POST" action="{{ url_for('registration.pricing_settings', public_id=tournament.public_id) }}">
-            <h4 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">قوانین کلی</h4>
+            <h4 style="margin-top: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">قوانین کلی</h4>
             <div class="form-row">
                 <div class="form-group col-md-4">
                     <label>قیمت پایه (تومان)</label>
@@ -49,8 +49,8 @@
                 </div>
             </div>
 
-            <h4 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">شرایط ثبت‌نام (شرط شرکت)</h4>
-            <p style="font-size: 0.85em; color: #6b7280;">اگر هیچ شرطی فعال نباشد، همه می‌توانند ثبت‌نام کنند. محدوده سنی بر اساس تاریخ شروع مسابقه و به صورت بازه بسته (شامل مرزها) اعمال می‌شود.</p>
+            <h4 style="margin-top: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">شرایط ثبت‌نام (شرط شرکت)</h4>
+            <p style="font-size: 0.85em; color:var(--text-muted);">اگر هیچ شرطی فعال نباشد، همه می‌توانند ثبت‌نام کنند. محدوده سنی بر اساس تاریخ شروع مسابقه و به صورت بازه بسته (شامل مرزها) اعمال می‌شود.</p>
             <div class="form-row" style="display:flex; flex-wrap:wrap; gap:15px;">
                 <label style="display:flex; align-items:center; gap:6px;">
                     <input type="checkbox" name="phone_required" value="1" {% if req_set.phone_required %}checked{% endif %}>
@@ -80,7 +80,7 @@
                 </div>
             </div>
 
-            <h4 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">قوانین تخفیف</h4>
+            <h4 style="margin-top: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">قوانین تخفیف</h4>
             
             <div class="form-row">
                 <div class="form-group col-md-4">
@@ -108,7 +108,7 @@
                 </div>
             </div>
 
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <div style="background: var(--surface-muted); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <h5>تخفیف عناوین فیده (٪)</h5>
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
                     {% for t in ['GM', 'IM', 'FM', 'CM', 'WGM', 'WIM', 'WFM', 'WCM'] %}
@@ -123,10 +123,10 @@
             <button type="submit" class="btn btn-primary btn-block">💾 ذخیره تنظیمات</button>
         </form>
         
-        <hr style="margin: 30px 0; border: 0; border-top: 2px dashed #ccc;">
+        <hr style="margin: 30px 0; border: 0; border-top: 2px dashed var(--border-strong);">
 
         <!-- Promo Codes Management Section -->
-        <h4 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">🎟️ مدیریت کدهای تخفیف</h4>
+        <h4 style="margin-top: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">🎟️ مدیریت کدهای تخفیف</h4>
         
         <form method="POST" action="{{ url_for('registration.add_promo_code', public_id=tournament.public_id) }}" style="margin-bottom: 20px;">
             <div class="form-row" style="display: flex; gap: 10px; align-items: flex-end;">
@@ -157,12 +157,12 @@
             <table class="standings-table" style="width: 100%;">
                 <thead>
                     <tr>
-                        <th>کد</th>
-                        <th>درصد</th>
-                        <th>تاریخ انقضا</th>
-                        <th>استفاده شده</th>
-                        <th>سقف</th>
-                        <th>عملیات</th>
+                        <th scope="col">کد</th>
+                        <th scope="col">درصد</th>
+                        <th scope="col">تاریخ انقضا</th>
+                        <th scope="col">استفاده شده</th>
+                        <th scope="col">سقف</th>
+                        <th scope="col">عملیات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -184,7 +184,7 @@
             </table>
         </div>
         {% else %}
-            <p style="text-align: center; color: #6b7280; padding: 20px;">هیچ کد تخفیفی تعریف نشده است.</p>
+            <p style="text-align: center; color:var(--text-muted); padding: 20px;">هیچ کد تخفیفی تعریف نشده است.</p>
         {% endif %}
     </div>
 </div>

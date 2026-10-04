@@ -1,0 +1,70 @@
+{# ============================================================
+   Shared UI macros. Keep flat and practical — no framework.
+   Usage: {% from "components/ui.html" import page_header, badge, alert, empty_state, stat %}
+   ============================================================ #}
+
+{# ---- page header: title + desc + breadcrumbs + status + actions ---- #}
+{% macro page_header(title, description=None, crumbs=None, status=None, actions=None) -%}
+<div class="page-header">
+  <div>
+    {% if crumbs %}
+    <nav class="breadcrumbs" aria-label="مسیر صفحه">
+      {% for c in crumbs %}
+        {% if not loop.last %}<a href="{{ c[1] }}">{{ c[0] }}</a><span class="sep" aria-hidden="true">‹</span>
+        {% else %}<span aria-current="page">{{ c[0] }}</span>{% endif %}
+      {% endfor %}
+    </nav>
+    {% endif %}
+    <h1 class="page-title">{{ title }}</h1>
+    {% if description %}<p class="page-desc">{{ description }}</p>{% endif %}
+    {% if status %}<div style="margin-top:8px">{{ status }}</div>{% endif %}
+  </div>
+  {% if actions %}<div class="page-actions">{{ actions }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{# ---- status badge: kind in success|warning|danger|info|neutral|accent ---- #}
+{% macro badge(text, kind="neutral") -%}
+<span class="badge badge-{{ kind }}">{{ text }}</span>
+{%- endmacro %}
+
+{# ---- alert: kind in success|info|warning|error ---- #}
+{% macro alert(message, kind="info", dismissible=True) -%}
+<div class="alert alert-{{ kind }}" role="{% if kind == 'error' %}alert{% else %}status{% endif %}">
+  <span>{{ message }}</span>
+  {% if dismissible %}<button type="button" class="alert-close" aria-label="بستن پیام">✕</button>{% endif %}
+</div>
+{%- endmacro %}
+
+{# ---- empty state ---- #}
+{% macro empty_state(title, hint=None, action_url=None, action_label=None) -%}
+<div class="empty-state">
+  <p class="empty-title">{{ title }}</p>
+  {% if hint %}<p>{{ hint }}</p>{% endif %}
+  {% if action_url %}<div class="empty-actions"><a class="btn btn-primary" href="{{ action_url }}">{{ action_label or "اقدام" }}</a></div>{% endif %}
+</div>
+{%- endmacro %}
+
+{# ---- dashboard stat ---- #}
+{% macro stat(value, label) -%}
+<div class="stat card"><div class="stat-value num">{{ value }}</div><div class="stat-label">{{ label }}</div></div>
+{%- endmacro %}
+
+{# ---- tournament status badge from status string ---- #}
+{% macro tournament_status(status) -%}
+{% if status == "ongoing" %}<span class="badge badge-info">در حال برگزاری</span>
+{% elif status == "finished" %}<span class="badge badge-success">پایان‌یافته</span>
+{% elif status == "setup" %}<span class="badge badge-neutral">در حال آماده‌سازی</span>
+{% else %}<span class="badge badge-neutral">{{ status }}</span>{% endif %}
+{%- endmacro %}
+
+{# ---- registration status badge ---- #}
+{% macro registration_status(status) -%}
+{% if status == "pending" %}<span class="badge badge-warning">در انتظار پرداخت</span>
+{% elif status == "payment_pending" %}<span class="badge badge-warning">در حال پرداخت</span>
+{% elif status == "receipt_submitted" %}<span class="badge badge-warning">رسید در انتظار بررسی</span>
+{% elif status == "paid" %}<span class="badge badge-success">پرداخت شده</span>
+{% elif status == "approved" %}<span class="badge badge-success">تایید شده</span>
+{% elif status == "rejected" %}<span class="badge badge-error">رد شده</span>
+{% else %}<span class="badge badge-neutral">{{ status }}</span>{% endif %}
+{%- endmacro %}

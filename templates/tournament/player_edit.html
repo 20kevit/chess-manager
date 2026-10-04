@@ -7,8 +7,8 @@
     <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 انصراف</a>
 </div>
 
-<form method="POST" class="form-container" style="max-width: 900px; border:none; background:#f8fafc; padding:30px; border-radius:15px;">
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+<form method="POST" class="form-container" style="max-width: 900px; border:none; background:var(--surface); padding:30px; border-radius:15px;">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
         <div class="form-row">
             <div class="form-group">
                 <label>نام</label>
@@ -34,7 +34,7 @@
         </div>
     </div>
 
-    <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-top:20px;">
+    <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-top:20px;">
         <div class="form-row">
             <div class="form-group">
                 <label>ریتینگ فعلی</label>
@@ -76,7 +76,7 @@
 
     <div class="form-actions" style="margin-top:25px;">
         <button type="submit" class="btn btn-primary" style="padding:12px 50px;">💾 ذخیره تغییرات</button>
-        <form method="POST" action="{{ url_for('player.player_delete', public_id=tournament.public_id, participant_id=player.id) }}" style="display:inline;" onsubmit="return confirm('آیا از حذف کامل این بازیکن اطمینان دارید؟')">
+        <form method="POST" action="{{ url_for('player.player_delete', public_id=tournament.public_id, participant_id=player.id) }}" style="display:inline;" data-confirm="بازیکن برای همیشه از این تورنومنت حذف می‌شود." data-confirm-hint="این عمل قابل بازگشت نیست.">
             <button type="submit" class="btn btn-danger-outline">🗑️ حذف بازیکن</button>
         </form>
     </div>

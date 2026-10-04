@@ -6,7 +6,7 @@
 <style>
     .dash-header {
         background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-        color: white;
+        color:#fff;
         padding: 30px;
         border-radius: 16px;
         margin-bottom: 30px;
@@ -14,7 +14,7 @@
     }
     .dash-header h2 { margin: 0; font-size: 1.8rem; font-weight: 700; }
     .dash-card {
-        background: #fff;
+        background:var(--surface);
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
@@ -26,7 +26,7 @@
         width: 100%;
         max-height: 250px;
         overflow-y: auto;
-        background: #fff;
+        background:var(--surface);
         border: 1px solid #e5e7eb;
         border-radius: 8px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -34,10 +34,10 @@
     }
     .dropdown-item-custom {
         padding: 10px 15px;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid var(--surface-muted);
         cursor: pointer;
     }
-    .dropdown-item-custom:hover { background: #f9fafb; }
+    .dropdown-item-custom:hover { background: var(--surface-muted); }
     .dropdown-item-custom:last-child { border-bottom: none; }
 </style>
 {% endblock %}

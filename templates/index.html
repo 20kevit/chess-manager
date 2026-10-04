@@ -19,30 +19,11 @@
 
 <!-- آمار کلان سایت -->
 {% if stats and stats.tournaments > 0 %}
-<div class="stats-overview" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 30px 0;">
-    <div class="stat-card" style="flex: 1; min-width: 150px; background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border-bottom: 4px solid var(--primary);">
-        <div style="font-size: 2.2em; margin-bottom: 10px;">👨‍⚖️</div>
-        <div style="font-size: 1.8em; font-weight: bold; color: var(--gray-800);">{{ stats.arbiters }}</div>
-        <div style="color: var(--gray-500); font-size: 0.9em;">داور و برگزارکننده</div>
-    </div>
-    
-    <div class="stat-card" style="flex: 1; min-width: 150px; background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border-bottom: 4px solid var(--success);">
-        <div style="font-size: 2.2em; margin-bottom: 10px;">🏆</div>
-        <div style="font-size: 1.8em; font-weight: bold; color: var(--gray-800);">{{ stats.tournaments }}</div>
-        <div style="color: var(--gray-500); font-size: 0.9em;">تورنمنت معتبر</div>
-    </div>
-    
-    <div class="stat-card" style="flex: 1; min-width: 150px; background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border-bottom: 4px solid var(--warning);">
-        <div style="font-size: 2.2em; margin-bottom: 10px;">👥</div>
-        <div style="font-size: 1.8em; font-weight: bold; color: var(--gray-800);">{{ stats.players }}</div>
-        <div style="color: var(--gray-500); font-size: 0.9em;">بازیکن شطرنج</div>
-    </div>
-    
-    <div class="stat-card" style="flex: 1; min-width: 150px; background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border-bottom: 4px solid #8b5cf6;">
-        <div style="font-size: 2.2em; margin-bottom: 10px;">⚔️</div>
-        <div style="font-size: 1.8em; font-weight: bold; color: var(--gray-800);">{{ stats.matches }}</div>
-        <div style="color: var(--gray-500); font-size: 0.9em;">مسابقه (بازی) انجام‌شده</div>
-    </div>
+<div class="stat-grid" style="margin: 30px 0;" role="list" aria-label="آمار کلی سامانه">
+    <div class="stat card" role="listitem"><div class="stat-value num">{{ stats.arbiters }}</div><div class="stat-label">داور و برگزارکننده</div></div>
+    <div class="stat card" role="listitem"><div class="stat-value num">{{ stats.tournaments }}</div><div class="stat-label">تورنمنت معتبر</div></div>
+    <div class="stat card" role="listitem"><div class="stat-value num">{{ stats.players }}</div><div class="stat-label">بازیکن شطرنج</div></div>
+    <div class="stat card" role="listitem"><div class="stat-value num">{{ stats.matches }}</div><div class="stat-label">بازی انجام‌شده</div></div>
 </div>
 {% endif %}
 
@@ -50,18 +31,22 @@
 <div class="search-section">
     <h2>مشاهده تورنومنت</h2>
 
-    <form class="search-form" action="/search" method="GET">
-        <input type="text" name="q" placeholder="جستجوی نام تورنومنت..." dir="auto">
+    <form class="search-form" action="{{ url_for('tournament.search') }}" method="GET" role="search">
+        <label class="visually-hidden" for="main-search">جستجوی نام تورنومنت</label>
+        <input type="search" id="main-search" name="q" placeholder="جستجوی نام تورنومنت..." dir="auto" autocomplete="off">
         <button type="submit" class="btn btn-primary">جستجو</button>
     </form>
 
     <div class="divider-text">یا</div>
 
-    <form class="search-form" onsubmit="goToTournament(event)">
+    <form class="search-form" id="goto-form" role="search" aria-label="مشاهده مستقیم با شناسه">
+        <label class="visually-hidden" for="tournament-id">شناسه ۸ رقمی تورنومنت</label>
         <input type="text" id="tournament-id" placeholder="شناسه ۸ رقمی تورنومنت"
-               maxlength="8" pattern="[0-9]{8}" dir="ltr">
+               maxlength="8" pattern="[0-9]{8}" dir="ltr" inputmode="numeric" autocomplete="off"
+               aria-describedby="goto-error">
         <button type="submit" class="btn btn-primary">مشاهده</button>
     </form>
+    <p class="field-error" id="goto-error" role="alert" style="display:none;justify-content:center">لطفاً یک شناسه ۸ رقمی معتبر وارد کنید</p>
 </div>
 
 <!-- تورنومنت‌های اخیر -->
@@ -123,14 +108,17 @@
 
 {% block extra_js %}
 <script>
-function goToTournament(e) {
+document.getElementById('goto-form').addEventListener('submit', function (e) {
     e.preventDefault();
     var id = document.getElementById('tournament-id').value.trim();
-    if (id.length === 8 && /^\d{8}$/.test(id)) {
+    var err = document.getElementById('goto-error');
+    if (/^\d{8}$/.test(id)) {
+        err.style.display = 'none';
         window.location.href = '/' + id;
     } else {
-        alert('لطفاً یک شناسه ۸ رقمی معتبر وارد کنید');
+        err.style.display = 'flex';
+        document.getElementById('tournament-id').setAttribute('aria-invalid', 'true');
     }
-}
+});
 </script>
 {% endblock %}

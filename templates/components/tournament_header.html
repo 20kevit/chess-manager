@@ -1,0 +1,23 @@
+{# Tournament context header — name, status, round progress, meta, primary action.
+   Expects: tournament, optional primary_action (html), manage_url. #}
+{% from "components/ui.html" import tournament_status %}
+<div class="tournament-header">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+    <div>
+      <h1>{{ tournament.name }}</h1>
+      <div style="margin-top:6px">{{ tournament_status(tournament.status) }}</div>
+    </div>
+    {% if primary_action %}<div>{{ primary_action }}</div>{% endif %}
+  </div>
+  <div class="tournament-meta" style="margin-top:12px">
+    {% if tournament.city %}<span class="meta-item">📍 {{ tournament.city }}</span>{% endif %}
+    {% if tournament.time_control_type %}<span class="meta-item">♟️ {{ tournament.time_control_type|capitalize }}</span>{% endif %}
+    <span class="meta-item">🔄 <span>دور <span class="num">{{ tournament.current_round }}</span> از <span class="num">{{ tournament.total_rounds }}</span></span></span>
+  </div>
+  {% if tournament.total_rounds %}
+  <div class="tournament-progress" aria-hidden="true">
+    <div class="progress-track"><div class="progress-fill" style="width:{{ (100 * (tournament.current_round or 0) / tournament.total_rounds)|round(0) }}%"></div></div>
+  </div>
+  <span class="visually-hidden">پیشرفت تورنومنت: دور {{ tournament.current_round }} از {{ tournament.total_rounds }}</span>
+  {% endif %}
+</div>

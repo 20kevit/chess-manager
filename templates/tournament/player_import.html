@@ -34,10 +34,10 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>نام ستون</th>
-                            <th>توضیح</th>
-                            <th>مثال</th>
-                            <th>اجباری</th>
+                            <th scope="col">نام ستون</th>
+                            <th scope="col">توضیح</th>
+                            <th scope="col">مثال</th>
+                            <th scope="col">اجباری</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -84,16 +84,16 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>نام</th>
-                    <th>نام خانوادگی</th>
-                    <th>ریتینگ</th>
-                    <th>فیده</th>
-                    <th>فدراسیون</th>
-                    <th>جنسیت</th>
-                    <th>عنوان</th>
-                    <th>رده سنی</th>
-                    <th>دسته</th>
+                    <th scope="col">#</th>
+                    <th scope="col">نام</th>
+                    <th scope="col">نام خانوادگی</th>
+                    <th scope="col">ریتینگ</th>
+                    <th scope="col">فیده</th>
+                    <th scope="col">فدراسیون</th>
+                    <th scope="col">جنسیت</th>
+                    <th scope="col">عنوان</th>
+                    <th scope="col">رده سنی</th>
+                    <th scope="col">دسته</th>
                 </tr>
             </thead>
             <tbody>
@@ -119,7 +119,7 @@
         <input type="hidden" name="action" value="confirm">
         <div class="form-actions">
             <button type="submit" class="btn btn-primary btn-large"
-                    onclick="return confirm('{{ total_count }} بازیکن اضافه شود؟')">
+                    data-confirm="{{ total_count }} بازیکن به تورنومنت اضافه می‌شود.">
                 ✅ تایید و افزودن {{ total_count }} بازیکن
             </button>
             <a href="/{{ tournament.public_id }}" class="btn btn-secondary">انصراف</a>

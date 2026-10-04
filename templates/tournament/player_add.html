@@ -10,12 +10,12 @@
     </div>
 </div>
 
-<div class="form-container" style="max-width: 900px; border:none; background:#f8fafc; padding:25px; border-radius:15px;">
+<div class="form-container" style="max-width: 900px; border:none; background:var(--surface); padding:25px; border-radius:15px;">
 
     <form method="POST" id="playerAddForm">
         
         <!-- 1️⃣ FIDE Search Card (Phase 8 Fix) -->
-        <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-bottom:20px;">
+        <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-bottom:20px;">
             <h3 class="section-title">🔍 جستجوی سریع در دیتابیس فیده</h3>
             <div class="form-group">
                 <label>نام یا کد فیده بازیکن را تایپ کنید...</label>
@@ -25,7 +25,7 @@
         </div>
 
         <!-- 2️⃣ Personal Info Card -->
-        <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+        <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
             <h3 class="section-title">📝 اطلاعات شناسنامه‌ای</h3>
             
             <!-- Added fide_id field as hidden/text -->
@@ -60,7 +60,7 @@
         </div>
 
         <!-- 3️⃣ Birth Date Card -->
-        <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-top:20px;">
+        <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-top:20px;">
             <h3 class="section-title">📅 تاریخ تولد</h3>
             <div class="form-group">
                 <label>تاریخ تولد (میلادی)</label>
@@ -69,7 +69,7 @@
         </div>
 
         <!-- 4️⃣ Rating & Categories -->
-        <div class="form-section" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-top:20px;">
+        <div class="form-section" style="background:var(--surface); padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-top:20px;">
             <h3 class="section-title">📊 رتبه‌بندی و دسته‌بندی</h3>
             <div class="form-row">
                 <div class="form-group">
@@ -137,12 +137,12 @@ document.addEventListener("DOMContentLoaded", function() {
                     data.forEach(player => {
                         const item = document.createElement('div');
                         item.style.padding = '10px';
-                        item.style.borderBottom = '1px solid #eee';
+                        item.style.borderBottom = '1px solid var(--border)';
                         item.style.cursor = 'pointer';
                         item.style.transition = 'background 0.2s';
                         item.innerHTML = `
                             <strong>${player.name}</strong> 
-                            <small style="color:#666;">(کد: ${player.fide_id}) - استاندارد: ${player.standard} | رپید: ${player.rapid}</small>
+                            <small style="color:var(--text-muted);">(کد: ${player.fide_id}) - استاندارد: ${player.standard} | رپید: ${player.rapid}</small>
                         `;
                         
                         item.addEventListener('mouseenter', function() {

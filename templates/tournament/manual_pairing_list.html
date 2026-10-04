@@ -5,23 +5,23 @@
 {% block content %}
 <div class="form-container">
     <h2 class="section-title">جفت‌های قفل شده برای دور بعدی</h2>
-    <p style="margin-bottom: 20px; color: #555;">
+    <p style="margin-bottom: 20px; color:var(--text-muted);">
         این جفت‌ها در هنگام تولید خودکار جفت‌های دور بعدی، به صورت ثابت لحاظ خواهند شد.
     </p>
 
     {% if manual_pairings and manual_pairings|length > 0 %}
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
-                <tr style="background-color: #f5f5f5; border-bottom: 2px solid #ddd;">
-                    <th style="padding: 12px; text-align: right;">#</th>
-                    <th style="padding: 12px; text-align: right;">بازیکن سفید</th>
-                    <th style="padding: 12px; text-align: right;">بازیکن سیاه</th>
-                    <th style="padding: 12px; text-align: center;">عملیات</th>
+                <tr style="background-color: var(--surface-muted); border-bottom: 2px solid var(--border);">
+                    <th scope="col" style="padding: 12px; text-align: right;">#</th>
+                    <th scope="col" style="padding: 12px; text-align: right;">بازیکن سفید</th>
+                    <th scope="col" style="padding: 12px; text-align: right;">بازیکن سیاه</th>
+                    <th scope="col" style="padding: 12px; text-align: center;">عملیات</th>
                 </tr>
             </thead>
             <tbody>
                 {% for pairing in manual_pairings %}
-                <tr style="border-bottom: 1px solid #eee;">
+                <tr style="border-bottom: 1px solid var(--border);">
                     <td style="padding: 12px;">{{ loop.index }}</td>
                     <td style="padding: 12px; font-weight: bold;">{{ pairing.white_participant.full_name }}</td>
                     <td style="padding: 12px; font-weight: bold;">{{ pairing.black_participant.full_name }}</td>
@@ -30,7 +30,7 @@
                             {{ csrf_token() }}
                             <input type="hidden" name="participant_id" value="{{ pairing.white_participant_id }}">
                             <button type="submit" class="btn btn-small btn-danger-outline"
-                                    onclick="return confirm('آیا از حذف این جفت‌گذاری اطمینان دارید؟');">
+                                    data-confirm="این جفت‌گذاری دستی حذف می‌شود.">
                                 حذف
                             </button>
                         </form>
@@ -40,12 +40,12 @@
             </tbody>
         </table>
     {% else %}
-        <div class="alert" style="background-color: #f9f9f9; text-align: center; padding: 30px;">
-            <p style="color: #666;">هیچ جفت‌گذاری دستی برای دور بعدی ثبت نشده است.</p>
+        <div class="alert" style="background-color: var(--surface-muted); text-align: center; padding: 30px;">
+            <p style="color:var(--text-muted);">هیچ جفت‌گذاری دستی برای دور بعدی ثبت نشده است.</p>
         </div>
     {% endif %}
 
-    <div class="form-actions" style="margin-top: 30px; border-top: 2px dashed #ddd; padding-top: 20px;">
+    <div class="form-actions" style="margin-top: 30px; border-top: 2px dashed var(--border); padding-top: 20px;">
         <a href="/{{ tournament.public_id }}/admin/rounds/request-bye" class="btn btn-secondary">بازگشت به مدیریت استراحت</a>
         <a href="/{{ tournament.public_id }}/admin/rounds" class="btn btn-primary">بازگشت به لیست دورها</a>
     </div>
