@@ -5,7 +5,7 @@ E-1: FIDE validator wired post-generate — engine violations block generation,
      nothing persisted, valid pairings untouched.
 E-2: stale bye requests of withdrawn players never mint phantom bye boards.
 E-3: round-1 colour alternation invariant; manual locks exempt; floats empty.
-E-4: engine bye-candidate ordering is single-sourced with domain/pairing/bye.py.
+E-4: engine bye-candidate ordering is single-sourced with pairing_core.bye.
 """
 import pytest
 import sys
