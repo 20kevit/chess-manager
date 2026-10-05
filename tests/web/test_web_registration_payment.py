@@ -23,6 +23,8 @@ def _tournament(organizer=None, base_price=1000, max_players=None, enable_online
     return t
 
 def _login(c,u):
+    from flask import g
+    g.pop("_login_user", None)
     with c.session_transaction() as sess:
         sess["_user_id"]=str(u.id); sess["_fresh"]=True
 

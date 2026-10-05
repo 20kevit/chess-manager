@@ -110,7 +110,7 @@ Entry hub: `application/__init__.py` re-exports all service names; `docs/APPLICA
 
 Blueprint modules: `tournament/__init__.py`, `round_routes.py`, `player_routes.py`, `registration_routes.py`, `dashboard_routes.py`, `admin_routes.py`, `fide_routes.py`, `notification_routes.py`, `payment_routes.py`, `backup_routes.py`, `print_routes.py`, `player_profile_routes.py`, `auth_routes.py` (+ empty package stubs `admin/__init__.py`, `api/__init__.py`, `dashboard/__init__.py`, `registration/__init__.py`, `round/__init__.py`) + helpers `admin_auth.py` (`require_admin`/`require_tournament_manager`/`require_result_editor` — order: system admin → organizer → accepted `TournamentStaffModel` → legacy `session["admin_<public_id>"]`), `decorators.py` (`role_required(*roles)`, `admin_required`).
 
-**Pattern:** parse/validate request → capability check → call `application.*` service → `db.session` never touched here → `flash()`+`redirect()` or `render_template()` with `url_for('bp.endpoint', public_id=...)`. Unified UI: public `tournament.view` doubles as arbiter console (`can_manage`/`can_edit_results`/`is_admin` flags) — never create separate admin templates/routes. Details: `docs/WEB_ROUTES_LAYER.md`.
+**Pattern:** parse/validate request → capability check → call `application.*` service → `db.session` never touched here → `flash()`+`redirect()` or `render_template()` with `url_for('bp.endpoint', public_id=...)`. Capability UI: same page, different capabilities — `tournament.view`, `round.round_list`, `round.round_view`, `player.player_list` are public GETs rendering gated controls from `capabilities()` flags (`can_manage`/`can_edit_results`); mutations stay behind `deny_or_login()` (anon → login redirect, authed-denied → 403). Never create separate public/admin templates for the same resource. Details: `docs/WEB_ROUTES_LAYER.md`.
 
 ## Frontend Architecture
 
@@ -164,10 +164,10 @@ Small inline `<style>` in `register.html` (`.reg-*`/`price-box`) and `manual_pai
 - **Tiebreaks:** configured order in `tournament.tiebreak_rules` (JSON), evaluated via `tiebreak_core`; `StandingsService.get_standings` computes `player_standings` + `rating_changes`.
 - **Payments are idempotent:** `PaymentInitiator.process_callback` handles duplicate callbacks; `code 101` counts as success; Rial = Toman×10; overbook flags manual-refund metadata, no auto-refunds.
 - **Notifications are isolated:** `NotificationService → NotificationDispatcher → providers (Web/Telegram/Bale)`; dispatcher checks tournament gates + user prefs; provider failure never crashes the dispatcher.
-- **FIDE data:** monthly XML, `fide/parser.py` streaming, default federation filter `IRI`, batch upsert every 500, tracked in `FideImportModel`, retention 90 days, instance-anchored storage.
+- **FIDE data:** monthly XML, `fide/parser.py` streaming, default federation filter `IRI`, batch upsert every 500, tracked in `FideImportModel`, retention 90 days, instance-anchored storage. Admin READ path prefers the independent `fide-service` (`infrastructure/fide/service_client.py`, timeout + TTL cache + local fallback) via `application/fide/fide_status_service.py` (single source: healthy/stale/running/failed/never); local importer remains the write path.
 - **IDs:** `TournamentModel.public_id` is the 8-digit URL key (never expose internal `id` in URLs).
 - **RBAC:** `email+password` (pbkdf2), default `player`; system-admin via `is_admin`; tournament-manager = system-admin **or** organizer **or** accepted `TournamentStaffModel` (single `chief_arbiter` invariant); result-editor adds ordinary arbiter. No email/phone verification; Telegram/Bale links are 32-byte urlsafe, 10-min expiry, single-use, webhook-verified.
-- **Unified UI:** `tournament.view` *is* the arbiter console (`can_manage`/`can_edit_results`), no parallel admin pages.
+- **Unified UI:** workspace pages (`tournament.view`, rounds, round view, players) are public GETs with capability-gated controls (`can_manage`/`can_edit_results` from `admin_auth.capabilities()`), no parallel admin pages. Mutations use `admin_auth.deny_or_login()` (anon → login, denied → 403).
 
 ## Key Flows
 

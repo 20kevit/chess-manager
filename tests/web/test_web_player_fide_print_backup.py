@@ -19,6 +19,8 @@ def _tournament(organizer=None):
     db.session.add(t); db.session.flush()
     return t
 def _login(c,u):
+    from flask import g
+    g.pop("_login_user", None)
     with c.session_transaction() as sess:
         sess["_user_id"]=str(u.id); sess["_fresh"]=True
 
@@ -28,7 +30,10 @@ class TestPlayerRoutes:
         db.session.commit()
         player=_user("player@test.com")
         c=app.test_client(); _login(c,player)
-        assert c.get(f"/{t.public_id}/players").status_code in (403,404,302)
+        # Phase 15: roster is public; Actions column stays manager-only.
+        resp=c.get(f"/{t.public_id}/players")
+        assert resp.status_code == 200
+        assert "اقدامات" not in resp.get_data(as_text=True)
 
     def test_player_add_as_manager(self, app, db):
         org=_user("orgplayer@test.com")

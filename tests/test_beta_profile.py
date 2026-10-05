@@ -284,7 +284,8 @@ class TestFideVerificationReuse:
 
 
 class TestProfileConnectionMenu:
-    """Static contract for the claim-profile (اتصال پروفایل موجود) modal."""
+    """The claim-profile (اتصال پروفایل موجود) UI was removed from normal
+    UX (owner item 09); the edit-profile modal contract below remains."""
 
     def _dashboard_html(self, app, beta_user):
         client = app.test_client()
@@ -301,9 +302,15 @@ class TestProfileConnectionMenu:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
 
+    def test_claim_modal_removed_from_dashboard(self, app, beta_user):
+        html = self._dashboard_html(app, beta_user)
+        assert 'id="claimModal"' not in html
+        assert 'data-modal-trigger="claimModal"' not in html
+        # Edit modal stays.
+        assert 'id="editModal" class="modal-overlay"' in html
+
     def test_overlay_has_no_close_attribute(self, app, beta_user):
         html = self._dashboard_html(app, beta_user)
-        assert 'id="claimModal" class="modal-overlay"' in html
         assert 'id="editModal" class="modal-overlay"' in html
 
     def test_clicks_inside_menu_do_not_close(self, app, beta_user):
@@ -314,8 +321,6 @@ class TestProfileConnectionMenu:
         assert "closeBtn.classList.contains('modal-overlay')" in js
         # Explicit close buttons still exist for انصراف actions.
         assert 'data-modal-close="editModal"' in html
-        # The claim trigger that opens the Profile Connection menu exists.
-        assert 'data-modal-trigger="claimModal"' in html
 
     def test_outside_click_and_escape_close(self):
         js = self._modal_js()

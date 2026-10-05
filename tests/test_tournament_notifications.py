@@ -179,8 +179,8 @@ class TestAnnouncements:
     def test_plain_arbiter_denied(self, notif_setup):
         client = _as_user(notif_setup["app"], notif_setup["arbiter"])
         resp = _post(client, f"/{notif_setup['public_id']}/admin/announcements",
-                     data={"message": "hack"}, follow_redirects=True)
-        assert resp.status_code == 200          # redirected back to login
+                     data={"message": "hack"})
+        assert resp.status_code == 403                 # manager-only
         assert NotificationModel.query.count() == 0
 
     @pytest.mark.parametrize("who", ("organizer", "chief"))
@@ -252,4 +252,4 @@ class TestTournamentPrefsCrud:
         client = _as_user(notif_setup["app"], notif_setup["arbiter"])
         assert _get(client,
                     f"/{notif_setup['public_id']}/admin/notification-prefs"
-                    ).status_code == 302
+                    ).status_code == 403

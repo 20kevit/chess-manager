@@ -248,7 +248,7 @@ def _as(setup, who):
 class TestAuthorization:
     def test_arbiter_denied_editor_and_recompute(self, prize_setup):
         client = _as(prize_setup, "arbiter")
-        assert _get(client, f"/{PIDZ}/admin/prizes").status_code == 302
+        assert _get(client, f"/{PIDZ}/admin/prizes").status_code == 403
         resp = _post(client, f"/{PIDZ}/admin/prizes/recompute")
         assert resp.status_code == 403
         assert TournamentPrizeModel.query.filter_by(

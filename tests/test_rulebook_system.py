@@ -282,7 +282,7 @@ class TestAuthorization:
         resp = _post(client, f"/{setup['public_id']}/settings/rulebook", data={
             "rulebook_text": "هک", "sections_json": "[]",
         })
-        assert resp.status_code == 302                 # bounced to login
+        assert resp.status_code == 403                  # denied for manager-only
         assert T(setup).rulebook_text != "هک"
 
     def test_arbiter_cannot_upload_or_remove_pdf(self, setup):
@@ -309,7 +309,7 @@ class TestAuthorization:
         client = setup["app"].test_client()
         _login(client, UserModel.query.get(setup["arbiter"]))
         assert _get(client, f"/{setup['public_id']}/settings/rulebook") \
-            .status_code == 302
+            .status_code == 403
 
 class TestPdfHandling:
     def _upload(self, setup, who="organizer", content=PDF_BYTES,

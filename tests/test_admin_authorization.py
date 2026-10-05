@@ -71,14 +71,16 @@ class TestStaffInvitationAuthorization:
 
     def test_accepted_invitation_no_longer_grants_management(self, app, setup_access):
         """P1-B contract change: an accepted plain arbiter is result-editor
-        tier only — player MANAGEMENT is no longer reachable."""
+        tier only. Phase 15: the roster itself is public (200) but the
+        Actions column stays manager-only (no management POSTs succeed)."""
         data = setup_access
         _add_staff(data["tournament"].id, data["invitee"].id, "accepted")
 
         client = app.test_client()
         _login(client, data["invitee"].id)
         resp = client.get(f"/{data['tournament'].public_id}/players")
-        assert resp.status_code == 302  # manager-only since P1-B
+        assert resp.status_code == 200
+        assert "اقدامات" not in resp.get_data(as_text=True)
 
     def test_accepted_arbiter_keeps_result_console_access(self, app, setup_access):
         """P1-B: the same accepted arbiter retains the operational
@@ -98,7 +100,8 @@ class TestStaffInvitationAuthorization:
         client = app.test_client()
         _login(client, data["invitee"].id)
         resp = client.get(f"/{data['tournament'].public_id}/players")
-        assert resp.status_code == 302  # redirected to admin login, not granted
+        assert resp.status_code == 200  # roster is public; no Actions column
+        assert "اقدامات" not in resp.get_data(as_text=True)
 
     def test_rejected_invitation_does_not_grant_access(self, app, setup_access):
         data = setup_access
@@ -107,7 +110,8 @@ class TestStaffInvitationAuthorization:
         client = app.test_client()
         _login(client, data["invitee"].id)
         resp = client.get(f"/{data['tournament'].public_id}/players")
-        assert resp.status_code == 302  # redirected to admin login, not granted
+        assert resp.status_code == 200  # roster is public; no Actions column
+        assert "اقدامات" not in resp.get_data(as_text=True)
 
     def test_organizer_retains_access(self, app, setup_access):
         data = setup_access
@@ -141,8 +145,10 @@ class TestLegacyAdminCodeRemoved:
     def test_legacy_session_value_grants_nothing(self, app, setup_access):
         data = setup_access
         client = app.test_client()
-        # Even forging the old legacy session key must NOT grant arbiter view
+        # Even forging the old legacy session key must NOT grant management.
+        # The roster is public (200) but carries no Actions column.
         with client.session_transaction() as sess:
             sess[f"admin_{data['tournament'].public_id}"] = "forged_or_old_code"
         resp = client.get(f"/{data['tournament'].public_id}/players")
-        assert resp.status_code == 302  # redirected away, not an admin render
+        assert resp.status_code == 200
+        assert "اقدامات" not in resp.get_data(as_text=True)
