@@ -32,6 +32,7 @@ from application.round.display_service import RoundDisplayService
 
 from interfaces.web.admin_auth import (
     require_admin, require_tournament_manager, require_result_editor,
+    capabilities, deny_or_login,
 )
 from tiebreak_core.display import ALL_TIEBREAKS_DISPLAY
 from domain.rulebook import (
@@ -315,11 +316,14 @@ def crosstable(public_id):
         key=lambda x: (-(x["player"].points or 0), -(x["player"].rating_snapshot or 0))
     )
 
+    _, cross_can_manage, cross_can_edit = capabilities(public_id)
     return render_template(
         "tournament/crosstable.html",
         tournament=tournament,
         sorted_players=sorted_players,
         total_rounds=total_rounds,
+        can_manage=cross_can_manage,
+        can_edit_results=cross_can_edit,
     )
 
 
@@ -424,6 +428,8 @@ def summary(public_id):
         sum(p.rating_snapshot for p in rated_players) / len(rated_players)
     ) if rated_players else 0
 
+    _, _summary_can_manage, _summary_can_edit = capabilities(public_id)
+    _summary_flags = (_summary_can_manage, _summary_can_edit)
     return render_template(
         "tournament/summary.html",
         tournament=tournament,
@@ -444,6 +450,8 @@ def summary(public_id):
         age_winners=age_winners,
         custom_winners=custom_winners,
         prize_summary=PrizeSummaryService.get_public_prize_summary(tournament),
+        can_manage=_summary_flags[0],
+        can_edit_results=_summary_flags[1],
     )
 
 
@@ -494,9 +502,10 @@ def _announcement_recipient_ids(tournament):
 
 @tournament_bp.route("/<public_id>/settings", methods=["GET", "POST"])
 def settings(public_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         try:
@@ -520,9 +529,10 @@ def settings(public_id):
 @tournament_bp.route("/<public_id>/admin/announcements", methods=["GET", "POST"])
 def announcements(public_id):
     """Manager-tier broadcast to all registered participants (free)."""
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         message = request.form.get("message", "").strip()
@@ -567,9 +577,10 @@ def announcements(public_id):
                      methods=["GET", "POST"])
 def notification_prefs(public_id):
     """Organizer toggles for which tournament events generate notifications."""
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         prefs = {
@@ -600,9 +611,10 @@ def notification_prefs(public_id):
 @tournament_bp.route("/<public_id>/admin/prizes", methods=["GET", "POST"])
 def prize_settings(public_id):
     """Manager-tier prize definition editor (replace-all payload)."""
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         try:
@@ -640,9 +652,10 @@ def prizes_recompute(public_id):
 @tournament_bp.route("/<public_id>/settings/rulebook", methods=["GET", "POST"])
 def rulebook_settings(public_id):
     """Manager-tier editor for the three independent rulebook forms."""
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         try:

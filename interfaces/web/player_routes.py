@@ -6,7 +6,7 @@ from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, abort, Response
 )
-from interfaces.web.admin_auth import require_admin
+from interfaces.web.admin_auth import capabilities, deny_or_login, require_admin
 
 from application.player import ParticipantManagement
 from application.player.csv_import_service import PlayerCsvImportService, CsvImportError
@@ -24,27 +24,30 @@ def _require_admin_or_redirect(public_id):
 
 @player_bp.route("/<public_id>/players")
 def player_list(public_id):
-    # Check admin access or redirect
-    tournament, redir = _require_admin_or_redirect(public_id)
-    if redir:
-        return redir
+    # Public roster; managers additionally get the Actions column.
+    tournament, can_manage, can_edit_results = capabilities(public_id)
+    if not tournament:
+        abort(404)
 
     # Fetch all participants for the tournament
     players = ParticipantRepository.get_all(tournament.id)
-    
+
     # Render the players list template
     return render_template(
         "tournament/players.html",
         tournament=tournament,
         players=players,
-        is_admin=True
+        is_admin=can_manage,
+        can_manage=can_manage,
+        can_edit_results=can_edit_results,
     )
 
 @player_bp.route("/<public_id>/players/add", methods=["GET", "POST"])
 def player_add(public_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         try:
@@ -62,8 +65,10 @@ def player_add(public_id):
 
 @player_bp.route("/<public_id>/players/<int:participant_id>/edit", methods=["GET", "POST"])
 def player_edit(public_id, participant_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament: abort(403)
 
     participant = ParticipantRepository.get_by_id(participant_id, tournament.id)
     if not participant: abort(404)
@@ -77,9 +82,10 @@ def player_edit(public_id, participant_id):
 
 @player_bp.route("/<public_id>/players/<int:participant_id>/delete", methods=["POST"])
 def player_delete(public_id, participant_id):
-    tournament, redir = _require_admin_or_redirect(public_id)
-    if redir:
-        return redir
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
+    tournament = require_admin(public_id)
 
     participant = ParticipantRepository.get_by_id(participant_id, tournament.id)
     if not participant:
@@ -99,8 +105,10 @@ def player_delete(public_id, participant_id):
 
 @player_bp.route("/<public_id>/players/<int:participant_id>/withdraw", methods=["POST"])
 def player_withdraw(public_id, participant_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament: abort(403)
 
     participant = ParticipantRepository.get_by_id(participant_id, tournament.id)
     if not participant: abort(404)
@@ -110,6 +118,10 @@ def player_withdraw(public_id, participant_id):
 
 @player_bp.route("/<public_id>/players/import", methods=["GET", "POST"])
 def player_import(public_id):
+    if request.method == "POST" and request.form.get("action") == "confirm":
+        denied = deny_or_login(public_id, tier="manager")
+        if denied:
+            return denied
     tournament, redir = _require_admin_or_redirect(public_id)
     if redir:
         return redir

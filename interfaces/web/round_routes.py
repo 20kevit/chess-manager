@@ -9,7 +9,7 @@ P1-B tiered authorization:
   rounds (require_admin == require_tournament_manager)
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
-from interfaces.web.admin_auth import require_admin, require_result_editor
+from interfaces.web.admin_auth import capabilities, deny_or_login, require_result_editor
 
 from application.round.round_lifecycle_service import RoundLifecycleService
 from application.round.result_recording_service import ResultRecordingService
@@ -32,22 +32,25 @@ def _require_editor_or_redirect(public_id):
 
 @round_bp.route("/<public_id>/rounds")
 def round_list(public_id):
-    tournament, redir = _require_editor_or_redirect(public_id)
-    if redir:
-        return redir
+    tournament, can_manage, can_edit_results = capabilities(public_id)
+    if not tournament:
+        abort(404)
     rounds = RoundRepository.get_all(tournament.id)
     return render_template(
         "tournament/rounds.html",
         tournament=tournament,
         rounds=rounds,
-        is_admin=True,
+        is_admin=can_manage,
+        can_manage=can_manage,
+        can_edit_results=can_edit_results,
     )
 
 @round_bp.route("/<public_id>/rounds/new", methods=["POST"])
 def round_new(public_id):
-    tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
+    tournament = require_result_editor(public_id)
 
     try:
         new_round = RoundLifecycleService.create_next_round(tournament)
@@ -66,9 +69,9 @@ def round_new(public_id):
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>")
 def round_view(public_id, round_number):
-    tournament, redir = _require_editor_or_redirect(public_id)
-    if redir:
-        return redir
+    tournament, can_manage, can_edit_results = capabilities(public_id)
+    if not tournament:
+        abort(404)
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
     if not round_obj:
         abort(404)
@@ -80,13 +83,17 @@ def round_view(public_id, round_number):
         round=round_obj,
         pairings=pairings,
         players=participants,
-        is_admin=True,
+        is_admin=can_manage,
+        can_manage=can_manage,
+        can_edit_results=can_edit_results,
     )
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/result", methods=["POST"])
 def save_results(public_id, round_number):
+    denied = deny_or_login(public_id, tier="editor")
+    if denied:
+        return denied
     tournament = require_result_editor(public_id)
-    if not tournament: abort(403)
     
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
     
@@ -100,9 +107,10 @@ def save_results(public_id, round_number):
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/finish", methods=["POST"])
 def finish_round(public_id, round_number):
-    tournament, redir = _require_editor_or_redirect(public_id)
-    if redir:
-        return redir
+    denied = deny_or_login(public_id, tier="editor")
+    if denied:
+        return denied
+    tournament = require_result_editor(public_id)
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
     if not round_obj:
         abort(404)
@@ -119,9 +127,10 @@ def finish_round(public_id, round_number):
 def delete_round(public_id, round_number):
     # Manager tier only (P1-B): generating and deleting rounds are
     # administrative actions, not result-entry operations.
-    tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
+    tournament = require_result_editor(public_id)
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
     if not round_obj:
         flash("دور یافت نشد", "error")
@@ -143,6 +152,10 @@ def delete_round(public_id, round_number):
 
 @round_bp.route("/<public_id>/rounds/request-bye", methods=["GET", "POST"])
 def request_bye(public_id):
+    if request.method == "POST":
+        denied = deny_or_login(public_id, tier="editor")
+        if denied:
+            return denied
     tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir
@@ -185,9 +198,10 @@ def request_bye(public_id):
 
 @round_bp.route("/<public_id>/rounds/manual-pairing/add", methods=["POST"])
 def manual_pairing_add(public_id):
-    tournament, redir = _require_editor_or_redirect(public_id)
-    if redir:
-        return redir
+    denied = deny_or_login(public_id, tier="editor")
+    if denied:
+        return denied
+    tournament = require_result_editor(public_id)
     try:
         white_id = request.form.get("white_participant_id", type=int)
         black_id = request.form.get("black_participant_id", type=int)
@@ -202,9 +216,10 @@ def manual_pairing_add(public_id):
 
 @round_bp.route("/<public_id>/rounds/manual-pairing/remove", methods=["POST"])
 def manual_pairing_remove(public_id):
-    tournament, redir = _require_editor_or_redirect(public_id)
-    if redir:
-        return redir
+    denied = deny_or_login(public_id, tier="editor")
+    if denied:
+        return denied
+    tournament = require_result_editor(public_id)
     participant_id = request.form.get("participant_id", type=int)
     removed = ManualAdjustmentService.remove_manual_pairing(tournament, participant_id)
     if removed:
@@ -215,9 +230,10 @@ def manual_pairing_remove(public_id):
 
 @round_bp.route("/<public_id>/rounds/bye/cancel/<int:bye_id>", methods=["POST"])
 def cancel_bye(public_id, bye_id):
-    tournament, redir = _require_editor_or_redirect(public_id)
-    if redir:
-        return redir
+    denied = deny_or_login(public_id, tier="editor")
+    if denied:
+        return denied
+    tournament = require_result_editor(public_id)
     cancelled = ManualAdjustmentService.cancel_bye_request(tournament, bye_id)
     if cancelled:
         flash("درخواست استراحت لغو شد.", "success")
@@ -229,6 +245,10 @@ def cancel_bye(public_id, bye_id):
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/manual", methods=["GET", "POST"])
 def manual_pairing(public_id, round_number):
+    if request.method == "POST":
+        denied = deny_or_login(public_id, tier="editor")
+        if denied:
+            return denied
     tournament, redir = _require_editor_or_redirect(public_id)
     if redir:
         return redir

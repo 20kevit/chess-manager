@@ -3,7 +3,7 @@
 
 {% block content %}
 {% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "rounds") }}
+{{ tournament_nav(tournament, "rounds", can_manage|default(False), can_edit_results|default(False)) }}
 {% from "components/icons.html" import icon %}
 <div class="page-header">
     <div>
@@ -17,16 +17,18 @@
         {% set last_round = rounds[-1] if rounds else None %}
         {% set can_new_round = (not last_round or last_round.status == 'finished')
                                and tournament.current_round < tournament.total_rounds %}
-        {% if can_new_round %}
+        {% if can_manage|default(False) and can_new_round %}
         <form method="POST" action="{{ url_for('round.round_new', public_id=tournament.public_id) }}">
             <button type="submit" class="btn btn-primary">{{ icon("plus", 16) }} ایجاد دور {{ tournament.current_round + 1 }}</button>
         </form>
-        {% elif tournament.current_round >= tournament.total_rounds and rounds %}
+        {% elif can_manage|default(False) and tournament.current_round >= tournament.total_rounds and rounds %}
         <span class="badge badge-success">همه دورها ایجاد شده‌اند</span>
-        {% elif last_round and last_round.status != 'finished' %}
+        {% elif can_manage|default(False) and last_round and last_round.status != 'finished' %}
         <span class="badge badge-warning">ابتدا دور {{ last_round.round_number }} را به پایان برسانید</span>
         {% endif %}
+        {% if can_edit_results|default(False) %}
         <a href="{{ url_for('round.request_bye', public_id=tournament.public_id) }}" class="btn btn-secondary">مدیریت استراحت (Bye)</a>
+        {% endif %}
     </div>
 </div>
 
@@ -47,7 +49,7 @@
         <div class="round-actions" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
             <a href="{{ url_for('round.round_view', public_id=tournament.public_id, round_number=round.round_number) }}" class="btn btn-primary">مشاهده و مدیریت</a>
 
-            {% if loop.first %}
+            {% if loop.first and can_manage|default(False) %}
             <form method="POST"
                 action="{{ url_for('round.delete_round', public_id=tournament.public_id, round_number=round.round_number) }}"
                 data-confirm="دور {{ round.round_number }} و همه نتایج ثبت‌شده آن حذف می‌شود."

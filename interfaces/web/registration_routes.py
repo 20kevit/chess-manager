@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, abort, current_app, send_file)
 from werkzeug.utils import secure_filename
-from interfaces.web.admin_auth import require_admin
+from interfaces.web.admin_auth import deny_or_login, require_admin
 
 from application.tournament_service import TournamentService
 from application.registration_service import (
@@ -24,9 +24,10 @@ registration_bp = Blueprint("registration", __name__)
 
 @registration_bp.route("/<public_id>/admin/pricing", methods=["GET", "POST"])
 def pricing_settings(public_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         try:
@@ -63,9 +64,10 @@ def pricing_settings(public_id):
 
 @registration_bp.route("/<public_id>/admin/pricing/promo/add", methods=["POST"])
 def add_promo_code(public_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
         
     code = request.form.get("code", "").strip().upper()
     discount_percent = int(request.form.get("discount_percent", 0) or 0)
@@ -102,9 +104,10 @@ def add_promo_code(public_id):
 
 @registration_bp.route("/<public_id>/admin/pricing/promo/delete/<int:promo_id>", methods=["POST"])
 def delete_promo_code(public_id, promo_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
         
     promo = PromoCodeModel.query.get(promo_id)
     if promo and promo.tournament_id == tournament.id:
@@ -118,9 +121,10 @@ def delete_promo_code(public_id, promo_id):
 
 @registration_bp.route("/<public_id>/admin/registrations")
 def manage_registrations(public_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     registrations = RegistrationRepository.get_for_tournament(tournament.id)
     
@@ -151,9 +155,10 @@ def manage_registrations(public_id):
 
 @registration_bp.route("/<public_id>/admin/registrations/<int:reg_id>/approve", methods=["POST"])
 def approve_registration(public_id, reg_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
         
     try:
         RegistrationService.approve_registration(reg_id)
@@ -165,9 +170,10 @@ def approve_registration(public_id, reg_id):
 
 @registration_bp.route("/<public_id>/admin/registrations/<int:reg_id>/reject", methods=["POST"])
 def reject_registration(public_id, reg_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
         
     try:
         reason = request.form.get("rejection_reason", "").strip()
@@ -322,9 +328,10 @@ def discard_receipt(reg_id):
 def reject_receipt(public_id, reg_id):
     """Arbiter/organizer rejects a transfer receipt: the registration
     returns to a retryable pending state with the reason recorded (P0-E)."""
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     reason = request.form.get("rejection_reason", "").strip()
     try:

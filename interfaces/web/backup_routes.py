@@ -7,7 +7,7 @@ import traceback
 from datetime import datetime, date
 from flask import Blueprint, Response, request, redirect, url_for, flash, render_template, jsonify
 from flask_login import login_required
-from interfaces.web.admin_auth import require_admin
+from interfaces.web.admin_auth import deny_or_login, require_admin
 from interfaces.web.decorators import role_required
 
 from app.extensions import db
@@ -27,9 +27,10 @@ class DateEncoder(json.JSONEncoder):
 
 @backup_bp.route("/<public_id>/admin/backup/export")
 def export_json(public_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     try:
         file_content = ImportExportService.export_tournament(
@@ -54,9 +55,10 @@ def export_json(public_id):
 
 @backup_bp.route("/<public_id>/backup/import", methods=["GET", "POST"])
 def import_json(public_id):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         file = request.files.get("json_file")
@@ -106,9 +108,10 @@ def import_json(public_id):
 
 @backup_bp.route("/<public_id>/backup/export/<provider_name>", methods=["GET", "POST"])
 def export_provider(public_id, provider_name):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     try:
         file_content = ImportExportService.export_tournament(
@@ -133,9 +136,10 @@ def export_provider(public_id, provider_name):
 
 @backup_bp.route("/<public_id>/admin/backup/import/<provider_name>", methods=["GET", "POST"])
 def import_provider(public_id, provider_name):
+    denied = deny_or_login(public_id, tier="manager")
+    if denied:
+        return denied
     tournament = require_admin(public_id)
-    if not tournament:
-        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         file = request.files.get("json_file")

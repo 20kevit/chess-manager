@@ -126,21 +126,28 @@ class TestTierHelpersUnit:
         assert callable(require_result_editor)
 
 class TestManagerOnlyRoutes:
-    """Arbiter must be rejected; organizer/chief/sysadmin allowed."""
+    """Arbiter must be rejected; organizer/chief/sysadmin allowed.
+
+    Denial contract (Phase 15): anonymous -> 302 login; authenticated but
+    unauthorized -> 403. `/players` is public by design (roster + gated
+    Actions column) and is covered by TestPublicRoster below.
+    """
 
     @pytest.mark.parametrize("url", [
         f"/{PID}/settings",
         f"/{PID}/admin/pricing",
         f"/{PID}/admin/registrations",
-        f"/{PID}/players",
         f"/{PID}/players/add",
-        f"/{PID}/players/import",
         f"/{PID}/admin/backup/export",
-        "/dashboard/tournament/" + PID + "/manage",
     ])
     def test_get_pages(self, matrix, url):
-        denied = _as(matrix, "arbiter").get(url).status_code == 302
-        assert denied, url
+        # NOTE: Flask-Login caches the loaded user in `g` for the lifetime
+        # of the pushed app context, so clear it before the anonymous probe.
+        assert _as(matrix, "arbiter").get(url).status_code == 403, url
+        from flask import g
+        g.pop("_login_user", None)
+        anon = matrix["app"].test_client()
+        assert anon.get(url).status_code == 302, url
 
     @pytest.mark.parametrize("who", MANAGERS)
     def test_settings_get_allowed_for_managers(self, matrix, who):
@@ -176,7 +183,7 @@ class TestManagerOnlyRoutes:
 
     def test_backup_export_denied_for_arbiter(self, matrix):
         assert _as(matrix, "arbiter") \
-            .get(f"/{PID}/admin/backup/export").status_code == 302
+            .get(f"/{PID}/admin/backup/export").status_code == 403
 
     def test_staff_add_by_plain_arbiter_blocked(self, matrix):
         outsider = _user("mx_new@test.com")
@@ -412,8 +419,52 @@ class TestPublicPageUnchanged:
 
     def test_capability_flags_on_view(self, matrix):
         html = _as(matrix, "arbiter").get(f"/{PID}").get_data(as_text=True)
-        assert "کنسول داوری" in html
-        assert "پنل مدیریت" not in html
+        assert "دورها و نتایج" in html
+        assert "قیمت‌گذاری" not in html
 
         html = _as(matrix, "chief").get(f"/{PID}").get_data(as_text=True)
-        assert "کنسول داوری" in html and "پنل مدیریت" in html
+        assert "دورها و نتایج" in html and "قیمت‌گذاری" in html
+
+
+class TestPublicCapabilityPages:
+    """Phase 15: same page, different capabilities (items 14/15/16/22)."""
+
+    @pytest.mark.parametrize("url", [
+        f"/{PID}/players/import",
+        "/dashboard/tournament/" + PID + "/manage",
+    ])
+    def test_tool_and_hub_pages_keep_login_redirect(self, matrix, url):
+        # Tool pages (import wizard) and the management hub are not public
+        # content; unauthenticated/unauthorized GETs redirect to login.
+        assert _as(matrix, "arbiter").get(url).status_code == 302, url
+
+    def test_rounds_and_players_open_to_anonymous(self, matrix):
+        anon = matrix["app"].test_client()
+        assert anon.get(f"/{PID}/rounds").status_code == 200
+        assert anon.get(f"/{PID}/rounds/1").status_code == 200
+        assert anon.get(f"/{PID}/players").status_code == 200
+
+    def test_public_has_no_editor_controls(self, matrix):
+        anon = matrix["app"].test_client()
+        body = anon.get(f"/{PID}/rounds/1").get_data(as_text=True)
+        assert "result_" not in body  # no result <select> names
+        assert "ذخیره نتایج" not in body
+        roster = anon.get(f"/{PID}/players").get_data(as_text=True)
+        assert "اقدامات" not in roster
+
+    def test_manager_sees_actions_and_controls(self, matrix):
+        html = _as(matrix, "chief").get(f"/{PID}/players").get_data(as_text=True)
+        assert "اقدامات" in html
+        html = _as(matrix, "chief").get(f"/{PID}/rounds/1").get_data(as_text=True)
+        assert "ذخیره نتایج" in html
+
+    def test_unauthenticated_mutation_redirects_to_login(self, matrix):
+        anon = matrix["app"].test_client()
+        assert anon.post(f"/{PID}/rounds/new").status_code == 302
+        assert anon.post(f"/{PID}/rounds/1/result").status_code == 302
+        assert anon.post(f"/{PID}/players/add").status_code == 302
+
+    def test_authenticated_denied_mutation_is_403(self, matrix):
+        for url in (f"/{PID}/rounds/new", f"/{PID}/rounds/1/delete",
+                    f"/{PID}/players/add", f"/{PID}/settings"):
+            assert _as(matrix, "arbiter").post(url).status_code == 403, url

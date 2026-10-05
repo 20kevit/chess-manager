@@ -66,6 +66,40 @@ def require_tournament_manager(public_id):
     """Manager tier: system admin, organizer, or accepted CHIEF arbiter."""
     return _authorize(public_id, chief_only=True)
 
+def capabilities(public_id):
+    """Capability flags for the tournament workspace (same page, different capabilities).
+
+    Returns (tournament_or_None, can_manage, can_edit_results).
+    Never redirects/aborts — for GET rendering decisions only.
+    Backend mutation guards below remain authoritative.
+    """
+    tournament = TournamentRepository.get_by_public_id(public_id)
+    if not tournament:
+        return None, False, False
+    if not current_user.is_authenticated:
+        return tournament, False, False
+    can_edit_results = require_result_editor(public_id) is not None
+    can_manage = require_tournament_manager(public_id) is not None
+    return tournament, can_manage, can_edit_results
+
+
+def deny_or_login(public_id, tier="manager"):
+    """Consistent denial for protected mutations.
+
+    Returns None when authorized; otherwise a Flask response:
+    unauthenticated -> redirect to login, authenticated-but-denied -> 403.
+    tier: "manager" (organizer/chief/system-admin) or "editor" (+arbiter).
+    """
+    from flask import abort, redirect, url_for
+
+    check = require_tournament_manager if tier == "manager" else require_result_editor
+    tournament = check(public_id)
+    if tournament:
+        return None
+    if not current_user.is_authenticated:
+        return redirect(url_for("auth.login"))
+    abort(403)
+
 def require_result_editor(public_id):
     """Result-editor tier: managers plus every accepted arbiter."""
     return _authorize(public_id, chief_only=False)

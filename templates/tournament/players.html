@@ -3,7 +3,7 @@
 
 {% block content %}
 {% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "players") }}
+{{ tournament_nav(tournament, "players", can_manage|default(False), can_edit_results|default(False)) }}
 {% from "components/icons.html" import icon %}
 {% from "components/ui.html" import empty_state %}
 <div class="page-header">
@@ -15,8 +15,10 @@
         <h1 class="page-title">بازیکنان <span class="num text-gray-500">({{ players|length }})</span></h1>
     </div>
     <div class="page-actions">
+        {% if can_manage|default(False) %}
         <a href="{{ url_for('player.player_add', public_id=tournament.public_id) }}" class="btn btn-primary">{{ icon("plus", 16) }} افزودن بازیکن</a>
         <a href="{{ url_for('player.player_import', public_id=tournament.public_id) }}" class="btn btn-secondary">{{ icon("upload", 16) }} ایمپورت از CSV</a>
+        {% endif %}
     </div>
 </div>
 
@@ -36,7 +38,7 @@
                 <th scope="col">رده سنی</th>
                 <th scope="col">دسته</th>
                 <th scope="col">وضعیت</th>
-                <th scope="col"><span class="visually-hidden">عملیات</span></th>
+                {% if can_manage|default(False) %}<th scope="col">اقدامات</th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -64,6 +66,7 @@
                     {% endif %}
                 </td>
                 <td class="actions-cell">
+                    {% if can_manage|default(False) %}
                     <a href="{{ url_for('player.player_edit', public_id=tournament.public_id, participant_id=player.id) }}"
                        class="icon-btn" title="ویرایش {{ player.full_name }}" aria-label="ویرایش {{ player.full_name }}">✏️</a>
 
@@ -84,6 +87,7 @@
                           data-confirm-hint="این عمل قابل بازگشت نیست.">
                         <button type="submit" class="icon-btn danger" title="حذف {{ player.full_name }}" aria-label="حذف {{ player.full_name }}">🗑️</button>
                     </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -92,9 +96,11 @@
 </div>
 {% else %}
 {{ empty_state("هنوز بازیکنی اضافه نشده است", "با افزودن بازیکن یا ایمپورت CSV شروع کنید.") }}
+{% if can_manage|default(False) %}
 <div class="text-center mt-15">
 <a href="{{ url_for('player.player_add', public_id=tournament.public_id) }}"
    class="btn btn-primary">افزودن اولین بازیکن</a>
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}
