@@ -2,6 +2,8 @@
 {% block title %}تنظیمات مالی - {{ tournament.name }}{% endblock %}
 
 {% block content %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{{ tournament_nav(tournament, "pricing", True) }}
 <div class="reg-manage-container" style="max-width: 900px; margin: 20px auto;">
     <div class="reg-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">

@@ -2,6 +2,8 @@
 {% block title %}مدیریت استراحت | {{ tournament.name }}{% endblock %}
 
 {% block content %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{{ tournament_nav(tournament, "rounds", True) }}
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
     <h1>⏸️ مدیریت استراحت و جفت‌گذاری دستی</h1>
     <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 بازگشت به داشبورد</a>

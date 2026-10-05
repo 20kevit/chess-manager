@@ -71,7 +71,7 @@ def player_edit(public_id, participant_id):
     if request.method == "POST":
         ParticipantManagement.update(participant, tournament, request.form)
         flash(f"اطلاعات {participant.full_name} بروزرسانی شد.", "success")
-        return redirect(url_for("tournament.view", public_id=public_id))
+        return redirect(url_for("player.player_list", public_id=public_id))
 
     return render_template("tournament/player_edit.html", tournament=tournament, player=participant, is_admin=True)
 

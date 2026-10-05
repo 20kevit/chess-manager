@@ -143,6 +143,28 @@
 .progress-track { flex: 1; block-size: 8px; border-radius: var(--radius-full); background: var(--surface-muted); overflow: hidden; min-inline-size: 120px; }
 .progress-fill { block-size: 100%; background: var(--primary); border-radius: var(--radius-full); transition: inline-size var(--transition-normal); }
 
+/* ---------- workspace sub-navigation ---------- */
+.ws-nav {
+  display: flex; align-items: center; gap: var(--space-1);
+  overflow-x: auto; scrollbar-width: thin;
+  background: var(--surface); border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-1) var(--space-2);
+  margin-block: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-xs);
+}
+.ws-link {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  padding: 9px var(--space-3); border-radius: var(--radius);
+  color: var(--text-secondary); font-size: var(--text-body);
+  font-weight: var(--weight-medium); min-height: 40px;
+}
+.ws-link:hover { background: var(--surface-muted); color: var(--text); text-decoration: none; }
+.ws-link.active, .ws-link[aria-current="page"] {
+  background: var(--primary-subtle); color: var(--primary-active);
+  font-weight: var(--weight-semibold);
+}
+.ws-sep { inline-size: 1px; align-self: stretch; background: var(--border); margin-inline: var(--space-1); flex-shrink: 0; }
+
 @media (max-width: 1023px) {
   .site-nav.desktop-only { display: none; }
   .nav-toggle { display: inline-flex; align-items: center; justify-content: center; inline-size: 42px; block-size: 42px; background: transparent; border: none; color: #fff; font-size: 1.4rem; cursor: pointer; border-radius: var(--radius); }

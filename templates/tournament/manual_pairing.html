@@ -51,6 +51,8 @@
 {% endblock %}
 
 {% block content %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{{ tournament_nav(tournament, "rounds", True) }}
 <div class="form-container">
     <h2 class="section-title">تنظیمات دستی جفت‌گذاری - دور {{ round.round_number }}</h2>
     <p style="margin-bottom: 20px; color:var(--text-muted);">

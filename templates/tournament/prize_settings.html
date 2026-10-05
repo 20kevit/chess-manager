@@ -2,6 +2,8 @@
 {% block title %}جوایز | {{ tournament.name }}{% endblock %}
 
 {% block content %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{{ tournament_nav(tournament, "prizes", True) }}
 <div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>🏆 جوایز مسابقه</h1>

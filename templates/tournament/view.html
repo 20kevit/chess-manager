@@ -3,16 +3,17 @@
 
 {% block content %}
 {% from "components/icons.html" import icon %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+    <a href="{{ url_for('tournament.search') }}">تورنمنت‌ها</a>
+    <span class="sep" aria-hidden="true">‹</span><span aria-current="page">{{ tournament.name }}</span>
+</nav>
 
 {% if can_edit_results %}
 <div class="admin-actions" role="toolbar" aria-label="اقدامات داوری">
-    {% if can_manage %}
-    <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-primary">
-        {{ icon("settings", 16) }} پنل مدیریت تورنمنت
-    </a>
-    {% endif %}
     <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary">
-        {{ icon("layers", 16) }} کنسول داوری و ثبت نتایج
+        {{ icon("layers", 16) }} دورها و نتایج
     </a>
 </div>
 {% endif %}
@@ -24,6 +25,33 @@
   {% set primary_action %}<a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-secondary">برای ثبت‌نام لطفاً وارد شوید</a>{% endset %}
 {% endif %}
 {% include "components/tournament_header.html" with context %}
+{{ tournament_nav(tournament, "overview", can_manage, can_edit_results) }}
+
+{% if can_edit_results %}
+{# State-aware next-action callout (real domain data only). #}
+{% set ns = namespace(pending=0, ongoing_round=None) %}
+{% for r in tournament.rounds %}
+  {% if r.status == 'ongoing' %}
+    {% set ns.ongoing_round = r %}
+    {% for p in r.pairings %}
+      {% if p.black_participant_id and (not p.result or p.result == '') %}
+        {% set ns.pending = ns.pending + 1 %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+{% if ns.ongoing_round and ns.pending > 0 %}
+<div class="alert alert-warning" role="status">
+  <span>دور {{ ns.ongoing_round.round_number }} در جریان است و <strong>{{ ns.pending }}</strong> نتیجه ثبت نشده دارد.</span>
+  <a href="{{ url_for('round.round_view', public_id=tournament.public_id, round_number=ns.ongoing_round.round_number) }}" class="btn btn-small btn-warning">ثبت نتایج</a>
+</div>
+{% elif can_manage and (not tournament.rounds or tournament.rounds|selectattr('status', 'equalto', 'ongoing')|list|length == 0) and tournament.status != 'finished' and tournament.current_round < tournament.total_rounds %}
+<div class="alert alert-info" role="status">
+  <span>دور بعدی آماده ایجاد است.</span>
+  <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-small btn-info">مدیریت دورها</a>
+</div>
+{% endif %}
+{% endif %}
 
 <div class="tabs" role="tablist" aria-label="بخش‌های تورنومنت">
     <button class="tab active" role="tab" aria-selected="true" aria-controls="tab-standings" id="tabbtn-standings" data-tab="standings">رده‌بندی</button>

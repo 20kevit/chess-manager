@@ -2,6 +2,8 @@
 {% block title %}خلاصه | {{ tournament.name }}{% endblock %}
 
 {% block content %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{{ tournament_nav(tournament, "summary") }}
 <div class="page-header">
     <a href="/{{ tournament.public_id }}" class="btn btn-secondary" style="float:left;">🔙 بازگشت</a>
     <h1>خلاصه تورنومنت</h1>

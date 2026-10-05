@@ -2,6 +2,8 @@
 {% block title %}دورها | {{ tournament.name }}{% endblock %}
 
 {% block content %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{{ tournament_nav(tournament, "rounds") }}
 {% from "components/icons.html" import icon %}
 <div class="page-header">
     <div>

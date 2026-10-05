@@ -2,6 +2,8 @@
 {% block title %}جدول برخورد | {{ tournament.name }}{% endblock %}
 
 {% block content %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{{ tournament_nav(tournament, "crosstable") }}
 <div class="page-header">
     <div>
         <nav class="breadcrumbs" aria-label="مسیر صفحه">

@@ -2,6 +2,8 @@
 {% block title %}بازیکنان | {{ tournament.name }}{% endblock %}
 
 {% block content %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{{ tournament_nav(tournament, "players") }}
 {% from "components/icons.html" import icon %}
 {% from "components/ui.html" import empty_state %}
 <div class="page-header">

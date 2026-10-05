@@ -139,7 +139,7 @@
             </div>
 
             <div class="actions">
-                <a href="/" class="btn btn-secondary">انصراف</a>
+                {% if current_user.is_authenticated %}<a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">انصراف</a>{% else %}<a href="/" class="btn btn-secondary">انصراف</a>{% endif %}
                 <button type="submit" class="btn btn-primary">ایجاد تورنومنت</button>
             </div>
         </form>

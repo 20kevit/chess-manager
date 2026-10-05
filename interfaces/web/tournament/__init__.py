@@ -458,6 +458,13 @@ def search():
         ).order_by(
             TournamentModel.updated_at.desc()
         ).limit(20).all()
+    else:
+        # No query: act as the public tournament list (discovery).
+        results = TournamentModel.query.filter(
+            TournamentModel.status != "setup"
+        ).order_by(
+            TournamentModel.updated_at.desc()
+        ).limit(20).all()
 
     return render_template("search.html", query=query, results=results)
 

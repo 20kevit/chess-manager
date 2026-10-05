@@ -20,53 +20,25 @@
 {% endblock %}
 
 {% block content %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{{ tournament_nav(tournament, "staff", True) }}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
     <div>
-        <h2 style="margin: 0; font-weight: 700;">مدیریت تورنمنت</h2>
-        <h3 style="margin: 5px 0 0 0; color:var(--text-muted);">{{ tournament.name }}</h3>
+        <nav class="breadcrumbs" aria-label="مسیر صفحه">
+            <a href="{{ url_for('tournament.search') }}">تورنمنت‌ها</a>
+            <span class="sep" aria-hidden="true">‹</span>
+            <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
+            <span class="sep" aria-hidden="true">‹</span><span aria-current="page">کادر داوری</span>
+        </nav>
+        <h1 class="page-title" style="margin: 0;">کادر داوری</h1>
+        <p class="page-desc">{{ tournament.name }}</p>
     </div>
-    <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-light">مشاهده صفحه عمومی</a>
+    <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-light">نمای کلی تورنمنت</a>
 </div>
 
 <div class="manage-grid">
-    <!-- Right Column (Actions) -->
+    <!-- Right Column (Staff) -->
     <div>
-        <div class="manage-card">
-            <div class="manage-card-title">امکانات مدیریت</div>
-            <div class="action-grid">
-                <a href="{{ url_for('tournament.settings', public_id=tournament.public_id) }}" class="action-btn">
-                    ⚙️ تنظیمات تورنمنت
-                </a>
-                <a href="{{ url_for('player.player_list', public_id=tournament.public_id) }}" class="action-btn">
-                    👥 مدیریت بازیکنان
-                </a>
-                <a href="{{ url_for('registration.manage_registrations', public_id=tournament.public_id) }}" class="action-btn">
-                    📝 ثبت‌نام‌ها
-                </a>
-                <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="action-btn">
-                    🔄 دورها و جفت‌سازی
-                </a>
-                <a href="{{ url_for('backup.export_json', public_id=tournament.public_id) }}" class="action-btn">
-                    💾 خروجی پشتیبان
-                </a>
-                <a href="{{ url_for('registration.pricing_settings', public_id=tournament.public_id) }}" class="action-btn">
-                    💰 قیمت‌گذاری و پرداخت
-                </a>
-                <a href="{{ url_for('tournament.rulebook_settings', public_id=tournament.public_id) }}" class="action-btn">
-                    📜 آیین‌نامه مسابقه
-                </a>
-                <a href="{{ url_for('tournament.prize_settings', public_id=tournament.public_id) }}" class="action-btn">
-                    🏆 جوایز مسابقه
-                </a>
-                <a href="{{ url_for('tournament.announcements', public_id=tournament.public_id) }}" class="action-btn">
-                    📣 اعلان‌ها
-                </a>
-                <a href="{{ url_for('tournament.notification_prefs', public_id=tournament.public_id) }}" class="action-btn">
-                    🔔 اعلان‌های تورنمنت
-                </a>
-            </div>
-        </div>
-    </div>
 
     <!-- Left Column (Staff) -->
     <div>
@@ -122,6 +94,14 @@
             {% else %}
                 <p class="text-muted" style="text-align: center;">هیچ داوری اضافه نشده است.</p>
             {% endif %}
+        </div>
+
+        <div class="manage-card" style="margin-top:16px">
+            <div class="manage-card-title">پشتیبان‌گیری</div>
+            <div class="admin-actions">
+                <a href="{{ url_for('backup.export_json', public_id=tournament.public_id) }}" class="btn btn-secondary btn-sm">خروجی پشتیبان (JSON)</a>
+                <a href="{{ url_for('backup.import_json', public_id=tournament.public_id) }}" class="btn btn-secondary btn-sm">بازیابی از پشتیبان</a>
+            </div>
         </div>
     </div>
 </div>
