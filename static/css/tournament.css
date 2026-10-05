@@ -408,20 +408,9 @@
     font-size: 0.85em;
 }
 
-/* Professional Arbiter Toolbar */
-.arbiter-toolbar {
-    background: #0f172a; /* Slate 900 */
-    color: #f8fafc;
-    padding: 8px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.85rem;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    border-bottom: 2px solid var(--primary);
-}
+/* Arbiter toolbar retired: no template references .arbiter-toolbar
+   (verified 2026-10, Phase 17). Round management lives in the
+   tournament workspace (rounds.html / round_view.html). */
 
 /* Floating admin trigger / toolbar / duplicate drawer — retired Phase 7.
    No template references these selectors (verified 2026-10). */
@@ -548,7 +537,8 @@
 .text-gray-700 { color: var(--gray-700); }
 .text-gray-800 { color: var(--gray-800); }
 .text-gray-900 { color: var(--gray-900); }
-.text-white { color: white; }
+/* .text-white retired: fixed light text has no valid surface in dark mode.
+   Use semantic text tokens or an explicit fixed dark band instead. */
 
 .bg-white { background: var(--surface); }
 .bg-gray-50 { background: var(--gray-50); }

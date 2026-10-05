@@ -41,6 +41,7 @@ img { max-width: 100%; height: auto; }
 .body-text { font-size: var(--text-body); }
 .small { font-size: var(--text-small); }
 .caption, .meta { font-size: var(--text-caption); color: var(--text-muted); }
+.text-muted { color: var(--text-muted); }
 
 /* ---- numeric / technical LTR isolation ---- */
 /* NOTE: never set display on .num — it is applied directly to <td>/<th>

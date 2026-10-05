@@ -14,7 +14,7 @@
     .manage-card-title { font-size: 1.1rem; font-weight: 700; color:var(--text); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--surface-muted); }
     .action-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
     .action-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: var(--surface-muted); border-radius: 8px; text-decoration: none; color:var(--text); transition: all 0.2s; text-align: center; font-weight: 600; font-size: 0.9rem; }
-    .action-btn:hover { background: #eff6ff; color: #2563eb; transform: translateY(-2px); }
+    .action-btn:hover { background: var(--primary-subtle); color: var(--primary-active); transform: translateY(-2px); }
     .action-btn svg { width: 24px; height: 24px; margin-bottom: 10px; }
 </style>
 {% endblock %}
@@ -136,7 +136,7 @@ function searchArbiters() {
                     item.innerHTML = `<strong>${user.name}</strong> <span style="font-size:0.8rem; color:var(--text-muted);">(${user.email})</span> ${user.is_arbiter ? '<span style="color:var(--success); font-size:0.8rem;">[داور]</span>' : ''}`;
                     
                     item.onmouseenter = () => item.style.background = 'var(--surface-muted)';
-                    item.onmouseleave = () => item.style.background = '#fff';
+                    item.onmouseleave = () => item.style.background = 'var(--surface)';
                     
                     item.onclick = () => {
                         const form = document.createElement('form');

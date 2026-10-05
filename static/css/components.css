@@ -75,7 +75,7 @@
   background: var(--danger-subtle); color: var(--danger); border-color: var(--danger);
 }
 .badge-info, .badge-ongoing { background: var(--info-subtle); color: var(--info); border-color: var(--info); }
-.badge-muted, .badge-neutral, .badge-draft { background: var(--surface-muted); color: var(--text-muted); border-color: var(--border-strong); }
+.badge-muted, .badge-neutral, .badge-draft, .badge-inactive { background: var(--surface-muted); color: var(--text-muted); border-color: var(--border-strong); }
 .badge-accent { background: var(--accent-subtle); color: var(--accent-hover); border-color: var(--accent); }
 .badge-admin { background: var(--primary-subtle); color: var(--primary-active); border-color: var(--primary); }
 .badge-player { background: var(--surface-muted); color: var(--text-secondary); border-color: var(--border-strong); }

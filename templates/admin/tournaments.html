@@ -65,28 +65,12 @@
 {% endif %}
 
 <style>
-.page-title { margin: 0 0 20px 0; font-size: 24px; color: #2c3e50; }
-.admin-toolbar { background:var(--surface); padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
-.search-form { display: flex; gap: 10px; flex-wrap: wrap; }
-.search-input { flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
-.filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
-.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block; }
-.btn-primary { background: #3498db; color:#fff; }
-.btn-info { background: #17a2b8; color:#fff; }
-.btn-sm { padding: 4px 10px; font-size: 12px; }
-.table-container { background:var(--surface); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.08); overflow-x: auto; }
-.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.admin-table th { text-align: right; padding: 12px; background: var(--surface-muted); color: #495057; font-weight: 600; border-bottom: 2px solid #dee2e6; white-space: nowrap; }
-.admin-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
-.admin-table tr:hover { background: var(--surface-muted); }
-.empty-state { text-align: center; padding: 30px; color: #7f8c8d; }
-.status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-.status-setup { background: #f39c12; color:#fff; }
-.status-ongoing { background: #3498db; color:#fff; }
-.status-finished { background: #2ecc71; color:#fff; }
-.pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
-.page-link { padding: 8px 16px; background: #3498db; color:#fff; border-radius: 4px; text-decoration: none; font-size: 14px; }
-.page-info { font-size: 13px; color: #7f8c8d; }
-code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+    /* Layout-only rules. Buttons, badges, status, tables,
+       pagination and empty states come from the canonical
+       systems (components.css / tables.css). */
+    .admin-toolbar { background:var(--surface); border: var(--border-width) solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    .search-form { display: flex; gap: 10px; flex-wrap: wrap; }
+    .table-container { background:var(--surface); border: var(--border-width) solid var(--border); border-radius: 8px; overflow: hidden; overflow-x: auto; }
+    code { background: var(--surface-muted); color: var(--text-secondary); padding: 2px 6px; border-radius: 3px; font-size: 12px; direction: ltr; unicode-bidi: isolate; }
 </style>
 {% endblock %}

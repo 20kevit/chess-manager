@@ -15,8 +15,18 @@
 .page-title {
     margin: 0 0 25px 0;
     font-size: 24px;
-    color: var(--gray-900);
+    color: var(--text);
 }
+
+/* Card + health rows (tokenized section chrome) */
+.card-title {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: var(--text);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+}
+.health-label { font-size: 14px; color: var(--text); font-weight: var(--weight-medium); }
 
 /* Admin Toolbar */
 .admin-toolbar {
@@ -193,9 +203,11 @@
 }
 
 .status-finished,
-.status-success {
-    background: var(--success-light);
+.status-success,
+.status-verified {
+    background: var(--success-subtle);
     color: var(--success);
+    border: 1px solid var(--success);
 }
 
 .status-failed,

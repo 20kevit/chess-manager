@@ -5,8 +5,8 @@
 {% block extra_css %}
 <style>
     .dash-header {
-        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-        color:#fff;
+        background: #17212b;
+        color: #f2f6fa; /* fixed dark band, both themes */
         padding: 30px;
         border-radius: 16px;
         margin-bottom: 30px;
@@ -32,17 +32,17 @@
         align-items: center;
     }
     .modern-table { width: 100%; border-collapse: collapse; }
-    .modern-table th { text-align: right; color:var(--text-muted); font-size: 0.85rem; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
+    .modern-table th { text-align: start; color:var(--text-muted); font-size: 0.85rem; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
     .modern-table td { padding: 12px 0; border-bottom: 1px solid var(--surface-muted); color:var(--text); font-weight: 500; }
     .badge-status { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .badge-success { background: #d1fae5; color: var(--success); }
-    .badge-pending { background: #fef3c7; color: var(--warning); }
-    .badge-failed { background: #fee2e2; color: var(--danger); }
+    .badge-success { background: var(--success-subtle); color: var(--success); }
+    .badge-pending { background: var(--warning-subtle); color: var(--warning); }
+    .badge-failed { background: var(--danger-subtle); color: var(--danger); }
     /* Phase 2: Two-row progress UI */
     .progress-row { margin-bottom: 15px; }
     .progress-row-label { font-size: 0.85rem; color:var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
     .progress-bar-container { background: var(--border); border-radius: 8px; height: 22px; overflow: hidden; }
-    .progress-bar { height: 100%; width: 0%; background: #2563eb; transition: width .4s; }
+    .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width .4s; }
     .progress-bar.complete { background: var(--success); }
     .progress-bar.error { background: var(--danger); }
     .progress-hidden { display: none; }

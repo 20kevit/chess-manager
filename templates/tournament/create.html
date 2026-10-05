@@ -4,39 +4,24 @@
 
 {% block extra_css %}
 <style>
+    /* Layout-only rules. Buttons, alerts, fields and labels come from the
+       canonical systems (components.css / forms.css) — do not redeclare. */
     .create-container { max-width: 900px; margin: 0 auto; padding: 20px; }
     .toggle-buttons { display: flex; gap: 15px; margin-bottom: 30px; background: var(--surface-muted); padding: 5px; border-radius: 12px; }
-    .toggle-btn { padding: 12px 20px; border-radius: 8px; border: none; background: transparent; font-weight: 600; color:var(--text-muted); cursor: pointer; transition: all 0.3s; flex: 1; text-align: center; font-size: 1rem; }
-    .toggle-btn.active { background:var(--surface); color: #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    
-    .section-card { background:var(--surface); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid var(--surface-muted); }
-    .section-title { font-size: 1.1rem; font-weight: 700; color:var(--text); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--surface-muted); }
-    
+    .toggle-btn { padding: 12px 20px; border-radius: 8px; border: none; background: transparent; font-weight: 600; color:var(--text-muted); cursor: pointer; transition: background-color var(--transition-fast), color var(--transition-fast); flex: 1; text-align: center; font-size: 1rem; font-family: inherit; }
+    .toggle-btn.active { background:var(--surface); color: var(--primary); box-shadow: var(--shadow); }
+
+    .section-card { background:var(--surface); border-radius: 12px; padding: 25px; box-shadow: var(--shadow-xs); margin-bottom: 25px; border: 1px solid var(--border); }
+    .section-title { font-size: 1.1rem; font-weight: 700; color:var(--text); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+
     .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
     .full-width { grid-column: 1 / -1; }
-    
-    .form-group { display: flex; flex-direction: column; }
-    .form-group label { margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 0.9rem; }
-    .form-control { padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 8px; font-size: 1rem; transition: all 0.2s; background:var(--surface); }
-    .form-control:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-    
-    .checkbox-group { display: flex; align-items: center; gap: 10px; background:var(--surface); padding: 15px; border-radius: 8px; }
-    .checkbox-group input { width: 18px; height: 18px; accent-color: #2563eb; }
-    
-    .actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 10px; }
-    .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
-    .btn-primary { background: #2563eb; color: #fff; }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-secondary { background: #e5e7eb; color: #374151; }
-    .btn-secondary:hover { background: #d1d5db; }
-    
+
     .mode-section { display: none; }
     .mode-section.active { display: block; }
-    
-    .alert { padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-    .alert-error { background: #fee2e2; color: #991b1b; }
-    .tournament-preview-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; background-color: #f8fafc; }
-    .loading-spinner { display: inline-block; margin-right: 10px; }
+
+    .tournament-preview-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; background-color: var(--surface-muted); }
+    .tournament-preview-item .tournament-name { color: var(--text); font-weight: 600; }
 </style>
 {% endblock %}
 
@@ -130,15 +115,15 @@
                         <textarea id="rulebook_text" name="rulebook_text" rows="5" class="form-control"></textarea>
                     </div>
                     <div class="form-group full-width">
-                        <div class="checkbox-group">
+                        <label class="checkbox-label" for="cumulative_age_category">
                             <input type="checkbox" name="cumulative_age_category" value="1" id="cumulative_age_category">
-                            <label for="cumulative_age_category" style="margin:0; cursor:pointer;">رده‌سنی تجمعی (مثلاً بازیکن U14 در جدول U16 هم نمایش داده شود)</label>
-                        </div>
+                            رده‌سنی تجمعی (مثلاً بازیکن U14 در جدول U16 هم نمایش داده شود)
+                        </label>
                     </div>
                 </div>
             </div>
 
-            <div class="actions">
+            <div class="form-actions">
                 {% if current_user.is_authenticated %}<a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">انصراف</a>{% else %}<a href="/" class="btn btn-secondary">انصراف</a>{% endif %}
                 <button type="submit" class="btn btn-primary">ایجاد تورنومنت</button>
             </div>

@@ -29,10 +29,10 @@
         gap: 15px;
         font-size: 1.05em;
     }
-    .player-white { color: #333; }
-    .player-black { color: #333; }
-    .vs-separator { color: #999; font-weight: bold; }
-    .bye-row { background-color: #fff8e1; border-color: #ffe082; }
+    .player-white { color: var(--text); font-weight: 600; }
+    .player-black { color: var(--text); font-weight: 600; }
+    .vs-separator { color: var(--text-muted); font-weight: bold; }
+    .bye-row { background-color: var(--warning-subtle); border-color: var(--warning); }
     .swap-section {
         margin-top: 30px;
         padding: 20px;
@@ -40,9 +40,9 @@
         border-radius: 6px;
     }
     .warning-box {
-        background-color: #fff3cd;
-        border: 1px solid #ffc107;
-        color: #856404;
+        background-color: var(--warning-subtle);
+        border: 1px solid var(--warning);
+        color: var(--text);
         padding: 12px;
         border-radius: 4px;
         margin-bottom: 15px;

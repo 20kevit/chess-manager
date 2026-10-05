@@ -5,8 +5,8 @@
 {% block extra_css %}
 <style>
     .dash-header {
-        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-        color:#fff;
+        background: #17212b;
+        color: #f2f6fa; /* fixed dark band, both themes */
         padding: 30px;
         border-radius: 16px;
         margin-bottom: 30px;
@@ -33,11 +33,11 @@
         border-radius: 8px;
         padding: 20px;
         margin-bottom: 20px;
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
     }
     .aspect-card {
         background:var(--surface);
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 12px;
@@ -48,7 +48,7 @@
         align-items: center;
         margin-bottom: 12px;
         padding-bottom: 8px;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--border);
     }
     .aspect-title {
         font-weight: 600;
@@ -61,9 +61,9 @@
         font-size: 0.75rem;
         font-weight: 600;
     }
-    .aspect-pending { background: #fef3c7; color: var(--warning); }
-    .aspect-verified { background: #d1fae5; color: var(--success); }
-    .aspect-rejected { background: #fee2e2; color: var(--danger); }
+    .aspect-pending { background: var(--warning-subtle); color: var(--warning); }
+    .aspect-verified { background: var(--success-subtle); color: var(--success); }
+    .aspect-rejected { background: var(--danger-subtle); color: var(--danger); }
     .aspect-actions {
         display: flex;
         gap: 8px;
@@ -75,7 +75,7 @@
         background: var(--surface-muted);
         border-radius: 6px;
         font-size: 0.85rem;
-        color: #4b5563;
+        color: var(--text-secondary);
         white-space: pre-wrap;
     }
     .photo-comparison {
@@ -86,7 +86,7 @@
     }
     .photo-box {
         background: var(--surface-muted);
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: 15px;
         text-align: center;
@@ -104,7 +104,7 @@
         font-weight: 500;
     }
     .photo-box .no-photo {
-        color: #ef4444;
+        color: var(--danger);
         font-size: 0.85rem;
     }
     .data-comparison {
@@ -115,7 +115,7 @@
     }
     .data-column {
         background: var(--surface-muted);
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: 15px;
     }
@@ -123,7 +123,7 @@
         margin-top: 0;
         margin-bottom: 12px;
         padding-bottom: 8px;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--border);
     }
     .data-column ul { margin: 0; padding-right: 20px; }
     .data-column li { margin-bottom: 8px; font-size: 0.9rem; }
@@ -152,7 +152,7 @@
         align-items: flex-start;
         margin-bottom: 20px;
         padding-bottom: 15px;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--border);
     }
     .btn-aspect { padding: 6px 12px; font-size: 0.8rem; }
     @media (max-width: 768px) {

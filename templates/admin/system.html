@@ -45,18 +45,15 @@
 {% endif %}
 
 <style>
-.page-title { margin: 0 0 20px 0; font-size: 24px; color: #2c3e50; }
-.health-container { background:var(--surface); border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
-.health-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-.health-label { font-size: 14px; color: #2c3e50; font-weight: 500; }
-.status-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-.status-active { background: #2ecc71; color:#fff; }
-.status-inactive { background: #e74c3c; color:#fff; }
-.detail-card { background:var(--surface); border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
-.card-title { margin: 0 0 15px 0; font-size: 16px; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
-.disk-bar-container { width: 100%; height: 24px; background: #ecf0f1; border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
-.disk-bar { height: 100%; background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c); transition: width 0.5s; }
-.disk-stats { display: flex; gap: 20px; font-size: 13px; color: #2c3e50; flex-wrap: wrap; }
-.disk-path { font-size: 12px; color: #95a5a6; margin-top: 8px; }
+    /* Layout-only rules. Buttons, badges, status, tables,
+       pagination and empty states come from the canonical
+       systems (components.css / tables.css). */
+    .health-container { background:var(--surface); border: var(--border-width) solid var(--border); border-radius: 8px; padding: 20px; }
+    .health-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .detail-card { background:var(--surface); border: var(--border-width) solid var(--border); border-radius: 8px; padding: 20px; }
+    .disk-bar-container { width: 100%; height: 24px; background: var(--surface-muted); border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+    .disk-bar { height: 100%; background: var(--primary); transition: width 0.5s; }
+    .disk-stats { display: flex; gap: 20px; font-size: 13px; color: var(--text); flex-wrap: wrap; }
+    .disk-path { font-size: 12px; color: var(--text-muted); margin-top: 8px; direction: ltr; unicode-bidi: isolate; }
 </style>
 {% endblock %}
