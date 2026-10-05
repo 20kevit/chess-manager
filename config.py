@@ -58,3 +58,9 @@ class Config:
     FIDE_RAW_RETENTION_DAYS = 90
     FIDE_ALLOWED_FEDERATIONS = ["IRI"]  # Set to None or [] to import all federations
     FIDE_XML_URL = "http://ratings.fide.com/download/players_list_xml.zip"
+    # ── FIDE service (independent 20kevit/fide-service): preferred READ
+    # source for admin counts/status. Local importer remains the fallback.
+    FIDE_SERVICE_URL = os.environ.get("FIDE_SERVICE_URL", "http://127.0.0.1:5001")
+    FIDE_SERVICE_API_KEY = os.environ.get("FIDE_SERVICE_API_KEY", "")
+    FIDE_SERVICE_TIMEOUT = 5  # seconds per request; never block admin pages
+    FIDE_STATUS_CACHE_TTL = 300  # seconds for service status memoization

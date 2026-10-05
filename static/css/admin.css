@@ -98,6 +98,11 @@
     box-shadow: var(--shadow-lg);
 }
 
+/* Clickable stat cards: semantic links with affordance. */
+a.stat-card { color: inherit; }
+a.stat-card:hover { text-decoration: none; border-color: var(--primary); }
+a.stat-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
 .stat-icon {
     font-size: 32px;
 }

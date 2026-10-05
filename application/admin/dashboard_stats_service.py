@@ -10,7 +10,8 @@ from typing import Dict, Any
 
 from app.extensions import db
 
-from infrastructure.models.fide import FidePlayerModel, FideImportModel
+from infrastructure.models.fide import FideImportModel
+from application.fide.fide_status_service import FideStatusService
 from infrastructure.models.notification import NotificationModel
 from infrastructure.models.participant import TournamentParticipantModel
 from infrastructure.models.tournament import TournamentModel
@@ -27,6 +28,8 @@ class DashboardStatsService:
     @staticmethod
     def get_dashboard_stats() -> dict:
         """Get overview statistics for admin dashboard."""
+        # Centralized FIDE source (service preferred, local fallback).
+        fide_summary = FideStatusService.get_summary()
         stats = {
             'users': {
                 'total': UserModel.query.count(),
@@ -41,8 +44,9 @@ class DashboardStatsService:
                 'finished': TournamentModel.query.filter_by(status='finished').count(),
             },
             'fide': {
-                'players': FidePlayerModel.query.count(),
+                'players': fide_summary.get('players', 0),
                 'pending_verifications': PlayerVerificationModel.query.filter_by(status='pending').count(),
+                'import_summary': fide_summary,
                 'last_import': FideImportModel.query.order_by(FideImportModel.downloaded_at.desc()).first(),
             },
             'notifications': {

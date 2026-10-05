@@ -5,62 +5,62 @@
 
 <!-- Stats Cards -->
 <div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon">👥</div>
+    <a class="stat-card stat-link" href="{{ url_for('admin.manage_users') }}" aria-label="مشاهده کاربران">
+        <div class="stat-icon" aria-hidden="true">👥</div>
         <div class="stat-info">
             <div class="stat-value">{{ stats.users.total }}</div>
             <div class="stat-label">کل کاربران</div>
         </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">♟️</div>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('admin.manage_users') }}" aria-label="مشاهده بازیکنان">
+        <div class="stat-icon" aria-hidden="true">♟️</div>
         <div class="stat-info">
             <div class="stat-value">{{ stats.users.players }}</div>
             <div class="stat-label">بازیکنان</div>
         </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">🏟️</div>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('admin.manage_users') }}" aria-label="مشاهده برگزارکنندگان">
+        <div class="stat-icon" aria-hidden="true">🏟️</div>
         <div class="stat-info">
             <div class="stat-value">{{ stats.users.organizers }}</div>
             <div class="stat-label">برگزارکنندگان</div>
         </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">⚖️</div>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('admin.manage_users') }}" aria-label="مشاهده داوران">
+        <div class="stat-icon" aria-hidden="true">⚖️</div>
         <div class="stat-info">
             <div class="stat-value">{{ stats.users.arbiters }}</div>
             <div class="stat-label">داوران</div>
         </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">🏆</div>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('admin.manage_tournaments') }}" aria-label="مشاهده مسابقات">
+        <div class="stat-icon" aria-hidden="true">🏆</div>
         <div class="stat-info">
             <div class="stat-value">{{ stats.tournaments.total }}</div>
             <div class="stat-label">کل مسابقات</div>
         </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">🔥</div>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('admin.manage_tournaments') }}" aria-label="مشاهده مسابقات فعال">
+        <div class="stat-icon" aria-hidden="true">🔥</div>
         <div class="stat-info">
             <div class="stat-value">{{ stats.tournaments.active }}</div>
             <div class="stat-label">مسابقات فعال</div>
         </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">🌐</div>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('fide.fide_dashboard') }}" aria-label="مشاهده داده‌های فیده">
+        <div class="stat-icon" aria-hidden="true">🌐</div>
         <div class="stat-info">
             <div class="stat-value">{{ stats.fide.players }}</div>
             <div class="stat-label">بازیکنان فیده</div>
         </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">✅</div>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('fide.verifications_list') }}" aria-label="مشاهده تأییدهای در انتظار">
+        <div class="stat-icon" aria-hidden="true">✅</div>
         <div class="stat-info">
             <div class="stat-value">{{ stats.fide.pending_verifications }}</div>
             <div class="stat-label">در انتظار تأیید</div>
         </div>
-    </div>
+    </a>
 </div>
 
 <!-- Recent Activity -->
@@ -118,9 +118,25 @@
 </div>
 
 <!-- FIDE Import Status -->
-{% if stats.fide.last_import %}
+{% set fide_summary = stats.fide.import_summary %}
 <div class="dashboard-section">
     <h2 class="section-title">وضعیت آخرین Import فیده</h2>
+    <div class="admin-actions" style="margin-bottom:12px">
+        {% if fide_summary and fide_summary.source == 'service' %}
+            <span class="badge badge-info">منبع: سرویس فیده</span>
+        {% elif fide_summary and fide_summary.source == 'local' %}
+            <span class="badge badge-warning">منبع: بانک محلی</span>
+        {% endif %}
+        {% if fide_summary %}
+            {% if fide_summary.freshness == 'healthy' %}<span class="badge badge-success">به‌روز</span>
+            {% elif fide_summary.freshness == 'running' %}<span class="badge badge-info">در حال اجرا</span>
+            {% elif fide_summary.freshness == 'failed' %}<span class="badge badge-error">ناموفق</span>
+            {% elif fide_summary.freshness == 'never' %}<span class="badge badge-neutral">بدون داده</span>
+            {% else %}<span class="badge badge-warning">قدیمی/نامشخص</span>{% endif %}
+        {% endif %}
+        <a href="{{ url_for('fide.fide_dashboard') }}" class="btn btn-secondary btn-sm">جزئیات فیده</a>
+    </div>
+{% if stats.fide.last_import %}
     <div class="info-grid">
         <div class="info-item">
             <span class="info-label">دوره:</span>

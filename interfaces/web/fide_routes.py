@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import current_user, login_required
 from application.fide.fide_import_orchestrator import FideImportOrchestrator
 from application.fide.fide_search_service import FideSearchService
+from application.fide.fide_status_service import FideStatusService
 from application.verification.verification_request_service import VerificationRequestService
 from application.verification.verification_approver import VerificationApprover
 from application.verification.verification_status_updater import VerificationStatusUpdater
@@ -25,11 +26,12 @@ def fide_dashboard():
     # Get latest imports
     imports = FideImportRepository.get_all() if hasattr(FideImportRepository, 'get_all') else []
     pending_verifications = VerificationRequestService.get_pending_requests()
-    
+
     return render_template(
         "admin/fide_dashboard.html",
         imports=imports,
-        pending_verifications=pending_verifications
+        pending_verifications=pending_verifications,
+        fide_summary=FideStatusService.get_summary(),
     )
 
 @fide_bp.route("/admin/fide/import", methods=["POST"])

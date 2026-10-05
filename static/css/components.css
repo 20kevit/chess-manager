@@ -25,8 +25,8 @@
   background: transparent; border-color: var(--border-strong); color: var(--primary);
 }
 .btn-ghost:hover, .btn-outline-primary:hover, .btn-light:hover { background: var(--primary-subtle); border-color: var(--primary); }
-.btn-danger, .btn-danger-outline { background: transparent; border-color: var(--danger); color: var(--danger); }
-.btn-danger:hover, .btn-danger-outline:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn-danger, .btn-danger-outline, .btn-outline-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.btn-danger:hover, .btn-danger-outline:hover, .btn-outline-danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn-danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn-danger-solid:hover { background: var(--danger-hover); border-color: var(--danger-hover); color: #fff; }
 .btn-success { background: var(--success); border-color: var(--success); color: #fff; }

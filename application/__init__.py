@@ -59,6 +59,7 @@ from application.verification.verification_status_updater import VerificationSta
 # FIDE services
 from application.fide.fide_import_orchestrator import FideImportOrchestrator
 from application.fide.fide_search_service import FideSearchService
+from application.fide.fide_status_service import FideStatusService
 
 # Import/Export services
 from application.import_export.export_service import ExportService
@@ -168,6 +169,7 @@ __all__ = [
     # FIDE
     "FideImportOrchestrator",
     "FideSearchService",
+    "FideStatusService",
 
     # Import/Export
     "ExportService",
