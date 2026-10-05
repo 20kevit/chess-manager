@@ -191,14 +191,27 @@
     });
   }
 
-  function toast(message) {
+  /* ---------- transient success toasts (no layout shift) ----------
+     Success flash banners carry data-toast; they are lifted into the
+     toast region and removed from layout. Errors/warnings stay put. */
+  function initToastBridge() {
+    var reduce = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelectorAll(".alert[data-toast]").forEach(function (el) {
+      var text = el.querySelector("span");
+      toast(text ? text.textContent.trim() : "", reduce ? 5000 : 2600);
+      el.remove();
+    });
+  }
+
+  function toast(message, ms) {
     var region = document.getElementById("toastRegion");
-    if (!region) return;
+    if (!region || !message) return;
     var t = document.createElement("div");
     t.className = "toast";
     t.textContent = message;
     region.appendChild(t);
-    setTimeout(function () { t.remove(); }, 3500);
+    setTimeout(function () { t.remove(); }, ms || 3500);
   }
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -207,6 +220,7 @@
     initSidebarToggle();
     initConfirm();
     initAlerts();
+    initToastBridge();
   });
 
   window.UI = { toast: toast, openConfirm: openConfirm, closeConfirm: closeConfirm };

@@ -19,11 +19,12 @@
 
 <!-- آمار کلان سایت -->
 {% if stats and stats.tournaments > 0 %}
+{% from "components/icons.html" import icon %}
 <div class="stat-grid" style="margin: 30px 0;" role="list" aria-label="آمار کلی سامانه">
-    <div class="stat card" role="listitem"><div class="stat-value num">{{ stats.arbiters }}</div><div class="stat-label">داور و برگزارکننده</div></div>
-    <div class="stat card" role="listitem"><div class="stat-value num">{{ stats.tournaments }}</div><div class="stat-label">تورنمنت معتبر</div></div>
-    <div class="stat card" role="listitem"><div class="stat-value num">{{ stats.players }}</div><div class="stat-label">بازیکن شطرنج</div></div>
-    <div class="stat card" role="listitem"><div class="stat-value num">{{ stats.matches }}</div><div class="stat-label">بازی انجام‌شده</div></div>
+    <div class="stat card" role="listitem"><div class="stat-icon" aria-hidden="true">{{ icon("users", 22) }}</div><div class="stat-value num">{{ stats.arbiters }}</div><div class="stat-label">داور و برگزارکننده</div></div>
+    <a class="stat card stat-link" role="listitem" href="{{ url_for('tournament.search') }}" aria-label="مشاهده تورنمنت‌ها: {{ stats.tournaments }} تورنمنت معتبر"><div class="stat-icon" aria-hidden="true">{{ icon("trophy", 22) }}</div><div class="stat-value num">{{ stats.tournaments }}</div><div class="stat-label">تورنمنت معتبر</div></a>
+    <div class="stat card" role="listitem"><div class="stat-icon" aria-hidden="true">{{ icon("pawn", 22) }}</div><div class="stat-value num">{{ stats.players }}</div><div class="stat-label">بازیکن شطرنج</div></div>
+    <div class="stat card" role="listitem"><div class="stat-icon" aria-hidden="true">{{ icon("versus", 22) }}</div><div class="stat-value num">{{ stats.matches }}</div><div class="stat-label">بازی انجام‌شده</div></div>
 </div>
 {% endif %}
 

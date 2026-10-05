@@ -4,6 +4,7 @@
 
 {% block content %}
 {% from "components/ui.html" import empty_state %}
+{% from "components/icons.html" import icon %}
 <div class="page-header">
     <div>
         <h1 class="page-title">اعلان‌ها</h1>
@@ -19,7 +20,7 @@
     <div id="notificationsList">
         {% if notifications %}
             {% for n in notifications %}
-            <div class="notif-row {{ 'unread' if not n.is_read else '' }}" data-id="{{ n.id }}" {% if not n.is_read %}role="button" tabindex="0" aria-label="اعلان خوانده‌نشده: {{ n.title }}"{% endif %}>
+            <div class="notif-row {{ 'unread' if not n.is_read else '' }}" data-id="{{ n.id }}">
                 <div class="notif-row-icon" aria-hidden="true">
                     {% if not n.is_read %}<span class="unread-dot"></span>{% endif %}
                 </div>
@@ -28,6 +29,10 @@
                     <p>{{ n.message }}</p>
                     <small class="num">{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                 </div>
+                {% if not n.is_read %}
+                <button type="button" class="icon-btn notif-read-btn" data-id="{{ n.id }}"
+                        title="علامت‌گذاری به عنوان خوانده‌شده" aria-label="علامت‌گذاری اعلان «{{ n.title }}» به عنوان خوانده‌شده">{{ icon("check-double", 18) }}</button>
+                {% endif %}
             </div>
             {% endfor %}
         {% else %}

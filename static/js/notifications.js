@@ -4,29 +4,41 @@
  */
 
 function initNotificationsPage() {
-    // Mark individual notification as read on row click
+    function settleRow(row) {
+        row.classList.remove('unread');
+        row.style.cursor = 'default';
+        const dot = row.querySelector('.unread-dot');
+        if (dot) dot.remove();
+        const btn = row.querySelector('.notif-read-btn');
+        if (btn) btn.remove();
+        updateBellBadge(-1);
+        if (document.querySelectorAll('.notif-row.unread').length === 0) {
+            const markAllBtn = document.getElementById('markAllReadBtn');
+            if (markAllBtn) markAllBtn.remove();
+        }
+    }
+
+    // Explicit icon-only mark-as-read buttons (keyboard + touch first-class).
+    document.querySelectorAll('.notif-read-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = this.dataset.id;
+            const row = this.closest('.notif-row');
+            markAsRead(id).then(success => { if (success && row) settleRow(row); });
+        });
+    });
+
+    // Mark individual notification as read on row click (convenience).
     document.querySelectorAll('.notif-row.unread').forEach(item => {
         item.addEventListener('click', function(e) {
             // Don't trigger if clicking on a link/button inside
             if (e.target.closest('a, button')) return;
 
             const id = this.dataset.id;
-            const dot = this.querySelector('.unread-dot');
+            const row = this;
 
-            markAsRead(id).then(success => {
-                if (success) {
-                    this.classList.remove('unread');
-                    this.style.cursor = 'default';
-                    if (dot) dot.remove();
-                    updateBellBadge(-1);
-
-                    // Check if all read
-                    if (document.querySelectorAll('.notif-row.unread').length === 0) {
-                        const markAllBtn = document.getElementById('markAllReadBtn');
-                        if (markAllBtn) markAllBtn.remove();
-                    }
-                }
-            });
+            markAsRead(id).then(success => { if (success) settleRow(row); });
         });
     });
 
@@ -42,6 +54,8 @@ function initNotificationsPage() {
                         el.style.cursor = 'default';
                         const dot = el.querySelector('.unread-dot');
                         if (dot) dot.remove();
+                        const btn = el.querySelector('.notif-read-btn');
+                        if (btn) btn.remove();
                     });
 
                     const badge = document.getElementById('notifCount');

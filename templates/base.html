@@ -112,7 +112,8 @@
         {% if messages %}
             <div class="container" role="status" aria-live="polite">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'error' if category == 'error' else ('warning' if category == 'warning' else ('success' if category == 'success' else 'info')) }}">
+                    {% set kind = 'error' if category == 'error' else ('warning' if category == 'warning' else ('success' if category == 'success' else 'info')) %}
+                    <div class="alert alert-{{ kind }}"{% if kind == 'success' %} data-toast="1"{% endif %}>
                         <span>{{ message }}</span>
                         <button type="button" class="alert-close" aria-label="بستن پیام">✕</button>
                     </div>
