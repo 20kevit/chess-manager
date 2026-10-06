@@ -1,8 +1,10 @@
-{# Tournament workspace contextual navigation.
-   Same links for everyone; manager-only sections gated by can_manage.
-   Usage: {% from "components/tournament_nav.html" import tournament_nav %}
-          {{ tournament_nav(tournament, "overview", can_manage, can_edit_results) }} #}
-{% macro tournament_nav(tournament, active="overview", can_manage=False, can_edit_results=False) -%}
+{# Public tournament navigation — IDENTICAL for every visitor.
+   This is the public presentation of the tournament, not management.
+   It must never change structure based on the viewer's role: no
+   management links, no capability-gated entries. Management lives in the
+   separate Tournament Management Workspace (templates/manage/).
+   Extra positional args are accepted for backward compatibility and ignored. #}
+{% macro tournament_nav(tournament, active="overview") -%}
 {% set pid = tournament.public_id %}
 <nav class="ws-nav" aria-label="ناوبری تورنومنت">
   <a href="{{ url_for('tournament.view', public_id=pid) }}" class="ws-link {% if active == 'overview' %}active{% endif %}" {% if active == 'overview' %}aria-current="page"{% endif %}>نمای کلی</a>
@@ -10,15 +12,5 @@
   <a href="{{ url_for('round.round_list', public_id=pid) }}" class="ws-link {% if active == 'rounds' %}active{% endif %}" {% if active == 'rounds' %}aria-current="page"{% endif %}>دورها و نتایج</a>
   <a href="{{ url_for('tournament.crosstable', public_id=pid) }}" class="ws-link {% if active == 'crosstable' %}active{% endif %}" {% if active == 'crosstable' %}aria-current="page"{% endif %}>جدول برخورد</a>
   <a href="{{ url_for('tournament.summary', public_id=pid) }}" class="ws-link {% if active == 'summary' %}active{% endif %}" {% if active == 'summary' %}aria-current="page"{% endif %}>خلاصه</a>
-  {% if can_manage %}
-  <span class="ws-sep" aria-hidden="true"></span>
-  <a href="{{ url_for('registration.manage_registrations', public_id=pid) }}" class="ws-link {% if active == 'registrations' %}active{% endif %}" {% if active == 'registrations' %}aria-current="page"{% endif %}>ثبت‌نام‌ها</a>
-  <a href="{{ url_for('registration.pricing_settings', public_id=pid) }}" class="ws-link {% if active == 'pricing' %}active{% endif %}" {% if active == 'pricing' %}aria-current="page"{% endif %}>قیمت‌گذاری</a>
-  <a href="{{ url_for('tournament.prize_settings', public_id=pid) }}" class="ws-link {% if active == 'prizes' %}active{% endif %}" {% if active == 'prizes' %}aria-current="page"{% endif %}>جوایز</a>
-  <a href="{{ url_for('tournament.rulebook_settings', public_id=pid) }}" class="ws-link {% if active == 'rulebook' %}active{% endif %}" {% if active == 'rulebook' %}aria-current="page"{% endif %}>آیین‌نامه</a>
-  <a href="{{ url_for('tournament.announcements', public_id=pid) }}" class="ws-link {% if active == 'announcements' %}active{% endif %}" {% if active == 'announcements' %}aria-current="page"{% endif %}>اطلاع‌رسانی‌ها</a>
-  <a href="{{ url_for('tournament.settings', public_id=pid) }}" class="ws-link {% if active == 'settings' %}active{% endif %}" {% if active == 'settings' %}aria-current="page"{% endif %}>تنظیمات</a>
-  <a href="{{ url_for('dashboard.manage_tournament', public_id=pid) }}" class="ws-link {% if active == 'staff' %}active{% endif %}" {% if active == 'staff' %}aria-current="page"{% endif %}>کادر داوری</a>
-  {% endif %}
 </nav>
 {%- endmacro %}

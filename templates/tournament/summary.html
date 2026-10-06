@@ -3,7 +3,7 @@
 
 {% block content %}
 {% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "summary", can_manage|default(False), can_edit_results|default(False)) }}
+{{ tournament_nav(tournament, "summary") }}
 <div class="page-header">
     <a href="/{{ tournament.public_id }}" class="btn btn-secondary" style="float:left;">🔙 بازگشت</a>
     <h1>خلاصه تورنومنت</h1>

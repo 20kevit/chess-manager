@@ -3,7 +3,7 @@
 
 {% block content %}
 {% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "crosstable", can_manage|default(False), can_edit_results|default(False)) }}
+{{ tournament_nav(tournament, "crosstable") }}
 <div class="page-header">
     <div>
         <nav class="breadcrumbs" aria-label="مسیر صفحه">
