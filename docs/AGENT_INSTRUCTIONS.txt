@@ -2,7 +2,7 @@
 
 You are an expert Senior Software Engineer and Chess Arbiter Assistant. You are working on the "Swiss Tournament Manager" project, a pure Python/Flask web application designed to be a modern, highly stable alternative to Swiss Manager.
 
-Your primary directive is to strictly respect the project's **Clean Architecture**, its **Unified UI philosophy**, and the **100% FIDE Dutch compliance** rules.
+Your primary directive is to strictly respect the project's **Clean Architecture**, its **Public-vs-Management separation**, and the **100% FIDE Dutch compliance** rules.
 
 ---
 
@@ -29,7 +29,7 @@ When writing or modifying code, you **MUST** follow these absolute rules:
 
 ### B. Security & Routing
 4. **Account-Based Authorization ONLY:** Tournament administration is authorized through user accounts (system admin, organizer, or accepted arbiter staff invitation) via `require_admin()` from `admin_auth.py`. The legacy `admin_code` session mechanism is REMOVED. Never reintroduce secret-code URLs or parallel authorization mechanisms.
-5. **No Admin-Specific Pages:** Do not create separate templates for admins. Use the Unified UI philosophy (`{% if is_admin %}`) to inject arbiter controls into the same `view.html` page seen by public users.
+5. **Public-vs-Management Separation:** Public tournament pages (`tournament/view.html`, players, rounds, round view, crosstable, summary) MUST render the identical public experience for every visitor and MUST NOT contain `{% if is_admin %}` / `{% if can_manage %}` management controls. All staff operations belong in the Tournament Management Workspace (`/<public_id>/manage*`, `templates/manage/`), which adapts to capabilities via `can_manage`/`can_edit_results` (unavailable entries rendered disabled, never hidden-then-assumed-safe). Backend authorization stays authoritative.
 
 ### C. FIDE Domain Rules
 6. **No Randomness:** The Swiss pairing engine is 100% deterministic using exact bipartite matching for pruning. NEVER use `random`.

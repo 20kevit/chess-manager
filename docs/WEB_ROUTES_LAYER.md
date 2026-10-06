@@ -18,12 +18,12 @@ Dependencies must strictly point inward toward the Application and Infrastructur
 - Call `db.session.commit()`, `db.session.rollback()`, or `db.session.flush()`. Transaction management belongs to the Service layer.
 - Query the database directly using `Model.query.filter()`. Always use `Repository` methods.
 - Pass `admin_code` via URL parameters in any generated link or redirect (Rule 4 Enforcement).
-- Create separate endpoints for admin views (e.g., `/admin/standings`). Use the Unified UI approach.
+- Inject management controls into public tournament pages (`tournament/view.html`, players, rounds, round view, crosstable, summary). Staff operations belong in the Management Workspace (`manage_routes.py`, `/<public_id>/manage*`).
 
 **MUST:**
 - Use `require_admin(public_id)` from `admin_auth.py` at the top of any route that modifies data.
 - Catch exceptions thrown by the Service layer and use Flask's `flash()` to display user-friendly error messages.
-- Always redirect to the Unified Dashboard (`tournament.view`) after successful state-mutating operations.
+- After successful state-mutating operations inside the workspace, redirect back into the workspace (`manage.overview` / `manage.rounds` / `manage.round_detail` / `manage.players`); keep public user flows (registration) on public pages.
 - Extract all form data cleanly and pass it as dictionaries or specific arguments to the Service layer.
 
 ## 4. Module Specifications

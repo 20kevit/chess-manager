@@ -18,33 +18,42 @@ what needs attention / what can I do next / where is everything else.
 | Arbiter / organizer (desktop-first, mobile-usable) | round lifecycle, result entry, players, registrations, reports | density, keyboard flow, pending-work visibility |
 | System admin | users, roles, FIDE data, health, notifications | tables + status queues |
 
-## 3. Information architecture (routes actually present — 13 blueprints, ~105 routes)
+## 3. Information architecture (14 blueprints)
 
 - Global: `/` index+search, `/search`, auth (`/login /register /logout`),
   dashboard hub (`/dashboard`, profile, roles, verification, notification settings,
   staff invite/accept), notifications inbox, admin (`/admin*`, FIDE, verifications),
   public player profile (`/player/<id>`), print (`/print/*`), payment callback.
-- Tournament workspace (keyed by 8-digit `public_id`, unified `tournament.view` =
-  public page + arbiter console via `can_manage`/`can_edit_results`):
-  Overview(view) · Players(add/edit/import) · Rounds(list/view/result/finish/delete) ·
-  Bye requests · Manual pairing · Crosstable · Summary · Registrations · Pricing ·
-  Prizes · Rulebook · Announcements · Notification prefs · Backup import/export ·
-  Settings (incl. tiebreak order).
-- No invented routes. Sidebar/tabs only link to endpoints in `interfaces/web/`.
+- Public tournament (keyed by 8-digit `public_id`, structurally identical for
+  every visitor): Overview(view) · Players · Rounds · Round detail (read-only) ·
+  Crosstable · Summary · Player detail · Rulebook PDF download.
+- Tournament Management Workspace (`/<public_id>/manage*`, `manage_routes.py`,
+  shell `templates/manage/`): Overview (operational command center) · Players ·
+  Rounds · Round detail (result entry) · Standings · Crosstable · Tiebreaks ·
+  Output (printing/exports) · Registrations · Announcements · Settings ·
+  Rulebook · Staff & permissions · Pricing · Prizes. One workspace for all
+  roles; manager-only entries render disabled for result-editors. The retired
+  dashboard management hub redirects into the workspace (`manage.staff`).
+- No invented routes. Sidebar links only to endpoints in `interfaces/web/`.
 
 ## 4. Navigation model
 
 - Global header (all pages): brand → Home, Dashboard, Create (organizer), Admin
   (system admin), notification bell, auth links; mobile hamburger → drawer.
-- Tournament context header on every `/<public_id>*` page: name, status badge,
-  round progress, city/time-control meta, primary action (Register / Console).
-- Tournament sub-nav (tabs with `tablist` semantics): Overview, Players, Rounds,
-  Crosstable, Summary, plus management links grouped when `can_manage`.
+- Public tournament pages: tournament context header (name, status badge, round
+  progress, city/time-control meta, Register action) + public sub-nav
+  (Overview, Players, Rounds, Crosstable, Summary) — identical for everyone.
+- Management workspace: compact tournament identity bar (name, status, city,
+  time control, round x/y, start date, public-page return link) + grouped
+  capability-aware sidebar (Tournament · Round operations · Tournament data ·
+  Registration · Output · Configuration), collapsible to drawer <1024px with
+  focus trap + ESC + overlay; unavailable entries render disabled with a
+  reason tooltip instead of disappearing.
 - Admin sidebar grouped: Overview (dashboard, system) · People (users, roles,
   verifications) · Tournaments (all) · Data (FIDE) · Messaging (notifications).
   Group labels, SVG icons, `aria-current="page"`, collapsible to drawer <1024px
   with focus trap + ESC + overlay.
-- Breadcrumbs only on deep management pages (settings/pricing/rounds/players).
+- Breadcrumbs on workspace pages (overview → section → detail).
 
 ## 5. Color system
 

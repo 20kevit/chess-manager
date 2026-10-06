@@ -67,11 +67,13 @@ def require_tournament_manager(public_id):
     return _authorize(public_id, chief_only=True)
 
 def capabilities(public_id):
-    """Capability flags for the tournament workspace (same page, different capabilities).
+    """Capability flags for the Tournament Management Workspace.
 
     Returns (tournament_or_None, can_manage, can_edit_results).
-    Never redirects/aborts — for GET rendering decisions only.
-    Backend mutation guards below remain authoritative.
+    Never redirects/aborts — for workspace rendering decisions only.
+    Public tournament pages ignore these flags entirely (same public
+    experience for every visitor). Backend mutation guards below remain
+    authoritative.
     """
     tournament = TournamentRepository.get_by_public_id(public_id)
     if not tournament:
