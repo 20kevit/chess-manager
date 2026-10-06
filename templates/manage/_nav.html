@@ -1,0 +1,64 @@
+{# Capability-aware sidebar for the Tournament Management Workspace.
+   One workspace for every role; entries the current user may not use are
+   rendered DISABLED (visible structure, no action) instead of hidden.
+   Backend authorization stays authoritative — this macro never grants access.
+   Usage: {{ manage_sidebar(tournament, "overview", can_manage, can_edit_results) }} #}
+{% from "components/icons.html" import icon %}
+{% macro manage_sidebar(tournament, active="", can_manage=False, can_edit_results=False) -%}
+{% set pid = tournament.public_id %}
+<nav aria-label="بخش‌های مدیریت">
+  <div class="side-group">
+    <div class="side-label">تورنومنت</div>
+    <a href="{{ url_for('manage.overview', public_id=pid) }}" class="side-link {% if active == 'overview' %}active{% endif %}" {% if active == 'overview' %}aria-current="page"{% endif %}>{{ icon("dashboard", 18) }} نمای کلی</a>
+    <a href="{{ url_for('manage.players', public_id=pid) }}" class="side-link {% if active == 'players' %}active{% endif %}" {% if active == 'players' %}aria-current="page"{% endif %}>{{ icon("users", 18) }} بازیکنان</a>
+  </div>
+  <div class="side-group">
+    <div class="side-label">عملیات دور</div>
+    <a href="{{ url_for('manage.rounds', public_id=pid) }}" class="side-link {% if active == 'rounds' %}active{% endif %}" {% if active == 'rounds' %}aria-current="page"{% endif %}>{{ icon("layers", 18) }} دورها و نتایج</a>
+    <a href="{{ url_for('round.request_bye', public_id=pid) }}" class="side-link {% if active == 'byes' %}active{% endif %}" {% if active == 'byes' %}aria-current="page"{% endif %}>{{ icon("clock", 18) }} استراحت و قفل‌ها</a>
+  </div>
+  <div class="side-group">
+    <div class="side-label">داده‌های تورنومنت</div>
+    <a href="{{ url_for('manage.standings', public_id=pid) }}" class="side-link {% if active == 'standings' %}active{% endif %}" {% if active == 'standings' %}aria-current="page"{% endif %}>{{ icon("chart", 18) }} رده‌بندی</a>
+    <a href="{{ url_for('manage.crosstable', public_id=pid) }}" class="side-link {% if active == 'crosstable' %}active{% endif %}" {% if active == 'crosstable' %}aria-current="page"{% endif %}>{{ icon("table", 18) }} جدول برخورد</a>
+    <a href="{{ url_for('manage.tiebreaks', public_id=pid) }}" class="side-link {% if active == 'tiebreaks' %}active{% endif %}" {% if active == 'tiebreaks' %}aria-current="page"{% endif %}>{{ icon("versus", 18) }} تای‌بریک‌ها</a>
+  </div>
+  <div class="side-group">
+    <div class="side-label">ثبت‌نام</div>
+    {% if can_manage %}
+    <a href="{{ url_for('registration.manage_registrations', public_id=pid) }}" class="side-link {% if active == 'registrations' %}active{% endif %}" {% if active == 'registrations' %}aria-current="page"{% endif %}>{{ icon("card", 18) }} درخواست‌ها</a>
+    {% else %}
+    <span class="side-link is-disabled" aria-disabled="true" title="مشاهده درخواست‌های ثبت‌نام نیازمند دسترسی مدیریتی است">{{ icon("lock", 18) }} درخواست‌ها</span>
+    {% endif %}
+  </div>
+  <div class="side-group">
+    <div class="side-label">خروجی</div>
+    <a href="{{ url_for('manage.output', public_id=pid) }}" class="side-link {% if active == 'output' %}active{% endif %}" {% if active == 'output' %}aria-current="page"{% endif %}>{{ icon("print", 18) }} چاپ و خروجی‌ها</a>
+    {% if can_manage %}
+    <a href="{{ url_for('tournament.announcements', public_id=pid) }}" class="side-link {% if active == 'announcements' %}active{% endif %}" {% if active == 'announcements' %}aria-current="page"{% endif %}>{{ icon("announce", 18) }} اطلاع‌رسانی‌ها</a>
+    {% else %}
+    <span class="side-link is-disabled" aria-disabled="true" title="ارسال اطلاع‌رسانی نیازمند دسترسی مدیریتی است">{{ icon("lock", 18) }} اطلاع‌رسانی‌ها</span>
+    {% endif %}
+  </div>
+  <div class="side-group">
+    <div class="side-label">پیکربندی</div>
+    {% if can_manage %}
+    <a href="{{ url_for('tournament.settings', public_id=pid) }}" class="side-link {% if active == 'settings' %}active{% endif %}" {% if active == 'settings' %}aria-current="page"{% endif %}>{{ icon("settings", 18) }} تنظیمات</a>
+    <a href="{{ url_for('tournament.rulebook_settings', public_id=pid) }}" class="side-link {% if active == 'rulebook' %}active{% endif %}" {% if active == 'rulebook' %}aria-current="page"{% endif %}>{{ icon("doc", 18) }} آیین‌نامه</a>
+    <a href="{{ url_for('manage.staff', public_id=pid) }}" class="side-link {% if active == 'staff' %}active{% endif %}" {% if active == 'staff' %}aria-current="page"{% endif %}>{{ icon("shield", 18) }} کادر و دسترسی‌ها</a>
+    <a href="{{ url_for('registration.pricing_settings', public_id=pid) }}" class="side-link {% if active == 'pricing' %}active{% endif %}" {% if active == 'pricing' %}aria-current="page"{% endif %}>{{ icon("card", 18) }} قیمت‌گذاری</a>
+    <a href="{{ url_for('tournament.prize_settings', public_id=pid) }}" class="side-link {% if active == 'prizes' %}active{% endif %}" {% if active == 'prizes' %}aria-current="page"{% endif %}>{{ icon("prize", 18) }} جوایز</a>
+    {% else %}
+    <span class="side-link is-disabled" aria-disabled="true" title="تنظیمات تورنومنت نیازمند دسترسی مدیریتی است">{{ icon("lock", 18) }} تنظیمات</span>
+    <span class="side-link is-disabled" aria-disabled="true" title="ویرایش آیین‌نامه نیازمند دسترسی مدیریتی است">{{ icon("lock", 18) }} آیین‌نامه</span>
+    <span class="side-link is-disabled" aria-disabled="true" title="مدیریت کادر نیازمند دسترسی مدیریتی است">{{ icon("lock", 18) }} کادر و دسترسی‌ها</span>
+    <span class="side-link is-disabled" aria-disabled="true" title="قیمت‌گذاری نیازمند دسترسی مدیریتی است">{{ icon("lock", 18) }} قیمت‌گذاری</span>
+    <span class="side-link is-disabled" aria-disabled="true" title="مدیریت جوایز نیازمند دسترسی مدیریتی است">{{ icon("lock", 18) }} جوایز</span>
+    {% endif %}
+  </div>
+  <div class="side-group side-foot">
+    <a href="{{ url_for('tournament.view', public_id=pid) }}" class="side-link">{{ icon("globe", 18) }} صفحه عمومی تورنومنت</a>
+    <a href="{{ url_for('dashboard.index') }}" class="side-link">{{ icon("home", 18) }} داشبورد</a>
+  </div>
+</nav>
+{%- endmacro %}

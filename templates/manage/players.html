@@ -1,0 +1,103 @@
+{% extends "manage/shell.html" %}
+{% block title %}بازیکنان | مدیریت {{ tournament.name }}{% endblock %}
+
+{% block manage_content %}
+{% from "components/icons.html" import icon %}
+{% from "components/ui.html" import empty_state %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+  <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}">مدیریت {{ tournament.name }}</a>
+  <span class="sep" aria-hidden="true">‹</span><span aria-current="page">بازیکنان</span>
+</nav>
+<div class="page-header manage-page-head">
+  <div>
+    <h1 class="page-title">بازیکنان <span class="num text-gray-500">({{ players|length }})</span></h1>
+    <p class="page-desc">رکوردهای شرکت‌کننده تورنومنت — متفاوت از فرایند ثبت‌نام</p>
+  </div>
+  <div class="page-actions">
+    {% if can_manage %}
+    <a href="{{ url_for('player.player_add', public_id=tournament.public_id) }}" class="btn btn-primary">{{ icon("plus", 16) }} افزودن بازیکن</a>
+    <a href="{{ url_for('player.player_import', public_id=tournament.public_id) }}" class="btn btn-secondary">{{ icon("upload", 16) }} ایمپورت از CSV</a>
+    {% else %}
+    <button type="button" class="btn btn-primary" disabled title="افزودن بازیکن نیازمند دسترسی مدیریتی است">{{ icon("lock", 16) }} افزودن بازیکن</button>
+    {% endif %}
+  </div>
+</div>
+
+{% if players %}
+<div class="tbl-wrap">
+  <table class="tbl data-table sticky-first">
+    <caption class="visually-hidden">فهرست بازیکنان {{ tournament.name }}</caption>
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col" style="text-align:start;">نام</th>
+        <th scope="col" style="text-align:start;">نام خانوادگی</th>
+        <th scope="col">عنوان</th>
+        <th scope="col">ریتینگ</th>
+        <th scope="col">فدراسیون</th>
+        <th scope="col">فیده</th>
+        <th scope="col">رده سنی</th>
+        <th scope="col">امتیاز</th>
+        <th scope="col">وضعیت</th>
+        <th scope="col"><span class="visually-hidden">عملیات</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr class="{% if player.status == 'withdrawn' %}is-withdrawn{% endif %}">
+        <td class="num">{{ player.start_number }}</td>
+        <td class="player-cell">{{ player.profile.first_name }}</td>
+        <td class="player-cell">{{ player.profile.last_name }}</td>
+        <td class="num">{{ player.fide_title_snapshot or '-' }}</td>
+        <td class="num">{{ player.rating_snapshot or 0 }}</td>
+        <td class="num">{{ player.profile.federation }}</td>
+        <td class="num">
+          {% if player.profile.fide_id %}
+          <a href="https://ratings.fide.com/profile/{{ player.profile.fide_id }}" target="_blank" rel="noopener">{{ player.profile.fide_id }}</a>
+          {% else %}-{% endif %}
+        </td>
+        <td>{{ player.age_category or '-' }}</td>
+        <td class="num"><strong>{{ player.points or 0 }}</strong></td>
+        <td>
+          {% if player.status == 'active' %}<span class="badge badge-success">فعال</span>
+          {% elif player.status == 'withdrawn' %}<span class="badge badge-error">انصراف داده</span>
+          {% endif %}
+        </td>
+        <td class="actions-cell">
+          {% if can_manage %}
+          <a href="{{ url_for('player.player_edit', public_id=tournament.public_id, participant_id=player.id) }}"
+             class="icon-btn" title="ویرایش {{ player.full_name }}" aria-label="ویرایش {{ player.full_name }}">✏️</a>
+          <form method="POST" style="display:inline;"
+                action="{{ url_for('player.player_withdraw', public_id=tournament.public_id, participant_id=player.id) }}"
+                data-confirm="{% if player.status == 'active' %}بازیکن {{ player.full_name }} از ادامه مسابقه کنار گذاشته می‌شود. امتیازات قبلی حفظ می‌شود.{% else %}بازیکن {{ player.full_name }} دوباره فعال می‌شود.{% endif %}"
+                data-confirm-hint="این عمل قابل بازگشت است.">
+            <button type="submit" class="icon-btn"
+                    title="{% if player.status == 'active' %}انصراف{% else %}فعال‌سازی{% endif %}"
+                    aria-label="{% if player.status == 'active' %}انصراف {{ player.full_name }}{% else %}فعال‌سازی {{ player.full_name }}{% endif %}">
+              {% if player.status == 'active' %}⏸️{% else %}▶️{% endif %}
+            </button>
+          </form>
+          <form method="POST" style="display:inline;"
+                action="{{ url_for('player.player_delete', public_id=tournament.public_id, participant_id=player.id) }}"
+                data-confirm="بازیکن {{ player.full_name }} برای همیشه از این تورنومنت حذف می‌شود."
+                data-confirm-hint="این عمل قابل بازگشت نیست.">
+            <button type="submit" class="icon-btn danger" title="حذف {{ player.full_name }}" aria-label="حذف {{ player.full_name }}">🗑️</button>
+          </form>
+          {% else %}
+          <span class="text-muted" title="ویرایش بازیکنان نیازمند دسترسی مدیریتی است">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+{{ empty_state("هنوز بازیکنی اضافه نشده است", "با افزودن بازیکن یا ایمپورت CSV شروع کنید.") }}
+{% if can_manage %}
+<div class="text-center mt-15">
+  <a href="{{ url_for('player.player_add', public_id=tournament.public_id) }}" class="btn btn-primary">افزودن اولین بازیکن</a>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

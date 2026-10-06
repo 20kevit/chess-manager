@@ -1,0 +1,142 @@
+{% extends "manage/shell.html" %}
+{% block title %}مدیریت {{ tournament.name }}{% endblock %}
+
+{% block manage_content %}
+{% from "components/icons.html" import icon %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+  <a href="{{ url_for('dashboard.index') }}">داشبورد</a>
+  <span class="sep" aria-hidden="true">‹</span><span aria-current="page">مدیریت {{ tournament.name }}</span>
+</nav>
+<div class="page-header manage-page-head">
+  <div>
+    <h1 class="page-title">نمای کلی عملیات</h1>
+    <p class="page-desc">وضعیت زنده تورنومنت، کارهای نیازمند توجه و اقدام‌های بعدی</p>
+  </div>
+</div>
+
+{% if attention %}
+<section class="manage-section" aria-labelledby="attn-h">
+  <h2 class="section-title" id="attn-h">{{ icon("alert", 16) }} نیازمند توجه</h2>
+  <ul class="attention-list">
+    {% for item in attention %}
+    <li class="attention-item attention-{{ item.kind }}">
+      <span class="attention-text">{{ item.text }}</span>
+      {% if item.url %}<a href="{{ item.url }}" class="btn btn-sm btn-secondary">{{ item.action }}</a>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="manage-section" aria-labelledby="round-h">
+  <h2 class="section-title" id="round-h">{{ icon("layers", 16) }} وضعیت دور جاری</h2>
+  {% if ongoing_round and ongoing_stats %}
+  <div class="tbl-wrap plain">
+    <table class="tbl">
+      <caption class="visually-hidden">وضعیت دور {{ ongoing_round.round_number }}</caption>
+      <tbody>
+        <tr>
+          <th scope="row">دور فعال</th>
+          <td><strong class="num">{{ ongoing_round.round_number }}</strong> از <span class="num">{{ tournament.total_rounds }}</span></td>
+          <td><span class="badge badge-info">در جریان</span></td>
+          <td><a href="{{ url_for('manage.round_detail', public_id=tournament.public_id, round_number=ongoing_round.round_number) }}" class="btn btn-sm btn-primary">ادامه دور</a></td>
+        </tr>
+        <tr>
+          <th scope="row">تخته‌ها</th>
+          <td colspan="3"><span class="num">{{ ongoing_stats.total }}</span> تخته{% if ongoing_stats.byes %} <span class="text-muted">(به‌همراه {{ ongoing_stats.byes }} استراحت)</span>{% endif %}</td>
+        </tr>
+        <tr>
+          <th scope="row">نتایج</th>
+          <td colspan="3">
+            <span class="num">{{ ongoing_stats.decided }}</span> از <span class="num">{{ ongoing_stats.total }}</span> ثبت شده
+            {% if ongoing_stats.pending %}<span class="badge badge-warning">{{ ongoing_stats.pending }} نتیجه مانده</span>
+            {% else %}<span class="badge badge-success">کامل</span>{% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {% elif last_finished %}
+  <div class="alert alert-success" role="status">
+    دور <span class="num">{{ last_finished.round_number }}</span> به پایان رسیده است.
+    {% if can_create_next and tournament.current_round < tournament.total_rounds %}
+    دور بعدی آماده ایجاد است — از بخش «دورها و نتایج» ادامه دهید.
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p class="empty-title">هنوز دوری ایجاد نشده است</p>
+    <p>برای شروع تورنومنت، دور ۱ را ایجاد کنید.</p>
+  </div>
+  {% endif %}
+</section>
+
+<section class="manage-section" aria-labelledby="actions-h">
+  <h2 class="section-title" id="actions-h">اقدام‌های عملیاتی</h2>
+  <div class="action-bar" role="toolbar" aria-label="اقدام‌های عملیاتی">
+    {% if ongoing_round %}
+    <a href="{{ url_for('manage.round_detail', public_id=tournament.public_id, round_number=ongoing_round.round_number) }}" class="btn btn-primary">{{ icon("check", 16) }} ثبت نتایج دور {{ ongoing_round.round_number }}</a>
+    {% elif can_create_next %}
+    <form method="POST" action="{{ url_for('round.round_new', public_id=tournament.public_id) }}" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary">{{ icon("plus", 16) }} ایجاد دور {{ tournament.current_round + 1 }}</button>
+    </form>
+    {% else %}
+    <button type="button" class="btn btn-primary" disabled title="{{ create_blocked_reason }}">ایجاد دور بعدی</button>
+    {% endif %}
+    <a href="{{ url_for('manage.players', public_id=tournament.public_id) }}" class="btn btn-secondary">{{ icon("users", 16) }} مدیریت بازیکنان</a>
+    <a href="{{ url_for('round.request_bye', public_id=tournament.public_id) }}" class="btn btn-secondary">{{ icon("clock", 16) }} استراحت دور {{ next_round_no }}</a>
+    <a href="{{ url_for('manage.output', public_id=tournament.public_id) }}" class="btn btn-secondary">{{ icon("print", 16) }} چاپ و خروجی</a>
+    {% if can_manage %}
+    <a href="{{ url_for('registration.manage_registrations', public_id=tournament.public_id) }}" class="btn btn-secondary">{{ icon("card", 16) }} بررسی ثبت‌نام‌ها</a>
+    {% else %}
+    <button type="button" class="btn btn-secondary" disabled title="بررسی ثبت‌نام‌ها نیازمند دسترسی مدیریتی است">{{ icon("lock", 16) }} بررسی ثبت‌نام‌ها</button>
+    {% endif %}
+  </div>
+  {% if not can_create_next and create_blocked_reason and can_manage %}
+  <p class="hint">{{ create_blocked_reason }}</p>
+  {% endif %}
+</section>
+
+<section class="manage-section" aria-labelledby="counts-h">
+  <h2 class="section-title" id="counts-h">شمارهای مهم</h2>
+  <dl class="stat-list">
+    <div class="stat-item"><dt>بازیکنان</dt><dd class="num">{{ total_players }} <span class="text-muted">({{ active_players }} فعال)</span></dd></div>
+    <div class="stat-item"><dt>دورهای پایان‌یافته</dt><dd class="num">{{ rounds|selectattr('status', 'equalto', 'finished')|list|length }} از {{ tournament.total_rounds }}</dd></div>
+    {% if pending_registrations is not none %}
+    <div class="stat-item"><dt>ثبت‌نام‌های در انتظار</dt><dd class="num">{{ pending_registrations|length }}</dd></div>
+    {% endif %}
+    <div class="stat-item"><dt>استراحت‌های دور {{ next_round_no }}</dt><dd class="num">{{ bye_requests|length }}</dd></div>
+    <div class="stat-item"><dt>قفل‌های دستی دور {{ next_round_no }}</dt><dd class="num">{{ manual_locks|length }}</dd></div>
+  </dl>
+</section>
+
+<section class="manage-section" aria-labelledby="timeline-h">
+  <h2 class="section-title" id="timeline-h">خط زمانی دورها</h2>
+  {% if rounds %}
+  <div class="tbl-wrap plain">
+    <table class="tbl">
+      <caption class="visually-hidden">فهرست دورها</caption>
+      <thead>
+        <tr><th scope="col">دور</th><th scope="col">وضعیت</th><th scope="col"><span class="visually-hidden">عملیات</span></th></tr>
+      </thead>
+      <tbody>
+        {% for r in rounds %}
+        <tr>
+          <td class="num"><strong>{{ r.round_number }}</strong></td>
+          <td>
+            {% if r.status == 'finished' %}<span class="badge badge-success">پایان یافته</span>
+            {% elif r.status == 'ongoing' %}<span class="badge badge-info">در جریان</span>
+            {% else %}<span class="badge badge-neutral">در انتظار</span>{% endif %}
+          </td>
+          <td><a href="{{ url_for('manage.round_detail', public_id=tournament.public_id, round_number=r.round_number) }}" class="btn btn-sm btn-ghost">باز کردن</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state"><p class="empty-title">دوری وجود ندارد</p></div>
+  {% endif %}
+</section>
+{% endblock %}

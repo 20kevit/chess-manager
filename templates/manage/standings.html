@@ -1,0 +1,65 @@
+{% extends "manage/shell.html" %}
+{% block title %}رده‌بندی | مدیریت {{ tournament.name }}{% endblock %}
+
+{% block manage_content %}
+{% from "components/icons.html" import icon %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+  <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}">مدیریت {{ tournament.name }}</a>
+  <span class="sep" aria-hidden="true">‹</span><span aria-current="page">رده‌بندی</span>
+</nav>
+<div class="page-header manage-page-head">
+  <div>
+    <h1 class="page-title">رده‌بندی</h1>
+    <p class="page-desc">جدول زنده بر اساس امتیاز و ترتیب تای‌بریک‌های مصوب تورنومنت</p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('print.print_standings', public_id=tournament.public_id) }}" class="btn btn-secondary" target="_blank" rel="noopener">{{ icon("print", 16) }} چاپ</a>
+  </div>
+</div>
+
+{% if player_standings %}
+<div class="tbl-wrap">
+  <table class="tbl standings-table sticky-first">
+    <caption class="visually-hidden">جدول رده‌بندی {{ tournament.name }}</caption>
+    <thead>
+      <tr>
+        <th scope="col">رتبه</th>
+        <th scope="col">#No</th>
+        <th scope="col" style="text-align:start;">نام بازیکن</th>
+        <th scope="col">ریتینگ</th>
+        <th scope="col">امتیاز</th>
+        {% for tb in tiebreak_rules %}<th scope="col">{{ tb_names.get(tb, tb)[:8] }}</th>{% endfor %}
+        <th scope="col">وضعیت</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ps in player_standings %}
+      <tr class="{% if ps.player.status == 'withdrawn' %}is-withdrawn{% endif %}">
+        <td class="num"><strong>{{ loop.index }}</strong></td>
+        <td class="num text-gray-400">{{ ps.player.ranking_label }}</td>
+        <td class="player-cell">
+          {% if ps.player.fide_title_snapshot %}<span class="badge badge-info badge-xs" dir="ltr">{{ ps.player.fide_title_snapshot }}</span>{% endif %}
+          {{ ps.player.full_name }}
+        </td>
+        <td class="num">{{ ps.player.rating_snapshot or 0 }}</td>
+        <td class="num"><strong>{{ ps.points }}</strong></td>
+        {% for tb in tiebreak_rules %}
+        <td class="num">{{ ps.tiebreaks.get(tb, 0) }}</td>
+        {% endfor %}
+        <td>
+          {% if ps.player.status == 'withdrawn' %}<span class="badge badge-error">انصراف داده</span>
+          {% else %}<span class="badge badge-success">فعال</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="hint">ترتیب تای‌بریک‌ها: {% for tb in tiebreak_rules %}{{ tb_names.get(tb, tb) }}{% if not loop.last %} ← {% endif %}{% endfor %}</p>
+{% else %}
+<div class="empty-state">
+  <p class="empty-title">هنوز بازیکنی ثبت نشده است</p>
+  <p>پس از افزودن بازیکنان، رده‌بندی اینجا نمایش داده می‌شود.</p>
+</div>
+{% endif %}
+{% endblock %}

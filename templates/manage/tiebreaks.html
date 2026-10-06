@@ -1,0 +1,58 @@
+{% extends "manage/shell.html" %}
+{% block title %}تای‌بریک‌ها | مدیریت {{ tournament.name }}{% endblock %}
+
+{% block manage_content %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+  <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}">مدیریت {{ tournament.name }}</a>
+  <span class="sep" aria-hidden="true">‹</span><span aria-current="page">تای‌بریک‌ها</span>
+</nav>
+<div class="page-header manage-page-head">
+  <div>
+    <h1 class="page-title">تای‌بریک‌ها</h1>
+    <p class="page-desc">مقادیر محاسبه‌شده توسط موتور تای‌بریک — فقط نمایشی، بدون محاسبه مجدد در رابط کاربری</p>
+  </div>
+</div>
+
+{% if tiebreak_rules %}
+<div class="alert alert-info" role="note">
+  ترتیب اعمال تای‌بریک در این تورنومنت:
+  <strong>{% for tb in tiebreak_rules %}{{ tb_names.get(tb, tb) }}{% if not loop.last %} ← {% endif %}{% endfor %}</strong>
+</div>
+{% else %}
+<div class="alert alert-warning" role="note">برای این تورنومنت ترتیب تای‌بریک پیکربندی نشده است.</div>
+{% endif %}
+
+{% if player_standings %}
+<div class="tbl-wrap">
+  <table class="tbl data-table sticky-first">
+    <caption class="visually-hidden">مقادیر تای‌بریک بازیکنان {{ tournament.name }}</caption>
+    <thead>
+      <tr>
+        <th scope="col">رتبه</th>
+        <th scope="col" style="text-align:start;">نام بازیکن</th>
+        <th scope="col">امتیاز</th>
+        {% for tb in tiebreak_rules %}
+        <th scope="col">{{ tb_names.get(tb, tb) }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for ps in player_standings %}
+      <tr class="{% if ps.player.status == 'withdrawn' %}is-withdrawn{% endif %}">
+        <td class="num"><strong>{{ loop.index }}</strong></td>
+        <td class="player-cell">{{ ps.player.full_name }}</td>
+        <td class="num"><strong>{{ ps.points }}</strong></td>
+        {% for tb in tiebreak_rules %}
+        <td class="num">{{ ps.tiebreaks.get(tb, 0) }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <p class="empty-title">بازیکنی وجود ندارد</p>
+</div>
+{% endif %}
+{% endblock %}

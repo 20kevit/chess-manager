@@ -1,0 +1,43 @@
+{% extends "manage/shell.html" %}
+{% block title %}چاپ و خروجی‌ها | مدیریت {{ tournament.name }}{% endblock %}
+
+{% block manage_content %}
+{% from "components/icons.html" import icon %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+  <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}">مدیریت {{ tournament.name }}</a>
+  <span class="sep" aria-hidden="true">‹</span><span aria-current="page">چاپ و خروجی‌ها</span>
+</nav>
+<div class="page-header manage-page-head">
+  <div>
+    <h1 class="page-title">چاپ و خروجی‌ها</h1>
+    <p class="page-desc">برگه‌های قابل چاپ، خروجی‌های استاندارد و پشتیبان‌گیری</p>
+  </div>
+</div>
+
+<section class="manage-section" aria-labelledby="print-h">
+  <h2 class="section-title" id="print-h">{{ icon("print", 16) }} برگه‌های چاپی</h2>
+  <ul class="link-list">
+    <li><a href="{{ url_for('print.print_standings', public_id=tournament.public_id) }}" target="_blank" rel="noopener">جدول رده‌بندی</a></li>
+    <li><a href="{{ url_for('print.print_crosstable', public_id=tournament.public_id) }}" target="_blank" rel="noopener">جدول برخورد</a></li>
+    {% for r in rounds %}
+    <li><a href="{{ url_for('print.print_round', public_id=tournament.public_id, round_number=r.round_number) }}" target="_blank" rel="noopener">برگه دور {{ r.round_number }}</a></li>
+    {% endfor %}
+  </ul>
+  {% if not rounds %}
+  <div class="empty-state"><p class="empty-title">هنوز دوری برای چاپ وجود ندارد</p></div>
+  {% endif %}
+</section>
+
+<section class="manage-section" aria-labelledby="export-h">
+  <h2 class="section-title" id="export-h">{{ icon("download", 16) }} خروجی‌های استاندارد</h2>
+  <ul class="link-list">
+    <li><a href="{{ url_for('print.export_trf', public_id=tournament.public_id) }}">خروجی TRF فیده</a></li>
+    {% if can_manage %}
+    <li><a href="{{ url_for('backup.export_json', public_id=tournament.public_id) }}">خروجی پشتیبان (JSON)</a></li>
+    <li><a href="{{ url_for('backup.import_json', public_id=tournament.public_id) }}">بازیابی از پشتیبان</a></li>
+    {% else %}
+    <li><span class="text-muted" title="پشتیبان‌گیری نیازمند دسترسی مدیریتی است">{{ icon("lock", 14) }} خروجی پشتیبان (JSON)</span></li>
+    {% endif %}
+  </ul>
+</section>
+{% endblock %}

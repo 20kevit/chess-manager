@@ -1,0 +1,83 @@
+{% extends "manage/shell.html" %}
+{% block title %}جدول برخورد | مدیریت {{ tournament.name }}{% endblock %}
+
+{% block manage_content %}
+{% from "components/icons.html" import icon %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+  <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}">مدیریت {{ tournament.name }}</a>
+  <span class="sep" aria-hidden="true">‹</span><span aria-current="page">جدول برخورد</span>
+</nav>
+<div class="page-header manage-page-head">
+  <div>
+    <h1 class="page-title">جدول برخورد (Cross-Table)</h1>
+    <p class="page-desc">نتیجه هر بازیکن در هر دور در یک نگاه</p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('print.print_crosstable', public_id=tournament.public_id) }}" class="btn btn-secondary" target="_blank" rel="noopener">{{ icon("print", 16) }} چاپ</a>
+  </div>
+</div>
+
+{% if sorted_players %}
+<div class="tbl-wrap">
+  <table class="tbl data-table crosstable">
+    <caption class="visually-hidden">جدول برخورد {{ tournament.name }}</caption>
+    <thead>
+      <tr>
+        <th scope="col">رتبه</th>
+        <th scope="col">#</th>
+        <th scope="col" class="player-cell">نام بازیکن</th>
+        <th scope="col">ریتینگ</th>
+        {% for r in range(1, total_rounds + 1) %}
+        <th scope="col" class="round-col num">{{ r }}</th>
+        {% endfor %}
+        <th scope="col">امتیاز</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for data in sorted_players %}
+      {% set player = data.player %}
+      {% if player.status == 'active' or player.points > 0 %}
+      <tr>
+        <td class="num"><strong>{{ loop.index }}</strong></td>
+        <td class="num">{{ player.start_number }}</td>
+        <td class="player-cell">{{ player.full_name }}</td>
+        <td class="num">{{ player.rating_snapshot or 0 }}</td>
+        {% for r in range(1, total_rounds + 1) %}
+        <td class="cross-cell num {% if data.rounds.get(r) %}{{ data.rounds[r].css }}{% endif %}">
+          {% if data.rounds.get(r) %}
+            {% set cell = data.rounds[r] %}
+            {% if cell.get('opponent_id') %}
+            <span title="حریف: {{ cell.opponent_num }}">{{ cell.text }}</span>
+            {% else %}
+            {{ cell.text }}
+            {% endif %}
+          {% else %}
+          <span class="cell-empty" aria-hidden="true">-</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+        <td class="num"><strong>{{ player.points or 0 }}</strong></td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="crosstable-legend">
+  <h3>راهنما</h3>
+  <div class="legend-items">
+    <span class="legend-item"><span class="cell-win legend-box">+</span> برد</span>
+    <span class="legend-item"><span class="cell-draw legend-box">=</span> تساوی</span>
+    <span class="legend-item"><span class="cell-loss legend-box">-</span> باخت</span>
+    <span class="legend-item"><strong>W</strong> = سفید</span>
+    <span class="legend-item"><strong>B</strong> = سیاه</span>
+    <span class="legend-item">عدد = شماره حریف</span>
+  </div>
+</div>
+{% else %}
+<div class="empty-state">
+  <p>هنوز بازی‌ای انجام نشده است.</p>
+</div>
+{% endif %}
+{% endblock %}

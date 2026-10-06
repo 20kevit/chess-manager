@@ -1,0 +1,43 @@
+{# Tournament Management Workspace shell.
+   Extends the global base; wraps page content in the operational layout:
+   compact tournament identity bar + capability-aware sidebar + content.
+   Expects in context: tournament, mn_can_manage, mn_can_edit_results,
+   mn_active (nav key, default ''). Provided by manage routes and by the
+   global manage-nav context processor for converted tool pages. #}
+{% extends "base.html" %}
+{% from "manage/_nav.html" import manage_sidebar %}
+{% from "components/ui.html" import tournament_status %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+<div class="manage">
+  <div class="manage-identity" role="region" aria-label="مشخصات تورنومنت تحت مدیریت">
+    <div class="manage-identity-main">
+      <div>
+        <div class="manage-eyebrow">مدیریت تورنومنت</div>
+        <h1 class="manage-title">{{ tournament.name }}</h1>
+        <div class="manage-meta">
+          {{ tournament_status(tournament.status) }}
+          {% if tournament.city %}<span class="meta-item">{{ icon("pin", 14) }} {{ tournament.city }}</span>{% endif %}
+          {% if tournament.time_control_type %}<span class="meta-item">{{ icon("clock", 14) }} {{ tournament.time_control_type|capitalize }}</span>{% endif %}
+          <span class="meta-item">{{ icon("layers", 14) }} دور <span class="num">{{ tournament.current_round }}</span> از <span class="num">{{ tournament.total_rounds }}</span></span>
+          {% if tournament.start_date %}<span class="meta-item">{{ icon("calendar", 14) }} <span class="num">{{ tournament.start_date }}</span></span>{% endif %}
+        </div>
+      </div>
+      <div class="manage-identity-actions">
+        <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-ghost btn-sm">{{ icon("globe", 14) }} صفحه عمومی</a>
+        <button class="btn btn-secondary btn-sm sidebar-toggle" id="adminSidebarToggle" aria-expanded="false" aria-controls="adminSidebar">{{ icon("menu", 16) }} فهرست مدیریت</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout-sidebar manage-layout">
+    <aside class="sidebar manage-sidebar" id="adminSidebar" aria-label="ناوبری مدیریت تورنومنت">
+      {{ manage_sidebar(tournament, mn_active|default(''), mn_can_manage|default(False), mn_can_edit_results|default(False)) }}
+    </aside>
+    <div class="manage-main">
+      {% block manage_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

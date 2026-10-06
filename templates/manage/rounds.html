@@ -1,0 +1,83 @@
+{% extends "manage/shell.html" %}
+{% block title %}دورها و نتایج | مدیریت {{ tournament.name }}{% endblock %}
+
+{% block manage_content %}
+{% from "components/icons.html" import icon %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+  <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}">مدیریت {{ tournament.name }}</a>
+  <span class="sep" aria-hidden="true">‹</span><span aria-current="page">دورها و نتایج</span>
+</nav>
+<div class="page-header manage-page-head">
+  <div>
+    <h1 class="page-title">دورها و نتایج</h1>
+    <p class="page-desc">ایجاد دور، ورود نتایج و بستن دورها — محیط عملیات روز مسابقه</p>
+  </div>
+  <div class="page-actions">
+    {% if can_create_next %}
+    <form method="POST" action="{{ url_for('round.round_new', public_id=tournament.public_id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary">{{ icon("plus", 16) }} ایجاد دور {{ tournament.current_round + 1 }}</button>
+    </form>
+    {% elif can_manage %}
+    <span class="badge badge-neutral">ایجاد دور جدید در حال حاضر ممکن نیست</span>
+    {% else %}
+    <button type="button" class="btn btn-primary" disabled title="ایجاد دور نیازمند دسترسی مدیریتی است">{{ icon("lock", 16) }} ایجاد دور</button>
+    {% endif %}
+    <a href="{{ url_for('round.request_bye', public_id=tournament.public_id) }}" class="btn btn-secondary">مدیریت استراحت (Bye)</a>
+  </div>
+</div>
+
+{% if rounds %}
+<div class="tbl-wrap plain">
+  <table class="tbl">
+    <caption class="visually-hidden">فهرست دورها</caption>
+    <thead>
+      <tr>
+        <th scope="col">دور</th>
+        <th scope="col">وضعیت</th>
+        <th scope="col">تخته‌ها</th>
+        <th scope="col">نتایج ثبت‌شده</th>
+        <th scope="col">مانده</th>
+        <th scope="col"><span class="visually-hidden">عملیات</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rounds|sort(attribute='round_number', reverse=true) %}
+      {% set st = round_stats.get(r.id, {}) %}
+      <tr>
+        <td class="num"><strong>{{ r.round_number }}</strong></td>
+        <td>
+          {% if r.status == 'finished' %}<span class="badge badge-success">پایان یافته</span>
+          {% elif r.status == 'ongoing' %}<span class="badge badge-info">در جریان</span>
+          {% else %}<span class="badge badge-neutral">در انتظار</span>{% endif %}
+        </td>
+        <td class="num">{{ st.get('total', '-') }}</td>
+        <td class="num">{{ st.get('decided', '-') }}</td>
+        <td class="num">
+          {% if st.get('pending') %}<span class="badge badge-warning">{{ st.pending }} مانده</span>
+          {% else %}<span class="badge badge-success">کامل</span>{% endif %}
+        </td>
+        <td class="actions-cell">
+          <a href="{{ url_for('manage.round_detail', public_id=tournament.public_id, round_number=r.round_number) }}" class="btn btn-sm btn-primary">باز کردن</a>
+          {% if loop.first and can_manage %}
+          <form method="POST" style="display:inline;"
+                  action="{{ url_for('round.delete_round', public_id=tournament.public_id, round_number=r.round_number) }}"
+                  data-confirm="دور {{ r.round_number }} و همه نتایج ثبت‌شده آن حذف می‌شود."
+                  data-confirm-hint="این عمل قابل بازگشت نیست.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="icon-btn danger" title="حذف دور {{ r.round_number }}" aria-label="حذف دور {{ r.round_number }}">🗑️</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <p class="empty-title">هنوز دوری ایجاد نشده است</p>
+  <p>برای شروع، دور ۱ را ایجاد کنید.</p>
+</div>
+{% endif %}
+{% endblock %}

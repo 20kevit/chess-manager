@@ -1,0 +1,152 @@
+{% extends "manage/shell.html" %}
+{% block title %}کادر و دسترسی‌ها | مدیریت {{ tournament.name }}{% endblock %}
+
+{% block manage_content %}
+{% from "components/icons.html" import icon %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+  <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}">مدیریت {{ tournament.name }}</a>
+  <span class="sep" aria-hidden="true">‹</span><span aria-current="page">کادر و دسترسی‌ها</span>
+</nav>
+<div class="page-header manage-page-head">
+  <div>
+    <h1 class="page-title">کادر و دسترسی‌ها</h1>
+    <p class="page-desc">سرداور به هر دو سطح دسترسی دارد؛ داور فقط ثبت نتایج و عملیات دور</p>
+  </div>
+</div>
+
+<section class="manage-section" aria-labelledby="add-h">
+  <h2 class="section-title" id="add-h">{{ icon("plus", 16) }} دعوت عضو جدید</h2>
+  <div class="form-group" style="position: relative; max-width: 560px;">
+    <label for="arbiter-search">جستجوی کاربر (ایمیل یا نام):</label>
+    <input type="text" id="arbiter-search" class="form-control" placeholder="حداقل ۲ حرف وارد کنید..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="search-results">
+    <div id="search-results" style="position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: var(--border-width) solid var(--border); border-radius: 0 0 8px 8px; z-index: 10; display: none; box-shadow: var(--shadow-md); max-height: 200px; overflow-y: auto;" role="listbox"></div>
+  </div>
+  {% if can_appoint_chief %}
+  <div class="form-group" style="max-width: 560px;">
+    <label for="staff-role">نقش کاربر جدید:</label>
+    <select id="staff-role" class="form-control">
+      <option value="arbiter">داور (ثبت نتایج و عملیات دور)</option>
+      <option value="chief_arbiter">سرداور (دسترسی مدیریتی کامل)</option>
+    </select>
+  </div>
+  {% else %}
+  <input type="hidden" id="staff-role" value="arbiter">
+  <p class="hint">تعیین سرداور تنها توسط برگزارکننده یا مدیر سیستم ممکن است؛ شما می‌توانید داور دعوت کنید.</p>
+  {% endif %}
+</section>
+
+<section class="manage-section" aria-labelledby="list-h">
+  <h2 class="section-title" id="list-h">اعضای فعلی کادر</h2>
+  {% if staff_members %}
+  <div class="tbl-wrap plain">
+    <table class="tbl">
+      <caption class="visually-hidden">اعضای کادر {{ tournament.name }}</caption>
+      <thead>
+        <tr><th scope="col" style="text-align:start;">کاربر</th><th scope="col">نقش</th><th scope="col">وضعیت</th><th scope="col"><span class="visually-hidden">عملیات</span></th></tr>
+      </thead>
+      <tbody>
+        {% for staff in staff_members %}
+        <tr>
+          <td class="player-cell">{{ staff.user.email }}</td>
+          <td>{% if staff.role == 'chief_arbiter' %}<span class="badge badge-info">سرداور</span>{% else %}<span class="badge badge-neutral">داور</span>{% endif %}</td>
+          <td>
+            {% if staff.status == 'pending' %}<span class="badge badge-warning">در انتظار پاسخ</span>
+            {% elif staff.status == 'accepted' %}<span class="badge badge-success">تایید شده</span>
+            {% elif staff.status == 'rejected' %}<span class="badge badge-error">رد شده</span>
+            {% else %}<span class="badge badge-neutral">{{ staff.status }}</span>{% endif %}
+          </td>
+          <td class="actions-cell">
+            <form method="POST" action="{{ url_for('manage.staff_remove', public_id=tournament.public_id, user_id=staff.user_id) }}"
+                  data-confirm="عضو {{ staff.user.email }} از کادر {{ tournament.name }} حذف می‌شود."
+                  data-confirm-hint="دسترسی مدیریتی او بلافاصله قطع می‌شود.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state"><p class="empty-title">هیچ عضوی در کادر ثبت نشده است</p></div>
+  {% endif %}
+</section>
+
+<section class="manage-section" aria-labelledby="model-h">
+  <h2 class="section-title" id="model-h">مدل دسترسی</h2>
+  <div class="tbl-wrap plain">
+    <table class="tbl">
+      <caption class="visually-hidden">سطوح دسترسی کادر</caption>
+      <thead><tr><th scope="col" style="text-align:start;">قابلیت</th><th scope="col">برگزارکننده</th><th scope="col">سرداور</th><th scope="col">داور</th></tr></thead>
+      <tbody>
+        <tr><td>مشاهده فضای مدیریت</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td></tr>
+        <tr><td>ثبت و ویرایش نتایج، استراحت‌ها، جابجایی دستی</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td></tr>
+        <tr><td>ایجاد و حذف دور، مدیریت بازیکنان و ثبت‌نام‌ها</td><td class="num">✓</td><td class="num">✓</td><td class="num">—</td></tr>
+        <tr><td>تنظیمات، آیین‌نامه، قیمت‌گذاری، جوایز، اطلاع‌رسانی</td><td class="num">✓</td><td class="num">✓</td><td class="num">—</td></tr>
+        <tr><td>تعیین سرداور</td><td class="num">✓</td><td class="num">—</td><td class="num">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+(function () {
+  var box = document.getElementById('arbiter-search');
+  if (!box) return;
+  var resultsDiv = document.getElementById('search-results');
+  var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  var timer = null;
+  box.addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      var query = box.value.trim();
+      if (query.length < 2) { resultsDiv.style.display = 'none'; return; }
+      fetch('/dashboard/api/search-users?q=' + encodeURIComponent(query) + '&public_id={{ tournament.public_id }}')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          resultsDiv.innerHTML = '';
+          if (!Array.isArray(data)) { resultsDiv.style.display = 'none'; return; }
+          if (!data.length) {
+            resultsDiv.innerHTML = '<div style="padding: 10px; color: var(--text-muted);">کاربری یافت نشد</div>';
+          } else {
+            data.forEach(function (user) {
+              var item = document.createElement('div');
+              item.style.padding = '10px';
+              item.style.cursor = 'pointer';
+              item.style.borderBottom = 'var(--border-width) solid var(--border)';
+              item.setAttribute('role', 'option');
+              item.textContent = user.name + ' (' + user.email + ')';
+              item.addEventListener('click', function () {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ url_for("manage.staff_add", public_id=tournament.public_id) }}';
+                [['csrf_token', csrfToken], ['user_id', user.id],
+                 ['staff_role', (document.getElementById('staff-role') || {}).value || 'arbiter']
+                ].forEach(function (kv) {
+                  var inp = document.createElement('input');
+                  inp.type = 'hidden'; inp.name = kv[0]; inp.value = kv[1];
+                  form.appendChild(inp);
+                });
+                document.body.appendChild(form);
+                form.submit();
+              });
+              resultsDiv.appendChild(item);
+            });
+          }
+          resultsDiv.style.display = 'block';
+        })
+        .catch(function (e) { console.error(e); });
+    }, 250);
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || (!e.target.closest('#arbiter-search') && !e.target.closest('#search-results'))) {
+      resultsDiv.style.display = 'none';
+    }
+  });
+})();
+</script>
+{% endblock %}

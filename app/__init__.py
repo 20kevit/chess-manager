@@ -87,6 +87,7 @@ def create_app(config_class=None) -> Flask:
         return UserRepository.get_by_id(int(user_id))
 
     from interfaces.web.tournament import tournament_bp
+    from interfaces.web.manage_routes import manage_bp
     from interfaces.web.player_routes import player_bp
     from interfaces.web.round_routes import round_bp
     from interfaces.web.print_routes import print_bp
@@ -101,6 +102,7 @@ def create_app(config_class=None) -> Flask:
     from interfaces.web.notification_routes import notification_bp
 
     flask_app.register_blueprint(tournament_bp)
+    flask_app.register_blueprint(manage_bp)
     flask_app.register_blueprint(player_bp)
     flask_app.register_blueprint(round_bp)
     flask_app.register_blueprint(print_bp)
@@ -196,5 +198,89 @@ def create_app(config_class=None) -> Flask:
         else:
             unread_count = 0
         return dict(unread_notifications_count=unread_count)
+
+    # Tournament Management Workspace nav context.
+    #
+    # Every template rendered inside the workspace shell (manage/* and the
+    # converted manager-only tool pages) needs the same capability flags and
+    # the active nav key. Computing them here keeps old tool routes untouched:
+    # they already pass `tournament`, and the shell derives the rest.
+    _MANAGE_ACTIVE_BY_ENDPOINT = {
+        "manage.overview": "overview",
+        "manage.players": "players",
+        "manage.rounds": "rounds",
+        "manage.round_detail": "rounds",
+        "manage.standings": "standings",
+        "manage.crosstable": "crosstable",
+        "manage.tiebreaks": "tiebreaks",
+        "manage.output": "output",
+        "manage.staff": "staff",
+        "manage.staff_add": "staff",
+        "manage.staff_remove": "staff",
+        "tournament.settings": "settings",
+        "tournament.rulebook_settings": "rulebook",
+        "tournament.upload_rulebook_pdf": "rulebook",
+        "tournament.remove_rulebook_pdf": "rulebook",
+        "tournament.announcements": "announcements",
+        "tournament.notification_prefs": "announcements",
+        "tournament.prize_settings": "prizes",
+        "tournament.prizes_recompute": "prizes",
+        "registration.pricing_settings": "pricing",
+        "registration.add_promo_code": "pricing",
+        "registration.delete_promo_code": "pricing",
+        "registration.manage_registrations": "registrations",
+        "registration.approve_registration": "registrations",
+        "registration.reject_registration": "registrations",
+        "registration.reject_receipt": "registrations",
+        "player.player_list": "players",
+        "player.player_add": "players",
+        "player.player_edit": "players",
+        "player.player_import": "players",
+        "player.csv_template": "players",
+        "player.player_delete": "players",
+        "player.player_withdraw": "players",
+        "round.round_list": "rounds",
+        "round.round_view": "rounds",
+        "round.round_new": "rounds",
+        "round.finish_round": "rounds",
+        "round.delete_round": "rounds",
+        "round.save_results": "rounds",
+        "round.request_bye": "byes",
+        "round.manual_pairing_add": "byes",
+        "round.manual_pairing_remove": "byes",
+        "round.cancel_bye": "byes",
+        "round.manual_pairing": "rounds",
+        "print.print_standings": "output",
+        "print.print_round": "output",
+        "print.print_crosstable": "output",
+        "print.export_trf": "output",
+        "backup.export_json": "output",
+        "backup.import_json": "output",
+        "backup.export_provider": "output",
+        "backup.import_provider": "output",
+        "dashboard.manage_tournament": "staff",
+        "dashboard.add_staff": "staff",
+        "dashboard.remove_staff": "staff",
+    }
+
+    @flask_app.context_processor
+    def inject_manage_nav():
+        try:
+            view_args = request.view_args or {}
+            public_id = view_args.get("public_id")
+            if not public_id:
+                return {}
+            from interfaces.web.admin_auth import capabilities
+            _t, can_manage, can_edit = capabilities(str(public_id))
+            if _t is None:
+                return {}
+            return dict(
+                mn_can_manage=can_manage,
+                mn_can_edit_results=can_edit,
+                mn_active=_MANAGE_ACTIVE_BY_ENDPOINT.get(
+                    request.endpoint or "", ""),
+            )
+        except Exception:
+            return {}
         
     return flask_app

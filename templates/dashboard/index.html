@@ -3,7 +3,7 @@
 {% block title %}داشبورد کاربری{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v=20261005w2">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v=20261006m1">
 {% endblock %}
 
 {% block content %}
@@ -47,7 +47,8 @@
                             {% else %}<span class="badge badge-neutral">در حال آماده‌سازی</span>{% endif %}
                         </span>
                     </div>
-                    <a href="{{ url_for('tournament.view', public_id=t.public_id) }}" class="btn btn-info btn-action">مدیریت</a>
+                    <a href="{{ url_for('manage.overview', public_id=t.public_id) }}" class="btn btn-info btn-action">مدیریت</a>
+                    <a href="{{ url_for('tournament.view', public_id=t.public_id) }}" class="btn btn-light btn-action">صفحه عمومی</a>
                 </div>
                 {% endfor %}
             {% else %}
@@ -98,7 +99,8 @@
                         {% else %}<span class="badge badge-neutral">در حال آماده‌سازی</span>{% endif %}
                     </span>
                 </div>
-                <a href="{{ url_for('tournament.view', public_id=t.public_id) }}" class="btn btn-info btn-action">مشاهده</a>
+                <a href="{{ url_for('manage.overview', public_id=t.public_id) }}" class="btn btn-info btn-action">مدیریت</a>
+                <a href="{{ url_for('tournament.view', public_id=t.public_id) }}" class="btn btn-light btn-action">صفحه عمومی</a>
             </div>
             {% endfor %}
         </div>
@@ -478,5 +480,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/modal.js') }}?v=20261005w2"></script>
+<script src="{{ url_for('static', filename='js/modal.js') }}?v=20261006m1"></script>
 {% endblock %}
