@@ -129,8 +129,9 @@ class TestManagerOnlyRoutes:
     """Arbiter must be rejected; organizer/chief/sysadmin allowed.
 
     Denial contract (Phase 15): anonymous -> 302 login; authenticated but
-    unauthorized -> 403. `/players` is public by design (roster + gated
-    Actions column) and is covered by TestPublicRoster below.
+    unauthorized -> 403. `/players` is public by design (read-only roster;
+    player mutations live in the workspace and are covered by the
+    workspace tests) and is covered by TestPublicRoster below.
     """
 
     @pytest.mark.parametrize("url", [
@@ -417,26 +418,54 @@ class TestPublicPageUnchanged:
         anon = matrix["app"].test_client()
         assert anon.get(f"/{PID}").status_code == 200
 
-    def test_capability_flags_on_view(self, matrix):
-        html = _as(matrix, "arbiter").get(f"/{PID}").get_data(as_text=True)
-        assert "دورها و نتایج" in html
-        assert "قیمت‌گذاری" not in html
+    def test_public_view_identical_for_every_role(self, matrix):
+        """Public tournament stays structurally identical for everyone.
 
-        html = _as(matrix, "chief").get(f"/{PID}").get_data(as_text=True)
-        assert "دورها و نتایج" in html and "قیمت‌گذاری" in html
+        No role-dependent management navigation or controls may leak into
+        the public page — not for arbiters, chiefs, organizers, or
+        anonymous visitors. Management lives in /<id>/manage only.
+        """
+        forbidden = (
+            "قیمت‌گذاری", "ثبت‌نام‌ها", "کادر داوری", "اطلاع‌رسانی‌ها",
+            "ثبت نتایج", "ایجاد دور", "فضای مدیریت", "اقدامات داوری",
+            "admin-actions",
+        )
+        public_nav = (
+            "نمای کلی", "بازیکنان", "دورها و نتایج", "جدول برخورد", "خلاصه",
+        )
+        bodies = {}
+        for who in ("arbiter", "chief", "organizer"):
+            bodies[who] = _as(matrix, who).get(f"/{PID}") \
+                .get_data(as_text=True)
+        from flask import g
+        g.pop("_login_user", None)
+        bodies["anon"] = matrix["app"].test_client().get(f"/{PID}") \
+            .get_data(as_text=True)
+        for who, html in bodies.items():
+            for marker in forbidden:
+                assert marker not in html, (who, marker)
+            for link in public_nav:
+                assert link in html, (who, link)
 
 
 class TestPublicCapabilityPages:
-    """Phase 15: same page, different capabilities (items 14/15/16/22)."""
+    """Public pages carry no capability-gated controls; the workspace does."""
 
     @pytest.mark.parametrize("url", [
         f"/{PID}/players/import",
-        "/dashboard/tournament/" + PID + "/manage",
     ])
-    def test_tool_and_hub_pages_keep_login_redirect(self, matrix, url):
-        # Tool pages (import wizard) and the management hub are not public
-        # content; unauthenticated/unauthorized GETs redirect to login.
+    def test_tool_pages_keep_login_redirect(self, matrix, url):
+        # Tool pages (import wizard) are not public content;
+        # unauthenticated/unauthorized GETs redirect to login.
         assert _as(matrix, "arbiter").get(url).status_code == 302, url
+
+    def test_legacy_hub_redirects_into_workspace(self, matrix):
+        # The retired dashboard management hub redirects (302) into the
+        # workspace staff section for authorized staff.
+        resp = _as(matrix, "organizer") \
+            .get("/dashboard/tournament/" + PID + "/manage")
+        assert resp.status_code == 302
+        assert f"/{PID}/manage/staff" in resp.headers["Location"]
 
     def test_rounds_and_players_open_to_anonymous(self, matrix):
         anon = matrix["app"].test_client()
@@ -450,12 +479,24 @@ class TestPublicCapabilityPages:
         assert "result_" not in body  # no result <select> names
         assert "ذخیره نتایج" not in body
         roster = anon.get(f"/{PID}/players").get_data(as_text=True)
-        assert "اقدامات" not in roster
+        assert "عملیات" not in roster
+        assert "افزودن بازیکن" not in roster
 
-    def test_manager_sees_actions_and_controls(self, matrix):
-        html = _as(matrix, "chief").get(f"/{PID}/players").get_data(as_text=True)
-        assert "اقدامات" in html
-        html = _as(matrix, "chief").get(f"/{PID}/rounds/1").get_data(as_text=True)
+    def test_workspace_carries_role_controls(self, matrix):
+        """Management controls live in /manage, gated by capability."""
+        html = _as(matrix, "chief").get(f"/{PID}/manage/players") \
+            .get_data(as_text=True)
+        assert "عملیات" in html
+        assert "افزودن بازیکن" in html
+        html = _as(matrix, "chief").get(f"/{PID}/manage/rounds/1") \
+            .get_data(as_text=True)
+        assert "ذخیره نتایج" in html
+        # Plain arbiter: operational pages work, manager actions disabled.
+        html = _as(matrix, "arbiter").get(f"/{PID}/manage/players") \
+            .get_data(as_text=True)
+        assert "نیازمند دسترسی مدیریتی" in html
+        html = _as(matrix, "arbiter").get(f"/{PID}/manage/rounds/1") \
+            .get_data(as_text=True)
         assert "ذخیره نتایج" in html
 
     def test_unauthenticated_mutation_redirects_to_login(self, matrix):
