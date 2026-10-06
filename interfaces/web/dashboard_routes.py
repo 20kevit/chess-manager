@@ -115,24 +115,14 @@ def index():
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage")
 @login_required
 def manage_tournament(public_id):
-    """صفحه hub مدیریت تورنمنت در داشبورد"""
-    tournament = require_admin(public_id)
-    if not tournament:
-        flash("دسترسی غیرمجاز است.", "error")
-        return redirect(url_for("dashboard.index"))
-    
-    staff_members = TournamentStaffModel.query.filter_by(tournament_id=tournament.id).all()
+    """Legacy management hub — retired.
 
-    return render_template(
-        "dashboard/manage_tournament.html",
-        tournament=tournament,
-        staff_members=staff_members,
-        # P1-B: only organizer/system admin may appoint chief arbiters.
-        can_appoint_chief=(
-            current_user.is_admin
-            or tournament.organizer_id == current_user.id
-        ),
-    )
+    Redirects into the Tournament Management Workspace (staff section).
+    Kept for compatibility: old bookmarks/links continue to work, and the
+    authorization contract is unchanged (anonymous -> login via
+    @login_required, unauthorized -> 403 from the workspace gate).
+    """
+    return redirect(url_for("manage.staff", public_id=public_id))
 
 @dashboard_bp.route("/dashboard/profile/search", methods=["POST"])
 @login_required

@@ -1,12 +1,10 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 {% block title %}مدیریت استراحت | {{ tournament.name }}{% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "rounds", True) }}
+{% block manage_content %}
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
     <h1>⏸️ مدیریت استراحت و جفت‌گذاری دستی</h1>
-    <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 بازگشت به داشبورد</a>
+    <a href="{{ url_for('manage.rounds', public_id=tournament.public_id) }}" class="btn btn-secondary">بازگشت به دورها</a>
 </div>
 
 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:20px;">

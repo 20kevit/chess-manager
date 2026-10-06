@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 
 {% block title %}تنظیمات دستی جفت‌گذاری - دور {{ round.round_number }}{% endblock %}
 
@@ -50,9 +50,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "rounds", True) }}
+{% block manage_content %}
 <div class="form-container">
     <h2 class="section-title">تنظیمات دستی جفت‌گذاری - دور {{ round.round_number }}</h2>
     <p style="margin-bottom: 20px; color:var(--text-muted);">
@@ -165,12 +163,12 @@
     {% endif %}
 
     <div class="form-actions" style="margin-top: 30px; border-top: 2px dashed var(--border); padding-top: 20px;">
-        <a href="{{ url_for('round.round_view', public_id=tournament.public_id, round_number=round.round_number) }}" class="btn btn-secondary">بازگشت به مشاهده دور</a>
-        <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-secondary">بازگشت به لیست دورها</a>
+        <a href="{{ url_for('manage.round_detail', public_id=tournament.public_id, round_number=round.round_number) }}" class="btn btn-secondary">بازگشت به دور</a>
+        <a href="{{ url_for('manage.rounds', public_id=tournament.public_id) }}" class="btn btn-secondary">بازگشت به فهرست دورها</a>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/manual-pairing.js') }}?v=20261005w2"></script>
+<script src="{{ url_for('static', filename='js/manual-pairing.js') }}?v=20261006m1"></script>
 {% endblock %}

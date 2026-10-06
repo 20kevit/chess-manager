@@ -511,7 +511,7 @@ def settings(public_id):
         try:
             TournamentConfigService.update_basic_settings(tournament, request.form)
             flash("تنظیمات با موفقیت ذخیره شد.", "success")
-            return redirect(url_for("tournament.view", public_id=public_id))
+            return redirect(url_for("manage.overview", public_id=public_id))
         except Exception as e:
             flash(f"خطا در ذخیره تنظیمات: {str(e)}", "error")
 

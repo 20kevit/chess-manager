@@ -1,13 +1,11 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 {% block title %}آیین‌نامه | {{ tournament.name }}{% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "rulebook", True) }}
+{% block manage_content %}
 <div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>📜 آیین‌نامه مسابقه</h1>
-        <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
+        <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به فضای مدیریت</a>
     </div>
     <p style="font-size:0.85rem; color:var(--text-muted); margin-top:8px;">
         سه حالت مستقل: متن آزاد، بخش‌های ساختاریافته (مرتب‌شونده) و فایل PDF عمومی. می‌توانید از یک، دو یا هر سه حالت همزمان استفاده کنید.

@@ -76,7 +76,7 @@ def player_edit(public_id, participant_id):
     if request.method == "POST":
         ParticipantManagement.update(participant, tournament, request.form)
         flash(f"اطلاعات {participant.full_name} بروزرسانی شد.", "success")
-        return redirect(url_for("player.player_list", public_id=public_id))
+        return redirect(url_for("manage.players", public_id=public_id))
 
     return render_template("tournament/player_edit.html", tournament=tournament, player=participant, is_admin=True)
 
@@ -96,12 +96,12 @@ def player_delete(public_id, participant_id):
             f"بازیکن {participant.full_name} در قرعه‌کشی شرکت کرده و قابل حذف نیست. لطفاً برای خروج او از مسابقه، از گزینه انصراف (Withdraw) استفاده کنید.", 
             "error"
         )
-        return redirect(url_for("player.player_list", public_id=public_id))
+        return redirect(url_for("manage.players", public_id=public_id))
 
     name = participant.full_name
     ParticipantManagement.delete(participant, tournament.id)
     flash(f"بازیکن {name} با موفقیت حذف شد.", "success")
-    return redirect(url_for("player.player_list", public_id=public_id))
+    return redirect(url_for("manage.players", public_id=public_id))
 
 @player_bp.route("/<public_id>/players/<int:participant_id>/withdraw", methods=["POST"])
 def player_withdraw(public_id, participant_id):
@@ -114,7 +114,7 @@ def player_withdraw(public_id, participant_id):
     if not participant: abort(404)
 
     ParticipantManagement.toggle_withdraw(participant, tournament.current_round)
-    return redirect(url_for("tournament.view", public_id=public_id))
+    return redirect(url_for("manage.players", public_id=public_id))
 
 @player_bp.route("/<public_id>/players/import", methods=["GET", "POST"])
 def player_import(public_id):
@@ -182,7 +182,7 @@ def _handle_csv_confirm(tournament, public_id):
 
     flash(f"✅ {added} بازیکن با موفقیت اضافه شد", "success")
 
-    return redirect(url_for("player.player_list", public_id=public_id))
+    return redirect(url_for("manage.players", public_id=public_id))
 
 @player_bp.route("/<public_id>/players/import/template")
 def csv_template(public_id):

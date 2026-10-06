@@ -1,10 +1,10 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 {% block title %}ویرایش {{ player.full_name }}{% endblock %}
 
-{% block content %}
+{% block manage_content %}
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
     <h1>✏️ ویرایش اطلاعات: {{ player.full_name }}</h1>
-    <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 انصراف</a>
+    <a href="{{ url_for('manage.players', public_id=tournament.public_id) }}" class="btn btn-secondary">انصراف</a>
 </div>
 
 <form method="POST" class="form-container" style="max-width: 900px; border:none; background:var(--surface); padding:30px; border-radius:15px;">

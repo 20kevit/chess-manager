@@ -1,9 +1,7 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 {% block title %}تنظیمات | {{ tournament.name }}{% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "settings", True) }}
+{% block manage_content %}
 <div class="page-header" style="margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>⚙️ تنظیمات تورنمنت</h1>
@@ -122,5 +120,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/tiebreak-dnd.js') }}?v=20261005w2"></script>
+<script src="{{ url_for('static', filename='js/tiebreak-dnd.js') }}?v=20261006m1"></script>
 {% endblock %}

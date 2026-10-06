@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 {% block title %}ایمپورت بازیکنان | {{ tournament.name }}{% endblock %}
 
-{% block content %}
+{% block manage_content %}
 <div class="page-header">
     <h1>ایمپورت بازیکنان از CSV</h1>
     <p>{{ tournament.name }}</p>
@@ -9,7 +9,7 @@
 
 <div class="admin-actions">
     <!-- Clean URL without secret codes -->
-    <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 بازگشت به داشبورد</a>
+    <a href="{{ url_for('manage.players', public_id=tournament.public_id) }}" class="btn btn-secondary">بازگشت به بازیکنان</a>
     <a href="{{ url_for('player.csv_template', public_id=tournament.public_id) }}" class="btn btn-secondary">📥 دانلود فایل نمونه CSV</a>
 </div>
 

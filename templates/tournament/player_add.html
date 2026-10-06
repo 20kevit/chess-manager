@@ -1,12 +1,12 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 {% block title %}افزودن بازیکن | {{ tournament.name }}{% endblock %}
 
-{% block content %}
+{% block manage_content %}
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
     <h1>👤 افزودن بازیکن جدید</h1>
     <div>
         <button type="submit" form="playerAddForm" class="btn btn-primary" style="margin-left: 8px;">ثبت بازیکن</button>
-        <a href="/{{ tournament.public_id }}" class="btn btn-secondary">بازگشت</a>
+        <a href="{{ url_for('manage.players', public_id=tournament.public_id) }}" class="btn btn-secondary">بازگشت به بازیکنان</a>
     </div>
 </div>
 

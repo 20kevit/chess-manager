@@ -1,14 +1,12 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 {% block title %}تنظیمات مالی - {{ tournament.name }}{% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "pricing", True) }}
+{% block manage_content %}
 <div class="reg-manage-container" style="max-width: 900px; margin: 20px auto;">
     <div class="reg-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
             <h2 style="margin: 0;">💰 تنظیمات ثبت‌نام و قیمت‌گذاری</h2>
-            <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به پنل مدیریت</a>
+            <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}" class="btn btn-secondary">🔙 بازگشت به فضای مدیریت</a>
         </div>
         
         <form method="POST" action="{{ url_for('registration.pricing_settings', public_id=tournament.public_id) }}">

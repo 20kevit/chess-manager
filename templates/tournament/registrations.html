@@ -1,20 +1,18 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 {% block title %}درخواست‌های ثبت‌نام - {{ tournament.name }}{% endblock %}
 {% from "components/ui.html" import registration_status, empty_state %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "registrations", True) }}
+{% block manage_content %}
 <div class="page-header">
     <div>
         <nav class="breadcrumbs" aria-label="مسیر صفحه">
-            <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
+            <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}">مدیریت {{ tournament.name }}</a>
             <span class="sep" aria-hidden="true">‹</span><span aria-current="page">درخواست‌های ثبت‌نام</span>
         </nav>
         <h1 class="page-title">درخواست‌های ثبت‌نام</h1>
     </div>
     <div class="page-actions">
-        <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-ghost">بازگشت به پنل مدیریت</a>
+        <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}" class="btn btn-ghost">بازگشت به فضای مدیریت</a>
     </div>
 </div>
 

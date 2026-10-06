@@ -65,7 +65,7 @@ def round_new(public_id):
         )
         flash("An unexpected error occurred during pairing.", "error")
         
-    return redirect(url_for("tournament.view", public_id=public_id))
+    return redirect(url_for("manage.rounds", public_id=public_id))
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>")
 def round_view(public_id, round_number):
@@ -103,7 +103,7 @@ def save_results(public_id, round_number):
     except Exception as e:
         flash("خطا در ذخیره نتایج.", "error")
         
-    return redirect(url_for("round.round_view", public_id=public_id, round_number=round_number))
+    return redirect(url_for("manage.round_detail", public_id=public_id, round_number=round_number))
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/finish", methods=["POST"])
 def finish_round(public_id, round_number):
@@ -121,7 +121,7 @@ def finish_round(public_id, round_number):
         flash(str(e), "error")
     except Exception as e:
         flash(f"خطا: {str(e)}", "error")
-    return redirect(url_for("round.round_list", public_id=public_id))
+    return redirect(url_for("manage.rounds", public_id=public_id))
 
 @round_bp.route("/<public_id>/rounds/<int:round_number>/delete", methods=["POST"])
 def delete_round(public_id, round_number):
@@ -134,11 +134,11 @@ def delete_round(public_id, round_number):
     round_obj = RoundRepository.get_by_number(tournament.id, round_number)
     if not round_obj:
         flash("دور یافت نشد", "error")
-        return redirect(url_for("round.round_list", public_id=public_id))
+        return redirect(url_for("manage.rounds", public_id=public_id))
     last_round = RoundRepository.get_last(tournament.id)
     if last_round and last_round.round_number != round_number:
         flash("فقط آخرین دور قابل حذف است", "error")
-        return redirect(url_for("round.round_list", public_id=public_id))
+        return redirect(url_for("manage.rounds", public_id=public_id))
     try:
         RoundLifecycleService.delete_round(round_obj, tournament)
         flash(f"دور {round_number} حذف شد", "success")
@@ -146,7 +146,7 @@ def delete_round(public_id, round_number):
         import traceback
         traceback.print_exc()
         flash(f"خطا: {str(e)}", "error")
-    return redirect(url_for("round.round_list", public_id=public_id))
+    return redirect(url_for("manage.rounds", public_id=public_id))
 
 # ── Pre-Pairing Manual Controls (Byes & Locks) ──
 
