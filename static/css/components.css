@@ -16,8 +16,8 @@
   min-height: 40px;
 }
 .btn:hover { text-decoration: none; }
-.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
-.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: var(--on-primary); }
 .btn-primary:active { background: var(--primary-active); }
 .btn-secondary { background: var(--surface); border-color: var(--border-strong); color: var(--text); }
 .btn-secondary:hover { background: var(--surface-muted); border-color: var(--text-muted); }
@@ -26,17 +26,17 @@
 }
 .btn-ghost:hover, .btn-outline-primary:hover, .btn-light:hover { background: var(--primary-subtle); border-color: var(--primary); }
 .btn-danger, .btn-danger-outline, .btn-outline-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
-.btn-danger:hover, .btn-danger-outline:hover, .btn-outline-danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
-.btn-danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; }
-.btn-danger-solid:hover { background: var(--danger-hover); border-color: var(--danger-hover); color: #fff; }
-.btn-success { background: var(--success); border-color: var(--success); color: #fff; }
-.btn-success:hover { background: var(--success-hover); border-color: var(--success-hover); color: #fff; }
+.btn-danger:hover, .btn-danger-outline:hover, .btn-outline-danger:hover { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+.btn-danger-solid { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+.btn-danger-solid:hover { background: var(--danger-hover); border-color: var(--danger-hover); color: var(--on-danger); }
+.btn-success { background: var(--success); border-color: var(--success); color: var(--on-success); }
+.btn-success:hover { background: var(--success-hover); border-color: var(--success-hover); color: var(--on-success); }
 .btn-info { background: var(--info-subtle); border-color: var(--info); color: var(--info); }
 .btn-info:hover { background: var(--info); color: #fff; }
 .btn-warning { background: var(--warning-subtle); border-color: var(--warning); color: var(--warning); }
-.btn-warning:hover { background: var(--warning); color: #fff; }
-.btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn-accent:hover { background: var(--accent-hover); color: #fff; }
+.btn-warning:hover { background: var(--warning); color: var(--on-warning); }
+.btn-accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn-accent:hover { background: var(--accent-hover); color: var(--on-accent); }
 
 .btn-large, .btn-lg { padding: 12px 28px; font-size: var(--text-sub); min-height: 48px; }
 .btn-small, .btn-sm, .btn-action { padding: 6px 12px; font-size: var(--text-small); min-height: 36px; }
@@ -152,7 +152,7 @@ a.stat-link:hover { text-decoration: none; border-color: var(--primary); box-sha
   font-variant-numeric: tabular-nums;
 }
 .pagination a:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
-.pagination [aria-current="page"] { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: var(--weight-semibold); }
+.pagination [aria-current="page"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-weight: var(--weight-semibold); }
 .pagination .disabled { opacity: 0.45; pointer-events: none; }
 
 /* ---------- search / filter bar ---------- */
@@ -161,7 +161,7 @@ a.stat-link:hover { text-decoration: none; border-color: var(--primary); box-sha
 .filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); background: var(--surface-muted); border: var(--border-width) solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4); margin-block-end: var(--space-4); }
 .filter-btn { padding: 6px 14px; border-radius: var(--radius-full); border: var(--border-width) solid var(--border-strong); background: var(--surface); color: var(--text-secondary); font-size: var(--text-small); cursor: pointer; font-family: inherit; min-height: 34px; }
 .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
-.filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.filter-btn.active { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 
 /* ---------- modal / confirm ---------- */
 .modal-overlay {

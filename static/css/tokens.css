@@ -39,6 +39,15 @@
   --info-hover: #0f4f99;
   --info-subtle: #e8f1fc;
 
+  /* ---- foreground ON a solid brand/status fill ----
+     White is correct on the deep light-theme fills, but the accent orange
+     (#FF8A00) only reaches 2.36:1 with white, so it uses ink instead. */
+  --on-primary: #ffffff;
+  --on-accent: #231300;
+  --on-success: #ffffff;
+  --on-warning: #ffffff;
+  --on-danger: #ffffff;
+
   /* ---- semantic: surfaces & text ---- */
   --neutral: #5b6b7b;
   --background: var(--brand-offwhite);
@@ -143,12 +152,21 @@
   --primary-active: #a5d0f7;
   --primary-subtle: #1b3350;
   --accent: #ffa54d;
+  --accent-hover: #ffbb77;
   --accent-subtle: #3a2a16;
 
-  --success: #4cc38a; --success-subtle: #143a2a;
-  --warning: #e8a94e; --warning-subtle: #3a2c14;
-  --danger: #ef8080;  --danger-subtle: #431e1e;
+  --success: #4cc38a; --success-hover: #6fd3a4; --success-subtle: #143a2a;
+  --warning: #e8a94e; --warning-hover: #f2c377; --warning-subtle: #3a2c14;
+  --danger: #ef8080;  --danger-hover: #f5a0a0;  --danger-subtle: #431e1e;
   --info: #64a6ec;    --info-subtle: #1b3350;
+
+  /* Dark theme fills are pastel, so solid buttons need dark ink on top
+     (white text would sit at 1.9-2.6:1 and fail WCAG AA). */
+  --on-primary: #0f1722;
+  --on-accent: #231300;
+  --on-success: #0f1722;
+  --on-warning: #0f1722;
+  --on-danger: #0f1722;
 
   --gray-50: var(--surface-muted); --gray-100: #22303f;
   --gray-200: var(--border); --gray-300: var(--border-strong);
