@@ -26,8 +26,8 @@
                 شما برگزارکننده این تورنمنت هستید. نیازی به کد دسترسی نیست؛ می‌توانید مستقیماً از طریق داشبورد خود این تورنمنت را مدیریت کنید.
             </p>
             <div style="margin-top: 16px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                <a href="{{ url_for('dashboard.manage_tournament', public_id=tournament.public_id) }}" class="btn btn-primary btn-large">
-                    ⚙️ ورود به پنل مدیریت
+                <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}" class="btn btn-primary btn-large">
+                    ⚙️ ورود به فضای مدیریت
                 </a>
                 <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-secondary btn-large">
                     👁️ مشاهده صفحه عمومی

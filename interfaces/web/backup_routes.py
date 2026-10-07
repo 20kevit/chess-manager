@@ -46,11 +46,11 @@ def export_json(public_id):
         )
     except ImportExportError as e:
         flash(f"خطا در خروجی: {str(e)}", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        return redirect(url_for("manage.output", public_id=public_id))
     except Exception as e:
         traceback.print_exc()
         flash(f"خطای غیرمنتظره: {str(e)}", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        return redirect(url_for("manage.output", public_id=public_id))
 
 
 @backup_bp.route("/<public_id>/backup/import", methods=["GET", "POST"])
@@ -89,7 +89,7 @@ def import_json(public_id):
                 flash("داده‌ها ادغام شد", "success")
 
             return redirect(url_for(
-                "dashboard.manage_tournament", public_id=public_id
+                "manage.output", public_id=public_id
             ))
 
         except json.JSONDecodeError:
@@ -127,11 +127,11 @@ def export_provider(public_id, provider_name):
         )
     except ImportExportError as e:
         flash(f"خطا در خروجی: {str(e)}", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        return redirect(url_for("manage.output", public_id=public_id))
     except Exception as e:
         traceback.print_exc()
         flash(f"خطای غیرمنتظره: {str(e)}", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        return redirect(url_for("manage.output", public_id=public_id))
 
 
 @backup_bp.route("/<public_id>/admin/backup/import/<provider_name>", methods=["GET", "POST"])
@@ -168,7 +168,7 @@ def import_provider(public_id, provider_name):
             else:
                 flash("داده‌ها ادغام شد", "success")
 
-            return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+            return redirect(url_for("manage.output", public_id=public_id))
 
         except ImportExportError as e:
             flash(f"خطا در ورودی: {str(e)}", "error")
@@ -273,12 +273,12 @@ def create_tournament_from_backup(provider_name):
         if is_ajax:
             return jsonify({
                 "success": True,
-                "redirect_url": url_for("dashboard.manage_tournament", public_id=new_tournament.public_id),
+                "redirect_url": url_for("manage.overview", public_id=new_tournament.public_id),
                 "tournament_public_id": new_tournament.public_id,
                 "tournament_name": new_tournament.name
             })
 
-        return redirect(url_for("dashboard.manage_tournament", public_id=new_tournament.public_id))
+        return redirect(url_for("manage.overview", public_id=new_tournament.public_id))
 
     except ImportExportError as e:
         if is_ajax:

@@ -532,16 +532,16 @@ def add_staff(public_id):
     user_id = request.form.get("user_id", type=int)
     if not user_id:
         flash("کاربر نامعتبر است.", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        return redirect(url_for("manage.staff", public_id=public_id))
 
     user = UserModel.query.get(user_id)
     if not user:
         flash("کاربر یافت نشد.", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        return redirect(url_for("manage.staff", public_id=public_id))
 
     if tournament.organizer_id == user.id:
         flash("برگزارکننده نمی‌تواند به عنوان داور اضافه شود.", "error")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        return redirect(url_for("manage.staff", public_id=public_id))
 
     requested_role = request.form.get("staff_role", "arbiter")
     is_appointer = current_user.is_admin or \
@@ -549,7 +549,7 @@ def add_staff(public_id):
     if requested_role == "chief_arbiter":
         if not is_appointer:
             flash("تنها برگزارکننده یا مدیر سیستم می‌تواند سرداور تعیین کند.", "error")
-            return redirect(url_for("dashboard.manage_tournament",
+            return redirect(url_for("manage.staff",
                                     public_id=public_id))
         # Enforce single chief arbiter per tournament (application-level check)
         existing_chief = TournamentStaffModel.query.filter_by(
@@ -557,7 +557,7 @@ def add_staff(public_id):
         ).first()
         if existing_chief:
             flash("این تورنمنت قبلاً یک سرداور دارد. ابتدا سرداور فعلی را حذف کنید.", "error")
-            return redirect(url_for("dashboard.manage_tournament",
+            return redirect(url_for("manage.staff",
                                     public_id=public_id))
         role = "chief_arbiter"
     else:
@@ -572,7 +572,7 @@ def add_staff(public_id):
             flash("دعوت‌نامه قبلاً برای این کاربر ارسال شده است.", "info")
         elif existing.status == "accepted":
             flash("این کاربر قبلاً داور این تورنمنت است.", "info")
-        return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+        return redirect(url_for("manage.staff", public_id=public_id))
 
     new_staff = TournamentStaffModel(
         tournament_id=tournament.id,
@@ -601,7 +601,7 @@ def add_staff(public_id):
     # ──────────────────────────────────────────
     
     flash(f"دعوت‌نامه با موفقیت برای {user.email} ارسال شد.", "success")
-    return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+    return redirect(url_for("manage.staff", public_id=public_id))
 
 @dashboard_bp.route("/dashboard/tournament/<public_id>/manage/staff/remove/<int:user_id>", methods=["POST"])
 @login_required
@@ -623,7 +623,7 @@ def remove_staff(public_id, user_id):
             tournament.organizer_id == current_user.id
         if not is_appointer:
             flash("حذف سرداور تنها توسط برگزارکننده یا مدیر سیستم ممکن است.", "error")
-            return redirect(url_for("dashboard.manage_tournament",
+            return redirect(url_for("manage.staff",
                                     public_id=public_id))
 
     if staff:
@@ -633,7 +633,7 @@ def remove_staff(public_id, user_id):
     else:
         flash("داور یافت نشد.", "error")
 
-    return redirect(url_for("dashboard.manage_tournament", public_id=public_id))
+    return redirect(url_for("manage.staff", public_id=public_id))
 
 # --- Arbiter Accept/Reject Invitations ---
 @dashboard_bp.route("/dashboard/invitation/<int:staff_id>/accept", methods=["POST"])

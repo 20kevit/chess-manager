@@ -1,15 +1,18 @@
-{% extends "base.html" %}
+{% extends "manage/shell.html" %}
 {% block title %}بازیابی | {{ tournament.name }}{% endblock %}
 
-{% block content %}
-<div class="page-header">
-    <h1>بازیابی از فایل پشتیبان</h1>
-    <p>{{ tournament.name }}</p>
-</div>
-
-<div class="admin-actions">
-    <a href="/{{ tournament.public_id }}/admin/"
-       class="btn btn-secondary">🔙 بازگشت</a>
+{% block manage_content %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+    <a href="{{ url_for('manage.overview', public_id=tournament.public_id) }}">مدیریت {{ tournament.name }}</a>
+    <span class="sep" aria-hidden="true">‹</span>
+    <a href="{{ url_for('manage.output', public_id=tournament.public_id) }}">چاپ و خروجی‌ها</a>
+    <span class="sep" aria-hidden="true">‹</span><span aria-current="page">بازیابی از پشتیبان</span>
+</nav>
+<div class="page-header manage-page-head">
+    <div>
+        <h1 class="page-title">بازیابی از فایل پشتیبان</h1>
+        <p class="page-desc">بازگردانی وضعیت تورنومنت از یک فایل پشتیبان JSON</p>
+    </div>
 </div>
 
 <div class="form-container">
