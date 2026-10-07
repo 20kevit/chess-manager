@@ -217,6 +217,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     initTheme();
     initDrawer("navToggle", "mobileDrawer", "drawerScrim", "drawerClose");
+    initDrawer("manageSidebarToggle", "manageSidebar", "manageScrim", "manageSidebarClose");
     initSidebarToggle();
     initConfirm();
     initAlerts();

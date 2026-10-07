@@ -766,3 +766,17 @@
   .manage-identity-actions { inline-size: 100%; }
   .attention-item { align-items: flex-start; }
 }
+
+/* Workspace sidebar drawer: on <1024px it becomes a fixed drawer with an
+   overlay scrim so it can always be dismissed (tap outside, close button,
+   or ESC). On desktop the sidebar is static, so the header is hidden. */
+.manage-sidebar-head { display: none; }
+@media (max-width: 1023px) {
+  .manage-sidebar-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-2); padding: var(--space-2) var(--space-3);
+    margin-block-end: var(--space-2);
+    border-block-end: var(--border-width) solid var(--border);
+  }
+  .manage-sidebar { padding: var(--space-2); }
+}

@@ -26,13 +26,18 @@
       </div>
       <div class="manage-identity-actions">
         <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-ghost btn-sm">{{ icon("globe", 14) }} صفحه عمومی</a>
-        <button class="btn btn-secondary btn-sm sidebar-toggle" id="adminSidebarToggle" aria-expanded="false" aria-controls="adminSidebar">{{ icon("menu", 16) }} فهرست مدیریت</button>
+        <button class="btn btn-secondary btn-sm sidebar-toggle" id="manageSidebarToggle" aria-expanded="false" aria-controls="manageSidebar">{{ icon("menu", 16) }} فهرست مدیریت</button>
       </div>
     </div>
   </div>
 
+  <div class="drawer-scrim" id="manageScrim"></div>
   <div class="layout-sidebar manage-layout">
-    <aside class="sidebar manage-sidebar" id="adminSidebar" aria-label="ناوبری مدیریت تورنومنت">
+    <aside class="sidebar manage-sidebar" id="manageSidebar" aria-label="ناوبری مدیریت تورنومنت">
+      <div class="manage-sidebar-head">
+        <strong>منوی مدیریت</strong>
+        <button type="button" class="icon-btn" id="manageSidebarClose" aria-label="بستن فهرست مدیریت">{{ icon("close", 16) }}</button>
+      </div>
       {{ manage_sidebar(tournament, mn_active|default(''), mn_can_manage|default(False), mn_can_edit_results|default(False)) }}
     </aside>
     <div class="manage-main">
