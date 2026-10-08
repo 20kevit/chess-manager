@@ -20,7 +20,7 @@ description: Validation policy for chess-manager — baseline-first workflow, fo
    (see `frontend-conventions`).
 6. Report exact commands, counts, and any omitted scope.
 
-## Known pre-existing failure classes (last audited 2026-10-08 — re-verify, do not hard-code)
+## Known baseline conditions — re-verify before relying on them.
 
 Contract/refactor drift, not product bugs:
 

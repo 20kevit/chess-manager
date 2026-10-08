@@ -186,11 +186,7 @@ pytest tests/test_eligibility.py::TestX -v
 
 - `tests/conftest.py`: `TestConfig` (in-memory SQLite, `TESTING=True`, `WTF_CSRF_ENABLED=False`), function-scoped fresh app.
 - Styles: integration tests per phase (`test_phase8..10`, `test_fide_parser`, etc.) — class-based; plus service/route integrity tests (`test_pairing_flow`, `test_payment_flow`, `test_tournament_service`, …). No linter/CI.
-- Baseline mirrors `docs/APPLICATION.md` §11 / `tests/conftest.py`: **5 pre-existing failures** (re-characterized 2026-09-04 against a clean tree; unrelated to recent refactors, not product changes):
-  - `test_fide_import_flow::TestRoutes::test_status_endpoint_authz_matrix` — expects 302, route returns 403.
-  - `test_data_integrity::TestC1BackupSwissState` (3 tests: replace/old-backup/merge) — backup-restore expectations drift.
-  - `test_baseline_checkpoint::test_existing_db_upgrade_adds_p0_columns_without_data_loss` — hardcoded old shape lacks P1-G `download_progress`/`processing_progress`.
-  - Fixed by the migration-chain cutover: both `test_deployment_schema` drift tests, `test_baseline_checkpoint::test_fresh_install_from_baseline_is_usable`, and the phase9/10 notification tests all pass.
+- Known test drift is documented in `.opencode/skills/testing-validation/SKILL.md` as re-verifiable baseline conditions and must be re-established from fresh evidence before being relied upon.
 - New tests: follow existing class-based integration style; prefer service-layer SQLite fixtures. Unit tests for `domain/pairing`, `tiebreak`, `rating`, `pricing` are still absent — add when touching those areas.
 
 ## Frontend-Specific Development Rules
@@ -212,7 +208,6 @@ English for code/comments/commit messages; user-facing strings/flash in Persian.
 ## Deferred (known tech-debt)
 
 - No login/admin rate limiting (pbkdf2 mitigates; revisit post-beta).
-- The 8 pre-existing test failures above (contract/migration drift, not product bugs).
 
 ## Deployment
 
@@ -239,6 +234,8 @@ Start with `AGENTS.md` then follow the map to the deep doc for the layer you are
 Hierarchy: `AGENTS.md` (constitution) → `.opencode/skills/*/SKILL.md` (task-specific operational guardrails, OpenCode-discoverable) → `docs/` (deep reference). Skills link to sources of truth; they never duplicate them.
 
 Permanent rule: when a source of truth changes, review the affected Skills for staleness.
+
+Skills must not be the sole source of truth for mutable facts. Verify versions, schemas, test baselines, configuration, and other changeable facts against authoritative repository files or fresh evidence.
 
 | Change | Review |
 |--------|--------|
