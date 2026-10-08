@@ -1,0 +1,48 @@
+{% extends "tournament/shell.html" %}
+{% set active_tab = "rulebook" %}
+{% from "components/icons.html" import icon %}
+{% block title %}آیین‌نامه | {{ tournament.name }}{% endblock %}
+
+{% block crumb_trail %}
+<span class="sep" aria-hidden="true">‹</span><span aria-current="page">آیین‌نامه</span>
+{% endblock %}
+
+{% block tournament_content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">آیین‌نامه</h1>
+    </div>
+</div>
+
+{% set has_text = tournament.rulebook_text %}
+{% set sections_list = rulebook_sections or [] %}
+{% set has_sections = sections_list|length > 0 %}
+{% set has_pdf = tournament.rulebook_pdf_path %}
+
+{% if has_pdf %}
+    <div class="mb-20 text-center">
+        <a href="{{ url_for('tournament.download_rulebook_pdf', public_id=tournament.public_id) }}" target="_blank" class="btn btn-primary">
+            {{ icon("doc", 16) }} مشاهده / دانلود فایل PDF آیین‌نامه
+        </a>
+    </div>
+{% endif %}
+
+{% if has_sections %}
+    {% for s in sections_list %}
+    <div class="card p-18 mb-12">
+        <h3 class="mb-0 border-b pb-8">{{ s.title }}</h3>
+        <div class="pre-wrap lh-1-8">{{ s.body }}</div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+{% if has_text %}
+    <div class="card p-20 pre-wrap lh-1-8 font-vazir {% if has_sections %}mt-15{% endif %}">
+        {{ tournament.rulebook_text }}
+    </div>
+{% endif %}
+
+{% if not (has_pdf or has_sections or has_text) %}
+    <div class="empty-state"><p class="empty-title">آیین‌نامه‌ای برای این مسابقه ثبت نشده است</p></div>
+{% endif %}
+{% endblock %}

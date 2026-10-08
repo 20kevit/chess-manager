@@ -1,13 +1,16 @@
-{% extends "base.html" %}
-{% block title %}خلاصه | {{ tournament.name }}{% endblock %}
+{% extends "tournament/shell.html" %}
+{% set active_tab = "summary" %}
+{% block title %}خلاصه و آمار | {{ tournament.name }}{% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "summary") }}
+{% block crumb_trail %}
+<span class="sep" aria-hidden="true">‹</span><span aria-current="page">خلاصه و آمار</span>
+{% endblock %}
+
+{% block tournament_content %}
 <div class="page-header">
-    <a href="/{{ tournament.public_id }}" class="btn btn-secondary" style="float:left;">🔙 بازگشت</a>
-    <h1>خلاصه تورنومنت</h1>
-    <p>{{ tournament.name }}</p>
+    <div>
+        <h1 class="page-title">خلاصه و آمار</h1>
+    </div>
 </div>
 
 {% if prize_summary and prize_summary.winners %}
@@ -218,10 +221,4 @@
     </div>
 </div>
 {% endif %}
-
-<!-- لینک‌ها -->
-<div class="summary-links">
-    <a href="/{{ tournament.public_id }}" class="btn btn-primary">📊 جدول رده‌بندی</a>
-    <a href="/{{ tournament.public_id }}/crosstable" class="btn btn-secondary">📋 جدول برخورد</a>
-</div>
 {% endblock %}

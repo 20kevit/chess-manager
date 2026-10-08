@@ -1,14 +1,16 @@
-{% extends "base.html" %}
+{% extends "tournament/shell.html" %}
+{% set active_tab = "players" %}
 {% block title %}{{ player.full_name }} | {{ tournament.name }}{% endblock %}
 
-{% block content %}
+{% block crumb_trail %}
+<span class="sep" aria-hidden="true">‹</span>
+<a href="{{ url_for('player.player_list', public_id=tournament.public_id) }}">بازیکنان</a>
+<span class="sep" aria-hidden="true">‹</span><span aria-current="page">{{ player.full_name }}</span>
+{% endblock %}
+
+{% block tournament_content %}
 <div class="page-header">
-    <div style="float:left; display:flex; gap:6px;">
-        <a href="/{{ tournament.public_id }}" class="btn btn-secondary">🔙 بازگشت</a>
-        <a href="/{{ tournament.public_id }}/crosstable" class="btn btn-secondary">📋 جدول برخورد</a>
-    </div>
-    <h1>{{ player.full_name }}</h1>
-    <p>{{ tournament.name }}</p>
+    <h1 class="page-title">{{ player.full_name }}</h1>
 </div>
 
 <div class="player-info-card">

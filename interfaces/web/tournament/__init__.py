@@ -144,8 +144,7 @@ def view(public_id):
         is_admin=can_manage,
         can_manage=can_manage,
         can_edit_results=can_edit_results,
-        rulebook_sections=parse_sections(tournament.rulebook_sections),
-        prize_summary=PrizeSummaryService.get_public_prize_summary(tournament),
+        active_tab="standings",
         **standings
     )
 
@@ -233,9 +232,9 @@ def player_detail(public_id, participant_id):
     return render_template(
         "tournament/player_detail.html",
         tournament=tournament,
+        active_tab="players",
         player=participant,  # Pass participant as 'player' to template
-        games=games,
-        total_score=total_score,
+        games=games,        total_score=total_score,
         total_games=total_games,
         wins=wins,
         draws=draws,
@@ -322,6 +321,7 @@ def crosstable(public_id):
         tournament=tournament,
         sorted_players=sorted_players,
         total_rounds=total_rounds,
+        active_tab="crosstable",
         can_manage=cross_can_manage,
         can_edit_results=cross_can_edit,
     )
@@ -433,8 +433,8 @@ def summary(public_id):
     return render_template(
         "tournament/summary.html",
         tournament=tournament,
-        total_players=len(participants),
-        total_games=total_real,
+        active_tab="summary",
+        total_players=len(participants),        total_games=total_real,
         white_wins=white_wins,
         black_wins=black_wins,
         draws=draws,
@@ -452,6 +452,23 @@ def summary(public_id):
         prize_summary=PrizeSummaryService.get_public_prize_summary(tournament),
         can_manage=_summary_flags[0],
         can_edit_results=_summary_flags[1],
+    )
+
+
+@tournament_bp.route("/<public_id>/rulebook")
+def rulebook(public_id):
+    """Public rulebook destination: structured sections, legacy text, PDF."""
+    _validate_public_id(public_id)
+
+    tournament = TournamentRepository.get_by_public_id(public_id)
+    if not tournament:
+        abort(404)
+
+    return render_template(
+        "tournament/rulebook.html",
+        tournament=tournament,
+        rulebook_sections=parse_sections(tournament.rulebook_sections),
+        active_tab="rulebook",
     )
 
 

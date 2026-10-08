@@ -3,14 +3,16 @@
    It must never change structure based on the viewer's role: no
    management links, no capability-gated entries. Management lives in the
    separate Tournament Management Workspace (templates/manage/).
-   Extra positional args are accepted for backward compatibility and ignored. #}
-{% macro tournament_nav(tournament, active="overview") -%}
+   Extra positional args are accepted for backward compatibility and ignored.
+   Canonical order: standings, rounds, players, crosstable, summary, rulebook. #}
+{% macro tournament_nav(tournament, active="standings") -%}
 {% set pid = tournament.public_id %}
 <nav class="ws-nav" aria-label="ناوبری تورنومنت">
-  <a href="{{ url_for('tournament.view', public_id=pid) }}" class="ws-link {% if active == 'overview' %}active{% endif %}" {% if active == 'overview' %}aria-current="page"{% endif %}>نمای کلی</a>
-  <a href="{{ url_for('player.player_list', public_id=pid) }}" class="ws-link {% if active == 'players' %}active{% endif %}" {% if active == 'players' %}aria-current="page"{% endif %}>بازیکنان</a>
+  <a href="{{ url_for('tournament.view', public_id=pid) }}" class="ws-link {% if active == 'standings' %}active{% endif %}" {% if active == 'standings' %}aria-current="page"{% endif %}>رده‌بندی</a>
   <a href="{{ url_for('round.round_list', public_id=pid) }}" class="ws-link {% if active == 'rounds' %}active{% endif %}" {% if active == 'rounds' %}aria-current="page"{% endif %}>دورها و نتایج</a>
+  <a href="{{ url_for('player.player_list', public_id=pid) }}" class="ws-link {% if active == 'players' %}active{% endif %}" {% if active == 'players' %}aria-current="page"{% endif %}>بازیکنان</a>
   <a href="{{ url_for('tournament.crosstable', public_id=pid) }}" class="ws-link {% if active == 'crosstable' %}active{% endif %}" {% if active == 'crosstable' %}aria-current="page"{% endif %}>جدول برخورد</a>
-  <a href="{{ url_for('tournament.summary', public_id=pid) }}" class="ws-link {% if active == 'summary' %}active{% endif %}" {% if active == 'summary' %}aria-current="page"{% endif %}>خلاصه</a>
+  <a href="{{ url_for('tournament.summary', public_id=pid) }}" class="ws-link {% if active == 'summary' %}active{% endif %}" {% if active == 'summary' %}aria-current="page"{% endif %}>خلاصه و آمار</a>
+  <a href="{{ url_for('tournament.rulebook', public_id=pid) }}" class="ws-link {% if active == 'rulebook' %}active{% endif %}" {% if active == 'rulebook' %}aria-current="page"{% endif %}>آیین‌نامه</a>
 </nav>
 {%- endmacro %}

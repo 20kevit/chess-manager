@@ -287,15 +287,17 @@ class TestAutoPublishAndConsistency:
             tournament_id=prize_setup["tournament"].id).all()
         assert len(allocs) == 2
 
-        # ...and visible on BOTH public surfaces without login.
+        # ...and visible on the public summary surface without login.
+        # (Prize winners live on خلاصه و آمار only — not on standings.)
         anon = prize_setup["app"].test_client()
-        summary_html = anon.get(f"/{PIDZ}/summary").get_data(as_text=True)
+        html = anon.get(f"/{PIDZ}/summary").get_data(as_text=True)
+        assert "برندگان جوایز" in html
+        assert "بانوان" in html
+        assert "تومان" in html
+        assert "10,000,000 تومان" in html     # toman_formatter output
+        # Standings carries no duplicate prize content.
         view_html = anon.get(f"/{PIDZ}").get_data(as_text=True)
-        for html in (summary_html, view_html):
-            assert "برندگان جوایز" in html
-            assert "بانوان" in html
-            assert "تومان" in html
-            assert "10,000,000 تومان" in html     # toman_formatter output
+        assert "برندگان جوایز" not in view_html
 
     def test_recompute_endpoint_idempotent(self, prize_setup):
         _save(_as(prize_setup, "organizer"),

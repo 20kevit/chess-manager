@@ -5,7 +5,7 @@ Tournament Management Workspace regression coverage.
 Product contract under test:
 
 1. PUBLIC (`/<id>`, `/players`, `/rounds`, `/rounds/<n>`, `/crosstable`,
-   `/summary`) is structurally identical for every visitor — anonymous,
+   `/summary`, `/rulebook`) is structurally identical for every visitor — anonymous,
    arbiter, chief arbiter, organizer. No management controls leak.
 2. MANAGEMENT (`/<id>/manage*`) is a separate authenticated context with
    ONE capability-aware workspace: editor tier (arbiter+) operates rounds;
@@ -129,6 +129,7 @@ PUBLIC_PAGES = [
     f"/{PID}/rounds/1",
     f"/{PID}/crosstable",
     f"/{PID}/summary",
+    f"/{PID}/rulebook",
 ]
 
 
@@ -202,8 +203,8 @@ class TestPublicManagementSeparation:
         for html in bodies:
             for marker in markers:
                 assert marker not in html, marker
-            for link in ("نمای کلی", "بازیکنان", "دورها و نتایج",
-                         "جدول برخورد", "خلاصه"):
+            for link in ("رده‌بندی", "دورها و نتایج", "بازیکنان",
+                         "جدول برخورد", "خلاصه و آمار", "آیین‌نامه"):
                 assert link in html, link
 
 

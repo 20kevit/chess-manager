@@ -13,6 +13,7 @@ from interfaces.web.admin_auth import capabilities, deny_or_login, require_resul
 
 from application.round.round_lifecycle_service import RoundLifecycleService
 from application.round.result_recording_service import ResultRecordingService
+from application.round.display_service import RoundDisplayService
 from application.round.manual_adjustment_service import (
     ManualAdjustmentService, ManualPairingError, SwapError
 )
@@ -36,10 +37,26 @@ def round_list(public_id):
     if not tournament:
         abort(404)
     rounds = RoundRepository.get_all(tournament.id)
+    pairings_by_round = {}
+    for pairing in PairingRepository.get_all_for_tournament(tournament.id):
+        pairings_by_round.setdefault(pairing.round_id, []).append(pairing)
+    round_cards = []
+    for round_obj in rounds:
+        pending = RoundDisplayService.count_pending_results(
+            pairings_by_round.get(round_obj.id, []))
+        round_cards.append({
+            "round": round_obj,
+            "pending_count": pending,
+            "display": RoundDisplayService.describe_round_status(
+                round_obj.status, pending),
+        })
+    round_cards.sort(key=lambda card: card["round"].round_number,
+                     reverse=True)
     return render_template(
         "tournament/rounds.html",
         tournament=tournament,
-        rounds=rounds,
+        round_cards=round_cards,
+        active_tab="rounds",
         is_admin=can_manage,
         can_manage=can_manage,
         can_edit_results=can_edit_results,
@@ -77,12 +94,17 @@ def round_view(public_id, round_number):
         abort(404)
     pairings = PairingRepository.get_all_for_round(round_obj.id)
     participants = {p.id: p for p in ParticipantRepository.get_all(tournament.id)}
+    pending_count = RoundDisplayService.count_pending_results(pairings)
     return render_template(
         "tournament/round_view.html",
         tournament=tournament,
         round=round_obj,
         pairings=pairings,
         players=participants,
+        pending_count=pending_count,
+        round_display=RoundDisplayService.describe_round_status(
+            round_obj.status, pending_count),
+        active_tab="rounds",
         is_admin=can_manage,
         can_manage=can_manage,
         can_edit_results=can_edit_results,

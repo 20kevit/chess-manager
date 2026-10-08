@@ -1,26 +1,18 @@
-{% extends "base.html" %}
+{% extends "tournament/shell.html" %}
+{% set active_tab = "rounds" %}
 {% block title %}دور {{ round.round_number }} | {{ tournament.name }}{% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "rounds") }}
+{% block crumb_trail %}
+<span class="sep" aria-hidden="true">‹</span>
+<a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}">دورها و نتایج</a>
+<span class="sep" aria-hidden="true">‹</span><span aria-current="page">دور <span class="num">{{ round.round_number }}</span></span>
+{% endblock %}
+
+{% block tournament_content %}
 <div class="page-header">
     <div>
-        <nav class="breadcrumbs" aria-label="مسیر صفحه">
-            <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
-            <span class="sep" aria-hidden="true">‹</span>
-            <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}">دورها</a>
-            <span class="sep" aria-hidden="true">‹</span><span aria-current="page">دور {{ round.round_number }}</span>
-        </nav>
         <h1 class="page-title">دور <span class="num">{{ round.round_number }}</span></h1>
-        <p class="page-desc">وضعیت:
-            {% if round.status == 'finished' %}<span class="badge badge-success">پایان یافته</span>
-            {% elif round.status == 'ongoing' %}<span class="badge badge-info">در جریان</span>
-            {% else %}<span class="badge badge-neutral">در انتظار</span>{% endif %}
-        </p>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('round.round_list', public_id=tournament.public_id) }}" class="btn btn-ghost">بازگشت به دورها</a>
+        <p class="page-desc"><span class="badge {{ round_display.badge }}">{{ round_display.label }}</span></p>
     </div>
 </div>
 
@@ -45,7 +37,7 @@
                 </td>
                 <td class="result-cell">
                     {% if pairing.black_participant_id %}
-                    <strong class="result-display num" dir="ltr">{% if pairing.result %}{{ pairing.result_display }}{% else %}<span class="badge badge-warning">در انتظار</span>{% endif %}</strong>
+                    <strong class="result-display num" dir="ltr">{% if pairing.result %}{{ pairing.result }}{% else %}<span class="badge badge-warning">در انتظار</span>{% endif %}</strong>
                     {% else %}
                     <span class="badge badge-info">استراحت (Bye)</span>
                     {% endif %}

@@ -18,7 +18,7 @@ Dependencies must strictly point inward toward the Application and Infrastructur
 - Call `db.session.commit()`, `db.session.rollback()`, or `db.session.flush()`. Transaction management belongs to the Service layer.
 - Query the database directly using `Model.query.filter()`. Always use `Repository` methods.
 - Pass `admin_code` via URL parameters in any generated link or redirect (Rule 4 Enforcement).
-- Inject management controls into public tournament pages (`tournament/view.html`, players, rounds, round view, crosstable, summary). Staff operations belong in the Management Workspace (`manage_routes.py`, `/<public_id>/manage*`).
+- Inject management controls into public tournament pages (`tournament/shell.html` descendants: standings, players, rounds, round view, crosstable, summary, rulebook). Staff operations belong in the Management Workspace (`manage_routes.py`, `/<public_id>/manage*`).
 
 **MUST:**
 - Use `require_admin(public_id)` from `admin_auth.py` at the top of any route that modifies data.
@@ -31,21 +31,21 @@ Dependencies must strictly point inward toward the Application and Infrastructur
 ### A. Authentication & Authorization
 - **Account-Based Only:** Tournament administration is authorized exclusively through user accounts: system admin, tournament organizer, or accepted `TournamentStaffModel` arbiter invitation. The legacy `admin_code` session mechanism has been removed.
 - **Core Helpers (`interfaces/web/admin_auth.py`):** `require_tournament_manager` (manager tier), `require_result_editor` (manager + accepted arbiter), `capabilities(public_id)` → `(tournament, can_manage, can_edit_results)` for GET rendering, `deny_or_login(public_id, tier)` for mutations (anonymous → login redirect, authenticated-but-denied → 403).
-- **Capability UI:** `tournament.view`, `round.round_list`, `round.round_view`, `player.player_list` (plus `crosstable`, `summary`) are public GETs; templates gate controls on the capability flags. Backend POST guards remain authoritative.
+- **Capability UI:** `tournament.view`, `round.round_list`, `round.round_view`, `player.player_list` (plus `crosstable`, `summary`, `rulebook`, `player_detail`) are public GETs; templates carry no capability-gated controls. Backend POST guards remain authoritative.
 
 ### B. Tournament Routes (`tournament/__init__.py`)
-- **Unified View:** The `view(public_id)` endpoint serves public users, arbiters, and managers. It sets `can_manage`/`can_edit_results` via `capabilities()` and passes them to the template, allowing the UI to adapt without changing the URL. `crosstable` and `summary` follow the same pattern.
+- **Public IA (one destination per URL):** `/<public_id>` is the standings destination (`view()` renders `tournament/view.html` with `StandingsService` context only); `/<public_id>/rulebook` is the independent rulebook destination (`rulebook()` renders sections + legacy text + PDF button); `crosstable`, `summary`, and `player_detail` are standalone public pages. All share the shell `tournament/shell.html` (persistent header + canonical 6-link nav). The old Overview tab system is retired — no endpoint embeds another destination's content.
 - **Tournament list:** `search()` with an empty query renders the public tournament list (discovery).
 - **Data Delegation:** Fetches standings directly via `TournamentService.get_standings()`.
 
 ### C. Round Routes (`round_routes.py`)
 - **Actions:** Handles generating new rounds, saving results, finishing rounds, and manual adjustments (swaps/locks).
-- **Public reads, guarded writes:** `round_list` and `round_view` are public GETs (capability flags gate editor controls in-template); generation/deletion require the manager tier and result/bye/manual mutations the editor tier via `deny_or_login()`.
-- **Post/Redirect/Get Pattern:** All POST routes must `flash()` the outcome and `redirect()` back to the unified view or a specific tab to prevent form resubmission.
+- **Public reads, guarded writes:** `round_list` (round cards with derived status via `RoundDisplayService.describe_round_status`/`count_pending_results`) and `round_view` (pairings table) are public GETs with no management controls; generation/deletion require the manager tier and result/bye/manual mutations the editor tier via `deny_or_login()`.
+- **Post/Redirect/Get Pattern:** All POST routes must `flash()` the outcome and `redirect()` back into the workspace (`manage.*`) or the relevant public destination to prevent form resubmission.
 
 ### D. Player Routes (`player_routes.py`)
 - **CRUD Operations:** Endpoints for adding, editing, withdrawing, and deleting players (manager tier via `deny_or_login()`).
-- **Public roster:** `player_list` is a public GET; the template shows the Actions column only when `can_manage` is true.
+- **Public roster:** `player_list` is a public GET rendering two sections — preregistrations (`pending`/`payment_pending`/`receipt_submitted`/`paid` registrations, public-safe profile fields only) and registered `TournamentParticipant` rows. No Actions column, no management controls.
 - **FIDE Integration:** Provides the `/api/fide/<fide_id>` endpoint (exempt from CSRF if needed) which acts as a proxy to `PlayerService.lookup_fide`.
 
 ### E. Backup & Import/Export (`backup_routes.py`)

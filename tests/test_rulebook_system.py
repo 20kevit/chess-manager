@@ -247,7 +247,7 @@ class TestRulebookCrudAndIsolation:
         db.session.commit()
 
         body = setup["app"].test_client().get(
-            f"/{setup['public_id']}").get_data(as_text=True)
+            f"/{setup['public_id']}/rulebook").get_data(as_text=True)
         assert "متن قدیمی آیین‌نامه" in body
 
 class TestPublicRendering:
@@ -264,7 +264,7 @@ class TestPublicRendering:
               content_type="multipart/form-data")
 
         anon = setup["app"].test_client()
-        body = anon.get(f"/{setup['public_id']}").get_data(as_text=True)
+        body = anon.get(f"/{setup['public_id']}/rulebook").get_data(as_text=True)
         assert "مشاهده / دانلود فایل PDF" in body
         assert body.index("ثبت‌نام") < body.index("تای‌بریک‌ها")   # order
         assert "متن سفارشی" in body                                # other
@@ -272,7 +272,7 @@ class TestPublicRendering:
 
     def test_empty_state_message_when_nothing_configured(self, setup):
         body = setup["app"].test_client().get(
-            f"/{setup['public_id']}").get_data(as_text=True)
+            f"/{setup['public_id']}/rulebook").get_data(as_text=True)
         assert "آیین‌نامه‌ای برای این مسابقه ثبت نشده است" in body
 
 class TestAuthorization:

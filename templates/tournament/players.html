@@ -1,69 +1,109 @@
-{% extends "base.html" %}
+{% extends "tournament/shell.html" %}
+{% set active_tab = "players" %}
+{% from "components/ui.html" import registration_status %}
 {% block title %}بازیکنان | {{ tournament.name }}{% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "players") }}
+{% block crumb_trail %}
+<span class="sep" aria-hidden="true">‹</span><span aria-current="page">بازیکنان</span>
+{% endblock %}
+
+{% block tournament_content %}
 <div class="page-header">
     <div>
-        <nav class="breadcrumbs" aria-label="مسیر صفحه">
-            <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
-            <span class="sep" aria-hidden="true">‹</span><span aria-current="page">بازیکنان</span>
-        </nav>
-        <h1 class="page-title">بازیکنان <span class="num text-gray-500">({{ players|length }})</span></h1>
+        <h1 class="page-title">بازیکنان</h1>
     </div>
 </div>
 
-{% if players %}
-<div class="tbl-wrap">
-    <table class="tbl data-table sticky-first">
-        <caption class="visually-hidden">فهرست بازیکنان {{ tournament.name }}</caption>
-        <thead>
-            <tr>
-                <th scope="col">#</th>
-                <th scope="col" style="text-align:start;">نام</th>
-                <th scope="col" style="text-align:start;">نام خانوادگی</th>
-                <th scope="col">عنوان</th>
-                <th scope="col">ریتینگ</th>
-                <th scope="col">فدراسیون</th>
-                <th scope="col">فیده</th>
-                <th scope="col">رده سنی</th>
-                <th scope="col">دسته</th>
-                <th scope="col">وضعیت</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for player in players %}
-            <tr class="{% if player.status == 'withdrawn' %}is-withdrawn{% endif %}">
-                <td class="num">{{ player.start_number }}</td>
-                <td class="player-cell">{{ player.profile.first_name }}</td>
-                <td class="player-cell">{{ player.profile.last_name }}</td>
-                <td class="num">{{ player.fide_title_snapshot or '-' }}</td>
-                <td class="num">{{ player.rating_snapshot or 0 }}</td>
-                <td class="num">{{ player.profile.federation }}</td>
-                <td class="num">
-                    {% if player.profile.fide_id %}
-                        <a href="https://ratings.fide.com/profile/{{ player.profile.fide_id }}"
-                           target="_blank" rel="noopener">{{ player.profile.fide_id }}</a>
-                    {% else %}-{% endif %}
-                </td>
-                <td>{{ player.age_category or '-' }}</td>
-                <td>{{ player.custom_category or '-' }}</td>
-                <td>
-                    {% if player.status == 'active' %}
-                        <span class="badge badge-success">فعال</span>
-                    {% elif player.status == 'withdrawn' %}
-                        <span class="badge badge-error">انصراف داده</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% else %}
-<div class="empty-state">
-    <p class="empty-title">هنوز بازیکنی ثبت نشده است</p>
-</div>
-{% endif %}
+<section aria-labelledby="prereg-heading">
+    <h2 id="prereg-heading" class="section-title">پیش‌ثبت‌نام‌شده‌ها <span class="num text-gray-500">({{ preregistrations|length }})</span></h2>
+    {% if preregistrations %}
+    <div class="tbl-wrap">
+        <table class="tbl data-table sticky-first">
+            <caption class="visually-hidden">فهرست پیش‌ثبت‌نام‌شده‌های {{ tournament.name }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col" style="text-align:start;">نام</th>
+                    <th scope="col" style="text-align:start;">نام خانوادگی</th>
+                    <th scope="col">عنوان</th>
+                    <th scope="col">فدراسیون</th>
+                    <th scope="col">وضعیت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reg in preregistrations %}
+                <tr>
+                    <td class="num">{{ loop.index }}</td>
+                    <td class="player-cell">{{ reg.profile.first_name }}</td>
+                    <td class="player-cell">{{ reg.profile.last_name }}</td>
+                    <td class="num">{{ reg.profile.fide_title or '-' }}</td>
+                    <td class="num">{{ reg.profile.federation }}</td>
+                    <td>{{ registration_status(reg.status) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p class="empty-title">پیش‌ثبت‌نامی در انتظار بررسی نیست</p>
+    </div>
+    {% endif %}
+</section>
+
+<section aria-labelledby="participants-heading">
+    <h2 id="participants-heading" class="section-title">بازیکنان ثبت‌نام‌شده <span class="num text-gray-500">({{ players|length }})</span></h2>
+    {% if players %}
+    <div class="tbl-wrap">
+        <table class="tbl data-table sticky-first">
+            <caption class="visually-hidden">فهرست بازیکنان ثبت‌نام‌شده {{ tournament.name }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col" style="text-align:start;">نام</th>
+                    <th scope="col" style="text-align:start;">نام خانوادگی</th>
+                    <th scope="col">عنوان</th>
+                    <th scope="col">ریتینگ</th>
+                    <th scope="col">فدراسیون</th>
+                    <th scope="col">فیده</th>
+                    <th scope="col">رده سنی</th>
+                    <th scope="col">دسته</th>
+                    <th scope="col">وضعیت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in players %}
+                <tr class="{% if player.status == 'withdrawn' %}is-withdrawn{% endif %}">
+                    <td class="num">{{ player.start_number }}</td>
+                    <td class="player-cell">{{ player.profile.first_name }}</td>
+                    <td class="player-cell">{{ player.profile.last_name }}</td>
+                    <td class="num">{{ player.fide_title_snapshot or '-' }}</td>
+                    <td class="num">{{ player.rating_snapshot or 0 }}</td>
+                    <td class="num">{{ player.profile.federation }}</td>
+                    <td class="num">
+                        {% if player.profile.fide_id %}
+                            <a href="https://ratings.fide.com/profile/{{ player.profile.fide_id }}"
+                               target="_blank" rel="noopener">{{ player.profile.fide_id }}</a>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td>{{ player.age_category or '-' }}</td>
+                    <td>{{ player.custom_category or '-' }}</td>
+                    <td>
+                        {% if player.status == 'active' %}
+                            <span class="badge badge-success">فعال</span>
+                        {% elif player.status == 'withdrawn' %}
+                            <span class="badge badge-error">انصراف داده</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p class="empty-title">هنوز بازیکنی ثبت نشده است</p>
+    </div>
+    {% endif %}
+</section>
 {% endblock %}

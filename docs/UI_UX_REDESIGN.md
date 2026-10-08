@@ -25,8 +25,11 @@ what needs attention / what can I do next / where is everything else.
   staff invite/accept), notifications inbox, admin (`/admin*`, FIDE, verifications),
   public player profile (`/player/<id>`), print (`/print/*`), payment callback.
 - Public tournament (keyed by 8-digit `public_id`, structurally identical for
-  every visitor): Overview(view) · Players · Rounds · Round detail (read-only) ·
-  Crosstable · Summary · Player detail · Rulebook PDF download.
+  every visitor, one destination per URL): Standings (root) · Rounds list ·
+  Round detail (read-only) · Players (preregistrations + participants) ·
+  Crosstable · Summary · Player detail · Rulebook page + Rulebook PDF download.
+  Shared shell `tournament/shell.html` renders the persistent header + canonical
+  6-link nav once; the old Overview tab system is retired.
 - Tournament Management Workspace (`/<public_id>/manage*`, `manage_routes.py`,
   shell `templates/manage/`): Overview (operational command center) · Players ·
   Rounds · Round detail (result entry) · Standings · Crosstable · Tiebreaks ·
@@ -40,9 +43,9 @@ what needs attention / what can I do next / where is everything else.
 
 - Global header (all pages): brand → Home, Dashboard, Create (organizer), Admin
   (system admin), notification bell, auth links; mobile hamburger → drawer.
-- Public tournament pages: tournament context header (name, status badge, round
-  progress, city/time-control meta, Register action) + public sub-nav
-  (Overview, Players, Rounds, Crosstable, Summary) — identical for everyone.
+- Public tournament pages: persistent tournament context header (name, status badge, round
+  progress, city/time-control meta, Register action) + canonical public sub-nav
+  (رده‌بندی · دورها و نتایج · بازیکنان · جدول برخورد · خلاصه و آمار · آیین‌نامه) — identical for everyone.
 - Management workspace: compact tournament identity bar (name, status, city,
   time control, round x/y, start date, public-page return link) + grouped
   capability-aware sidebar (Tournament · Round operations · Tournament data ·
@@ -154,8 +157,8 @@ headers/actions, scroll tables, full-width result selects, large result buttons.
 ## 18. Page migration plan
 
 P1 shell: tokens→base→components→forms→tables→navigation→base.html/admin base/UI JS.
-P2 tournament workspace: view (header+tabs+standings+pairings), rounds,
-round_view, players, crosstable, summary. P3 dashboard hub, auth, index/search,
+P2 tournament workspace: shell (persistent header + nav), standings root, rounds,
+round_view, players (prereg + participants), crosstable, summary, rulebook. P3 dashboard hub, auth, index/search,
 registrations, settings/pricing/prizes/rulebook, notifications, player profile,
 admin pages, errors. P4 print CSS token-align (structure kept).
 
@@ -169,7 +172,7 @@ static/css/
                   #   empty/loading/error, modal, pagination, breadcrumbs, toast
   forms.css       # field system + controls + validation states        (NEW)
   tables.css      # unified table + crosstable cells + legend          (converged)
-  navigation.css  # header, drawer, sidebar, tabs, tournament nav      (NEW)
+  navigation.css  # header, drawer, sidebar, tournament nav      (NEW)
   layout.css      # container, hero, footer, public sections           (trimmed)
   tournament.css  # tournament header, pairings extras, summary        (trimmed)
   admin.css       # admin tables/stats reuse tokens                    (trimmed)

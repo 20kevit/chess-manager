@@ -1,37 +1,29 @@
-{% extends "base.html" %}
-{% block title %}دورها | {{ tournament.name }}{% endblock %}
+{% extends "tournament/shell.html" %}
+{% set active_tab = "rounds" %}
+{% block title %}دورها و نتایج | {{ tournament.name }}{% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "rounds") }}
+{% block crumb_trail %}
+<span class="sep" aria-hidden="true">‹</span><span aria-current="page">دورها و نتایج</span>
+{% endblock %}
+
+{% block tournament_content %}
 <div class="page-header">
     <div>
-        <nav class="breadcrumbs" aria-label="مسیر صفحه">
-            <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
-            <span class="sep" aria-hidden="true">‹</span><span aria-current="page">دورها</span>
-        </nav>
-        <h1 class="page-title">دورها</h1>
+        <h1 class="page-title">دورها و نتایج</h1>
     </div>
 </div>
 
-{% if rounds %}
+{% if round_cards %}
 <div class="rounds-list">
-    {% for round in rounds|sort(attribute='round_number', reverse=true) %}
-    <div class="round-card">
+    {% for card in round_cards %}
+    {% set round = card.round %}
+    <a class="round-card" href="{{ url_for('round.round_view', public_id=tournament.public_id, round_number=round.round_number) }}" aria-label="دور {{ round.round_number }}: {{ card.display.label }}">
         <div class="round-header">
             <h2>دور <span class="num">{{ round.round_number }}</span></h2>
-            <span class="badge {% if round.status == 'finished' %}badge-success
-                               {% elif round.status == 'ongoing' %}badge-info
-                               {% else %}badge-neutral{% endif %}">
-                {% if round.status == 'finished' %}پایان یافته
-                {% elif round.status == 'ongoing' %}در جریان
-                {% else %}در انتظار{% endif %}
-            </span>
+            <span class="badge {{ card.display.badge }}">{{ card.display.label }}</span>
         </div>
-        <div class="round-actions" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-            <a href="{{ url_for('round.round_view', public_id=tournament.public_id, round_number=round.round_number) }}" class="btn btn-secondary">مشاهده نتایج</a>
-        </div>
-    </div>
+        <span class="btn btn-secondary" aria-hidden="true" tabindex="-1">مشاهده نتایج</span>
+    </a>
     {% endfor %}
 </div>
 {% else %}

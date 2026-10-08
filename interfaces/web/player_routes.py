@@ -2,6 +2,8 @@
 Player HTTP handlers.
 All routes use user-account based auth via admin_auth.require_admin().
 """
+from datetime import datetime
+
 from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, abort, Response
@@ -13,8 +15,12 @@ from application.player.csv_import_service import PlayerCsvImportService, CsvImp
 from app.extensions import db
 
 from infrastructure.repositories.participant import ParticipantRepository
+from infrastructure.repositories.registration import RegistrationRepository
 from infrastructure.repositories.tournament import TournamentRepository
 player_bp = Blueprint("player", __name__)
+
+# Sort fallback for legacy registration rows without a timestamp.
+_EPOCH = datetime(1970, 1, 1)
 
 def _require_admin_or_redirect(public_id):
     tournament = require_admin(public_id)
@@ -32,11 +38,25 @@ def player_list(public_id):
     # Fetch all participants for the tournament
     players = ParticipantRepository.get_all(tournament.id)
 
+    # Public preregistrations: registrations that are still in progress and
+    # have not become participants. Only public-safe profile fields are
+    # rendered — never payment, receipt, rejection or contact data.
+    # (Approved registrations are represented by participant rows.)
+    prereg_statuses = ("pending", "payment_pending",
+                       "receipt_submitted", "paid")
+    preregistrations = [
+        reg for reg in RegistrationRepository.get_for_tournament(tournament.id)
+        if reg.status in prereg_statuses
+    ]
+    preregistrations.sort(key=lambda reg: reg.created_at or _EPOCH)
+
     # Render the players list template
     return render_template(
         "tournament/players.html",
         tournament=tournament,
         players=players,
+        preregistrations=preregistrations,
+        active_tab="players",
         is_admin=can_manage,
         can_manage=can_manage,
         can_edit_results=can_edit_results,

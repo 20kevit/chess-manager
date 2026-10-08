@@ -431,7 +431,8 @@ class TestPublicPageUnchanged:
             "admin-actions",
         )
         public_nav = (
-            "نمای کلی", "بازیکنان", "دورها و نتایج", "جدول برخورد", "خلاصه",
+            "رده‌بندی", "دورها و نتایج", "بازیکنان", "جدول برخورد",
+            "خلاصه و آمار", "آیین‌نامه",
         )
         bodies = {}
         for who in ("arbiter", "chief", "organizer"):

@@ -120,8 +120,11 @@ class TestFrontendContracts:
         db.session.commit()
         resp=app.test_client().get(f"/{t.public_id}")
         html=resp.data.decode()
-        # should have tabs and standings
-        assert 'data-tab' in html or 'tab' in html.lower()
+        # standings destination: heading present, no in-page tab system
+        # ("data-tab=\"" with quote — bare "data-tab" is a substring of "data-table")
+        assert 'رده‌بندی' in html
+        assert 'role="tablist"' not in html
+        assert 'data-tab="' not in html
         # check for price api url data attr is on register, not view
         # view should have standings
         assert 'standings' in html.lower() or 'tournament' in html.lower()

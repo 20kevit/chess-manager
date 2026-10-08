@@ -120,3 +120,38 @@ class RoundDisplayService:
     def get_bye_display(result: str) -> Dict:
         """Get display info for bye results."""
         return _BYE_DISPLAY.get(result, {}).copy()
+
+    @staticmethod
+    def count_pending_results(pairings) -> int:
+        """Count board pairings still awaiting a recorded result.
+
+        Only real boards count: bye/absent boards (no black player) are
+        excluded, as are boards with any recorded result. An empty result
+        ("" / None / legacy "pending") on a real board means unplayed.
+        """
+        pending = 0
+        for pairing in pairings:
+            if pairing.black_participant_id is None:
+                continue
+            result = pairing.result or ""
+            if result.strip() in ("", "pending"):
+                pending += 1
+        return pending
+
+    @staticmethod
+    def describe_round_status(status: str, pending_count: int = 0) -> Dict:
+        """Public-facing round status: label + badge class.
+
+        Derives display text from the round lifecycle status plus the real
+        pending-result count — no extra database state is introduced.
+        """
+        if status == "finished":
+            return {"label": "برگزار شد", "badge": "badge-success"}
+        if status == "ongoing":
+            if pending_count > 0:
+                return {
+                    "label": f"در حال برگزاری · هنوز {pending_count} نتیجه ثبت نشده",
+                    "badge": "badge-info",
+                }
+            return {"label": "در حال برگزاری", "badge": "badge-info"}
+        return {"label": "برگزار نشده", "badge": "badge-neutral"}

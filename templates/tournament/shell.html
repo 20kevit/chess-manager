@@ -1,0 +1,31 @@
+{# Public tournament shell — shared context for every public tournament page.
+   Renders ONCE per page: breadcrumb trail, the persistent tournament header
+   card, and the canonical public navigation. Child pages provide:
+     - title block (HTML <title>)
+     - crumb_trail block (trailing breadcrumb items for this destination)
+     - tournament_content block (page-specific content)
+   The `tournament` and `active_tab` variables come from the route context.
+   Never add management controls or capability-gated markup here. #}
+{% extends "base.html" %}
+{% from "components/tournament_nav.html" import tournament_nav %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="مسیر صفحه">
+    <a href="{{ url_for('tournament.search') }}">تورنمنت‌ها</a>
+    <span class="sep" aria-hidden="true">‹</span>
+    <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
+    {% block crumb_trail %}{% endblock %}
+</nav>
+
+{% set primary_action = None %}
+{% if current_user.is_authenticated %}
+  {% set primary_action %}<a href="{{ url_for('registration.register', public_id=tournament.public_id) }}" class="btn btn-accent">{{ icon("plus", 16) }} ثبت‌نام آنلاین</a>{% endset %}
+{% else %}
+  {% set primary_action %}<a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-secondary">برای ثبت‌نام لطفاً وارد شوید</a>{% endset %}
+{% endif %}
+{% include "components/tournament_header.html" with context %}
+{{ tournament_nav(tournament, active_tab|default("standings")) }}
+
+{% block tournament_content %}{% endblock %}
+{% endblock %}

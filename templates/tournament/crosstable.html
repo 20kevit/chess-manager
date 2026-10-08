@@ -1,19 +1,15 @@
-{% extends "base.html" %}
+{% extends "tournament/shell.html" %}
+{% set active_tab = "crosstable" %}
 {% block title %}جدول برخورد | {{ tournament.name }}{% endblock %}
 
-{% block content %}
-{% from "components/tournament_nav.html" import tournament_nav %}
-{{ tournament_nav(tournament, "crosstable") }}
+{% block crumb_trail %}
+<span class="sep" aria-hidden="true">‹</span><span aria-current="page">جدول برخورد</span>
+{% endblock %}
+
+{% block tournament_content %}
 <div class="page-header">
     <div>
-        <nav class="breadcrumbs" aria-label="مسیر صفحه">
-            <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}">{{ tournament.name }}</a>
-            <span class="sep" aria-hidden="true">‹</span><span aria-current="page">جدول برخورد</span>
-        </nav>
         <h1 class="page-title">جدول برخورد (Cross-Table)</h1>
-    </div>
-    <div class="page-actions">
-        <a href="{{ url_for('tournament.view', public_id=tournament.public_id) }}" class="btn btn-ghost">بازگشت</a>
     </div>
 </div>
 

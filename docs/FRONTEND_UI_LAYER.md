@@ -52,9 +52,9 @@ All files under `interfaces/web/` (verified with `glob "interfaces/web/**/*.py"`
 
 | File / Blueprint | Blueprint var | Public / Auth scope | Responsibility — what kind of pages/endpoints it owns |
 |------------------|---------------|---------------------|--------------------------------------------------------|
-| `tournament/__init__.py` | `tournament_bp` | **Public** (`/`, `/<public_id>`, `/search`, `/uploads/rulebook/...`) + **Manager** (`/<public_id>/settings`, `/admin/announcements`, `/admin/notification-prefs`, `/admin/prizes`, `/settings/rulebook`) | The centre of the product. Public views: `index`, `view` (unified arbiter/public page — see §16), `player_detail`, `crosstable`, `summary`, `search`. Manager views: `settings`, `announcements`, `notification_prefs`, `prize_settings`, `rulebook_settings`, rulebook PDF upload/remove, rulebook public download. Owns ~15 `tournament/*.html` templates. |
-| `round_routes.py` | `round_bp` | **Result-editor** (`/<public_id>/rounds`, `/<public_id>/rounds/<n>`, `/request-bye`, `/manual-pairing/*`) + **Manager** (`/rounds/new`, `/rounds/<n>/delete`) | Swiss lifecycle UI. `round_list`, `round_view` (result `<select>`s), `save_results`, `finish_round`, `delete_round`, bye/lock management (`request_bye`, `manual_pairing_add/remove`, `cancel_bye`) and post-pairing swaps (`manual_pairing`). Owns `tournament/rounds.html`, `round_view.html`, `request_bye.html`, `manual_pairing*.html`. |
-| `player_routes.py` | `player_bp` | **Manager** (`/<public_id>/players*`) | Participant CRUD owned by `ParticipantManagement`. `players`, `player_add`, `player_edit`, `player_delete`, `player_withdraw`, `player_import` (CSV + template download). |
+| `tournament/__init__.py` | `tournament_bp` | **Public** (`/`, `/<public_id>`, `/<public_id>/rulebook`, `/search`, `/uploads/rulebook/...`) + **Manager** (`/<public_id>/settings`, `/admin/announcements`, `/admin/notification-prefs`, `/admin/prizes`, `/settings/rulebook`) | Public IA: `index`, `view` (standings destination), `player_detail`, `crosstable`, `summary`, `rulebook`, `search` — all rendered through the shared shell `tournament/shell.html` (persistent header + canonical 6-link nav). Manager views: `settings`, `announcements`, `notification_prefs`, `prize_settings`, `rulebook_settings`, rulebook PDF upload/remove, rulebook public download. Owns ~16 `tournament/*.html` templates. |
+| `round_routes.py` | `round_bp` | **Public** (`/<public_id>/rounds`, `/<public_id>/rounds/<n>`) + **Result-editor** (`/request-bye`, `/manual-pairing/*`) + **Manager** (`/rounds/new`, `/rounds/<n>/delete`) | Swiss lifecycle UI. `round_list` (round cards + derived status), `round_view` (read-only pairings), `save_results`, `finish_round`, `delete_round`, bye/lock management (`request_bye`, `manual_pairing_add/remove`, `cancel_bye`) and post-pairing swaps (`manual_pairing`). Owns `tournament/rounds.html`, `round_view.html`, `request_bye.html`, `manual_pairing*.html`. |
+| `player_routes.py` | `player_bp` | **Public** (`/<public_id>/players`: preregistrations + participant roster) + **Manager** (`/players/add`, `/players/<id>/edit`, `/players/<id>/delete`, `/players/import*`) | Participant CRUD owned by `ParticipantManagement`. `player_list`, `player_add`, `player_edit`, `player_delete`, `player_withdraw`, `player_import` (CSV + template download). |
 | `registration_routes.py` | `registration_bp` | **Public/auth** (`/<public_id>/register`, `/<public_id>/api/calculate_price`) + **Manager** (`/<public_id>/admin/pricing`, `/admin/registrations*`) | Pricing/eligibility surface. Public price-calc JSON API + self-registration form; manager pricing editor, promo-code CRUD, registration queue (`registrations`, `approve`, `reject`, `reject-receipt`). Uses `RegistrationCreator / EligibilityChecker / PricingCalculator`. |
 | `payment_routes.py` | `payment_bp` | **Auth** (`/registration/<id>/pay`, `/payment/callback`) | Thin Zarinpal facade: `initiate_payment` (POST → redirect to gateway) and idempotent `callback` (GET). No template — redirects back to `tournament.view` / registration page. |
 | `dashboard_routes.py` | `dashboard_bp` | **Auth** (`/dashboard`, `/dashboard/tournament/...`, `/dashboard/profile/...`, `/uploads/profile-photo/...`, `/dashboard/api/search-users`, `/dashboard/verification/request`) | Authenticated user hub. `index` (organiser/player cards, invitations, available tournaments — the P0-D filtered list), `manage_tournament` (staff hub), profile CRUD + private media upload/remove/serve, FIDE search proxy, invitation accept/reject, verification request, notification preferences (`/dashboard/notifications/settings`). Owns `dashboard/*.html`. |
@@ -90,10 +90,11 @@ Empty package stubs exist but define no routes: `interfaces/web/admin/__init__.p
 |---------------|--------|-------------------|
 | `index()` | GET `/` | `index.html` |
 | `create()` | GET/POST `/create` | `tournament/create.html` (form) → `tournament/created.html` (success + public/admin URLs) |
-| `view()` | GET `/<public_id>` | `tournament/view.html` — the unified page (standings tabs + rounds + crosstable + summary + rulebook). Context: `tournament`, `is_admin/can_manage/can_edit_results`, `player_standings/tiebreak_rules`, `rating_changes`, `rulebook_sections`, `prize_summary`. The most coupled template in the project. |
+| `view()` | GET `/<public_id>` | `tournament/view.html` — the standings destination (standings table + age highlight filter only). Context: `tournament`, `is_admin/can_manage/can_edit_results`, `player_standings/tiebreak_rules`, `rating_changes`, `active_tab`. Shares the shell `tournament/shell.html` with all public destinations. |
 | `player_detail()` | GET `/<public_id>/player/<int:participant_id>` | `tournament/player_detail.html` |
 | `crosstable()` | GET `/<public_id>/crosstable` | `tournament/crosstable.html` |
 | `summary()` | GET `/<public_id>/summary` | `tournament/summary.html` |
+| `rulebook()` | GET `/<public_id>/rulebook` | `tournament/rulebook.html` (structured sections + legacy text + PDF button + empty state) |
 | `search()` | GET `/search?q=` | `search.html` |
 | `settings()` | GET/POST `/<public_id>/settings` | `tournament/settings.html` (basic + dates + time control + tiebreak DnD) |
 | `announcements()` | GET/POST `/<public_id>/admin/announcements` | `tournament/announcements.html` |
@@ -108,8 +109,8 @@ Empty package stubs exist but define no routes: `interfaces/web/admin/__init__.p
 
 | Handler | Template |
 |---------|----------|
-| `round_list()` | `tournament/rounds.html` |
-| `round_view()` | `tournament/round_view.html` (board table + result `<select>`s + finish/delete) |
+| `round_list()` | `tournament/rounds.html` (round cards with derived status: `RoundDisplayService.describe_round_status` / `count_pending_results`) |
+| `round_view()` | `tournament/round_view.html` (read-only board table + status line) |
 | `round_new()` / `delete_round()` | redirect → `tournament.view` / `round_list` (no template — flash + redirect) |
 | `request_bye()` | `tournament/request_bye.html` (bye + manual lock queue for `next_round`) |
 | `manual_pairing()` | `tournament/manual_pairing.html` (post-pairing color/swap) |
@@ -281,7 +282,7 @@ Only four templates load a feature CSS via `extra_css`; the rest rely on the glo
 | **Retired** | `main.js` | *deleted 2026-10* (was dead `console.log`, never loaded) | — |
 | **Feature** | `modal.js` (112 lines) | `dashboard/index.html` via `extra_js` | `Modal.open/close/closeAll`, focus trap, ESC + overlay close, auto-wires `[data-modal-trigger]` / `[data-modal-close]`. |
 | **Feature** | `notifications.js` (105 lines) | `notifications/index.html` via `extra_js` | Inbox `markAsRead / markAllAsRead`, bell badge delta (`#notifCount`), click-outside guard. Fetches `POST /api/notifications/<id>/read` + `POST /api/notifications/read-all`. |
-| **Feature** | `tournament-view.js` (99 lines) | `tournament/view.html` via `extra_js` | Tab switching (`[data-tab]` → `#tab-*`, tablist keyboard: arrows/Home/End + `aria-selected`/roving `tabindex`) + standings highlight/filter (`[data-filter]` vs `data-age`, cumulative `[data-cumulative-age-category]` flag, `ageOrder` map). The richest page JS. |
+| **Feature** | `tournament-view.js` | `tournament/view.html` via `extra_js` | Standings highlight/filter only (`[data-filter]` vs `data-age`, cumulative `[data-cumulative-age-category]` flag, `ageOrder` map). The old in-page tab switching was retired with the public IA refactor (destinations are URLs now). |
 | **Feature** | `tiebreak-dnd.js` (68 lines) | `tournament/settings.html` via `extra_js` | HTML5 drag-and-drop reordering of `#tiebreak-list > .tiebreak-item`; DOM order *is* submission order (`getDragAfterElement` midpoint heuristic). Keyboard fallback: per-item ▲/▼ buttons (`.tb-up/.tb-down`) move nodes for keyboard/screen-reader users. |
 | **Feature** | `manual-pairing.js` (35 lines) | `tournament/manual_pairing.html` via `extra_js` | Live validation that `#board1 ≠ #board2` for swaps; toggles `#swap-warning` + `#swap-submit-btn[disabled]`. |
 | **Feature** | `registration.js` (105 lines) | `tournament/register.html` via `extra_js` | Debounced (300 ms) live price preview. Reads `form[data-api-url]` + `form[data-base-price]`, POSTs JSON `{first_name,last_name,fide_id,birth_date,gender,promo_code}` to `POST /<public_id>/api/calculate_price`, patches `#base-price`, `#final-price`, `#discount-list`. Uses `escapeHtml`. |
@@ -545,15 +546,15 @@ tournament.view()               interfaces/web/tournament/__init__.py:121
   └─ render_template("tournament/view.html", tournament=…, is_admin=…, can_manage=…, **standings)
          │
          ▼
-templates/tournament/view.html  (extends base.html)
-  ├─ tournament-header (city, time control, round counter)
-  ├─ tabs (.tabs → #tab-standings, #tab-round-N, #tab-crosstable, #tab-summary, #tab-rulebook)
-  ├─ standings table (player_standings, tiebreak_rules, rating_changes) — data-age / row-highlighted classes
-  ├─ round tables (tournament.rounds → pairings, result_display)
-  └─ {% block extra_js %} → tournament-view.js (wire tabs + filter) + shim for cumulative flag
+templates/tournament/shell.html  (extends base.html — shared public shell)
+  ├─ breadcrumbs (تورنمنت‌ها › tournament name › destination)
+  ├─ tournament-header (name, status, register/login action, city, time control, round counter, progress)
+  ├─ tournament_nav (رده‌بندی › دورها و نتایج › بازیکنان › جدول برخورد › خلاصه و آمار › آیین‌نامه)
+  └─ tournament_content, e.g. view.html: standings table (player_standings, tiebreak_rules, rating_changes)
+  └─ {% block extra_js %} → tournament-view.js (age highlight filter) + shim for cumulative flag
          │
          ▼
-Browser: tournament.css (tabs/filter/podium) + tables.css (data-table) + tournament-view.js (Tabs + highlight)
+Browser: tournament.css (filter/podium) + tables.css (data-table) + tournament-view.js (highlight filter)
          + base.html globals (header, bell, CSRF) — no extra round-trip.
 ```
 
@@ -671,11 +672,11 @@ base.html (+ 6 globals)     print/base.html (standalone, only print.css)
 
 These are project decisions, not generic advice. Violating them will be flagged in code review.
 
-1. **Public and Management are separate contexts, not two states of one page.** The public tournament pages (`tournament/view.html`, `players.html`, `rounds.html`, `round_view.html`, `crosstable.html`, `summary.html`) render the SAME public experience for every visitor — anonymous, player, arbiter, chief, organizer — and carry no management controls. Tournament staff operate in the separate Tournament Management Workspace (`/<public_id>/manage*`, shell `templates/manage/shell.html`, sidebar `templates/manage/_nav.html`): one workspace for every role, driven by `can_manage`/`can_edit_results` from `admin_auth.py`, with unavailable entries rendered DISABLED (visible structure, inert control) instead of hidden. Backend authorization stays authoritative. Do not re-inject `{% if can_manage %}` management controls into public templates.
+1. **Public and Management are separate contexts, not two states of one page.** The public tournament pages (shell `tournament/shell.html` + `view.html`, `players.html`, `rounds.html`, `round_view.html`, `crosstable.html`, `summary.html`, `rulebook.html`, `player_detail.html`) render the SAME public experience for every visitor — anonymous, player, arbiter, chief, organizer — and carry no management controls. Tournament staff operate in the separate Tournament Management Workspace (`/<public_id>/manage*`, shell `templates/manage/shell.html`, sidebar `templates/manage/_nav.html`): one workspace for every role, driven by `can_manage`/`can_edit_results` from `admin_auth.py`, with unavailable entries rendered DISABLED (visible structure, inert control) instead of hidden. Backend authorization stays authoritative. Do not re-inject `{% if can_manage %}` management controls into public templates.
 
 2. **RTL + Persian is the default.** Every layout decision (flex order, `left` vs `right`, `float`, `margin-right` for tab admin slot, notification dropdown `left:0` in RTL) must be verified in `dir="rtl"`. Persian copy lives in templates/flash messages; code/comments/commit messages stay in English.
 
-3. **In-place over navigation.** Where the UX philosophy applies: `round_view.html` exposes a `<select class="result-select">` *inside* the round tab so arbiters never leave the page to submit results; standings highlight reflows ranks client-side (`tournament-view.js`) instead of reloading. Keep this pattern for future arbiter tools.
+3. **One destination per URL.** The public tournament IA is URL-based, not tab-based: standings (`/<public_id>`), rounds list + detail, players (preregistrations + participants), crosstable, summary, rulebook each own exactly one page and never embed another destination's full content. Result entry lives in the Management Workspace (`manage/round_detail.html`); standings highlight reflows ranks client-side (`tournament-view.js`) instead of reloading. Keep this pattern for future tools.
 
 4. **Reuse the library, do not re-declare it.** Buttons, badges, alerts, forms, table and notification chrome already exist in `components.css` / `tables.css` / `admin.css` / `dashboard.css` (see §9). Adding per-page CSS for a new button look is a review failure — use the modifiers (`.btn-primary`, `.filter-btn-custom`, etc.) or extend the library with a single variable-driven variant.
 
@@ -696,7 +697,7 @@ These are project decisions, not generic advice. Violating them will be flagged 
 | **Change global colours / fonts** | `static/css/base.css` → `base.html` (verify via Vazirmatn link, `:root` tokens) |
 | **Change global layout (header/footer/container)** | `static/css/layout.css` → `templates/base.html` |
 | **Change buttons / badges / alerts / forms** | `static/css/components.css` (library) → any 2–3 templates that use the class (grep the class name) |
-| **Change tournament chrome (header, tabs, standings, rounds, podium, awards)** | `static/css/tournament.css` + `templates/tournament/view.html` → `round_view.html`, `crosstable.html`, `summary.html`, `players.html` |
+| **Change tournament chrome (header, nav, standings, rounds, podium, awards)** | `static/css/tournament.css` + `templates/tournament/shell.html` → `view.html`, `round_view.html`, `crosstable.html`, `summary.html`, `players.html`, `rulebook.html` |
 | **Change tournament *logic* shown in the UI (tiebreak order, pricing)** | `interfaces/web/tournament/__init__.py` + `tournament/settings.html` (tiebreak) or `tournament/pricing.html` + `application.tournament.*` / `application.registration.*` |
 | **Change registration UI / live price preview** | `templates/tournament/register.html` + `static/js/registration.js` + `interfaces/web/registration_routes.py` (`calculate_price` handler) |
 | **Change dashboard UI (hub, staff, profile, media)** | `templates/dashboard/index.html` + `templates/dashboard/manage_tournament.html` + `static/css/dashboard.css` + `static/js/modal.js` → `interfaces/web/dashboard_routes.py` |
@@ -708,7 +709,7 @@ These are project decisions, not generic advice. Violating them will be flagged 
 | **Change auth (login/register)** | `templates/auth/*.html` + `static/css/layout.css` (`.login-*`) → `interfaces/web/auth_routes.py` + `application.auth.*` |
 | **Change any API consumed by JS** | `static/js/*.js` (the `fetch` call) → `interfaces/web/*routes.py` (the `@…route` handler) → `application/*` service that validates |
 | **Change a Flask route used by the frontend** | The route file in `interfaces/web/` → its `render_template` templates (see §3) → their CSS/JS (see §5/§6) → the application service it delegates to |
-| **Add a new tournament page** | `templates/tournament/view.html` (reference) → `static/css/tournament.css` → new template in `templates/tournament/` → wire via `interfaces/web/tournament/__init__.py` |
+| **Add a new tournament page** | `templates/tournament/shell.html` (reference: crumb_trail + tournament_content blocks, `active_tab`) → `static/css/tournament.css` → new template in `templates/tournament/` → wire via `interfaces/web/tournament/__init__.py` + extend `tournament_nav` if it is a top-level destination |
 | **Add a new admin page** | `templates/admin/base.html` (reference) → `static/css/admin.css` → new `admin/*.html` → `interfaces/web/admin_routes.py` or `fide_routes.py` |
 
 Goal: open 2–4 files, not the whole `interfaces/web/` + `templates/` + `static/` trees.
