@@ -233,3 +233,19 @@ English for code/comments/commit messages; user-facing strings/flash in Persian.
 | Deployment | `docs/DEPLOYMENT.md` | **Authoritative** Passenger/MySQL/migration/webhook runbook |
 
 Start with `AGENTS.md` then follow the map to the deep doc for the layer you are changing. When in doubt about the web/frontend split, `docs/FRONTEND_UI_LAYER.md` §11–§13 is the fastest orientation.
+
+## Skill Maintenance
+
+Hierarchy: `AGENTS.md` (constitution) → `.opencode/skills/*/SKILL.md` (task-specific operational guardrails, OpenCode-discoverable) → `docs/` (deep reference). Skills link to sources of truth; they never duplicate them.
+
+Permanent rule: when a source of truth changes, review the affected Skills for staleness.
+
+| Change | Review |
+|--------|--------|
+| `pairing-core` version/API | `fide-compliance`, `external-integrations` |
+| `tiebreak-core` version/API | `fide-compliance`, `external-integrations` |
+| Authorization model | `auth-rbac` |
+| Layer ownership/boundaries | `clean-architecture` |
+| Migration strategy/head | `database-migrations` |
+| Frontend assets/conventions | `frontend-conventions` |
+| Validation strategy | `testing-validation` |
